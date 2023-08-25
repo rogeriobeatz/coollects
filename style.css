@@ -1,0 +1,463 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+
+:root{
+    --color-primary:#6125BF;
+    --color-secondary: #F15700;
+    --color-gradient: linear-gradient(180deg, rgba(97,37,191,1) 50%, rgba(241,87,0,1) 70%);
+    --color-grey: #F3F3F3;
+    --color-white: #fffefb;
+    --color-dark: #1b1a1b;
+    --color-text:rgb(100, 98, 104);
+    --space-mid: 12px;
+    --space-min: 8px;
+    --space-max: 24px;
+    --viewport: 380px;
+    --bd-rad-a: 8px;
+    --bd-rad-b: 12px;
+    --bd-rad-c: 24px;
+    --space-50: 50px;
+}
+@font-face {
+    font-family: Work sans;
+    src: url(assets/WorkSans-Light.ttf);
+    font-weight: normal;
+}
+@font-face {
+    font-family: Work sans;
+    src: url(assets/WorkSans-Bold.ttf);
+    font-weight: bold;
+}
+
+.space {
+    height: var(--space-50);
+}
+.normal {
+    font-weight: normal;
+}
+h2 {
+    font-size: 2em;
+    margin: 5px 0;
+}
+h3 {
+    margin: 0;
+}
+p {
+    font-size: 16px;
+    margin: 5px;
+}
+h4 {
+    margin: 0;
+    font-size: 1.4em;
+}
+h5 {
+    margin: 0;
+    font-size: 1.2em;
+}
+h6 {
+    margin: 0;
+    font-size: 0.8em;
+}
+body {
+    font-family: Work sans, Arial, sans-serif;
+    width: 100%;
+    height: 100%;
+
+    background-color: var(--color-secondary);
+}
+.container {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Configurações da tela index */
+.home-login {
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+.welcome-modal {
+    width: var(--viewport);
+    text-align: center;
+    color: var(--color-white);
+}
+
+#home-buttons {
+    width: var(--viewport);
+    display: flex;
+    justify-content: space-between;
+}
+.home-button {
+    background: var(--color-white);
+    transition: transform 0.1s;
+    flex: 1;
+    margin: var(--space-mid);
+    padding: var(--space-max);
+    border-radius: var(--bd-rad-a);
+    font-weight: bold;
+}
+.home-button svg {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 32px;
+}
+
+.home-button:hover{
+    transform: scale(1.2);
+
+}
+
+
+/* Configurações da tela de login */
+
+.login-overlay{
+    position: fixed;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    background-color: #00000020;
+}
+.login-modal {
+    min-width: 80vw;
+    background-color: var(--color-primary);
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--bd-rad-c);
+    padding: 24px;
+    /* animation-name: uou; */
+    animation-duration: 1s;
+    animation-delay: 0.2s;
+    color: var(--color-grey);
+    box-shadow: 0 5px 8px #00000050;
+}
+.login-modal a{
+    color: #F3F3F3;
+}
+.login-modal .logo{
+    width: 200px;
+}
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+
+}
+.form input{
+    border-radius: 100px;
+    padding: 16px;
+    border: 0;
+    font-size: 18px;
+
+}
+.form label {
+    margin: 20px 20px -20px 20px;
+    padding: 2px 12px;
+    background-color: #63eee0;
+    z-index: 100;
+    border-radius: 100px;
+    color: #1b1a1b;
+
+}
+.form button {
+    border-radius: 100px;
+    padding: var(--space-mid);
+    border: 0;
+    color: #fffefb;
+    font-size: 18px;
+    width: 100%;
+}
+button.orange {
+    margin: var(--space-mid) 0;
+    background-color: var(--color-secondary);
+}
+
+
+/* Código referente ao Header */
+
+.main-header {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    background-color: var(--color-primary);
+    border-bottom: 10px solid var(--color-secondary);
+    z-index: 1000;
+    box-shadow: 0 4px 12px #00000050;
+}
+.menu-row {
+    padding: var(--space-mid);
+    display: flex;
+    align-items: center;
+}
+#logo-menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#logo-menu img{
+    max-height: 40px;
+    width: 100%;
+    margin: 20px 0;
+    object-fit: contain;
+}
+.menu-row svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Aqui esta o código referente ao formato e comportamento das páginas do tipo app*/
+.app-view {
+    width: 100vw;
+    height: 100vh;
+    padding: 140px 0.8em 0.8em 0.8em;
+    background-color: var(--color-grey);
+    display: flex;
+    justify-content: center;
+}
+.app-container {
+    width: var(--viewport);
+}
+
+/* Código para alinhar o link com um ícon e remover o sublinhado */
+.link-align{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+a.link-align{
+    text-decoration: none;
+}
+
+/* Config do Pre Home */
+.pre-home {
+    width: 100vw;
+    height: 100vh;
+    background: var(--color-gradient);
+    color: #F3F3F3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.pre-home-cont {
+    width: var(--viewport);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.pre-home .logo {
+    width: 80%;
+    margin: 20px 0 70px 0;
+}
+.pre-home h3{
+    margin: 20px 0;
+}
+
+.pre-home-row {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+}
+
+a.pre-home-button {
+    text-decoration: none;
+}
+
+.pre-home-button {
+    background: var(--color-white);
+    transition: transform 0.1s;
+    flex: 1;
+    margin: var(--space-mid);
+    padding: var(--space-mid);
+    border-radius: var(--bd-rad-a);
+    font-weight: bold;
+    font-size: 1.4em;
+    color: var(--color-dark);
+    box-shadow: 0 4px 8px #00000020;
+}
+a.pre-home-button:hover {
+    transform: scale(1.2);
+
+}
+
+
+
+
+/* Animação Padrão */
+
+@keyframes uou {
+    from {
+        margin-top: 100vh;
+        opacity: 0;
+    }
+    to {
+        margin-top: 0vh;
+        opacity: 1;
+    }
+}
+
+/* Animaçao do Carrosel */
+.slideshow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    z-index: -1;
+    opacity: 0.2;
+}
+
+.slideshow img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    filter: blur(5px);
+}
+
+/* Código referente à linha onde o usuario seleciona a categoria */
+.row-categ-cad {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.row-categ-cad *{
+    flex: 1;
+}
+#categ-flag {
+    border-radius: var(--bd-rad-b);
+    border: 0;
+    padding: 4px;
+    font-size: 10px ;
+    margin: 10px 0;
+    background-color: rgb(215, 215, 215);
+}
+/* Codigo referente aos steps dos formularios */
+.steps {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+.step {
+min-width: 100%;
+flex: 0 0 100%; /* Certifica-se de que cada passo ocupa todo o espaço horizontal */
+  scroll-snap-align: start; /* Alinha o passo no início da div */
+  opacity: 1;
+  transition: opacity 1s;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+
+}
+/* Código do formulario de cadastro de coleção */
+.categ-form {
+    display: flex;
+    flex-direction: column;
+  }
+  .categ-form input[type="radio"]{
+    display: none;
+  }
+  .categ-form label, .categ-form .label {
+      border-radius: var(--bd-rad-b);
+      padding: 18px;
+      border: 0;
+      font-size: 18px;
+      box-shadow: 0px 4px 4px 0px rgba(55, 54, 61, 0.20);
+      margin: 0;
+      background-color: #ffffff;
+  }
+  .categ-form input[type="radio"]:checked+label {
+    background: var(--color-secondary);
+    color: var(--color-white);
+  }
+  .steps input{
+    border-radius: var(--bd-rad-b);
+      padding: 18px;
+      border: 0;
+      font-size: 18px;
+      box-shadow: 0px 4px 4px 0px rgba(55, 54, 61, 0.20);
+      margin: 0;
+      background-color: #ffffff;
+  }
+
+  .steps input[type=color]{
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    height: 12em;
+    padding: 0;
+    width: 100%;
+  
+  }
+  .steps input[type=submit]{
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    margin: 40px 0 0 0;
+    margin-top: auto;
+  }
+  .steps input[name=col_desc]{
+    height: 200px;
+  }
+  .go-back {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .go-back svg {
+    width: 30px;
+    height: 30px;
+  }
+  .go-back a{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+  }
+  #botaoVoltar {
+    border-radius: var(--bd-rad-c);
+    padding: 14px;
+    border: 0;
+    font-size: 18px;
+    box-shadow: 0px 4px 4px 0px rgba(55, 54, 61, 0.20);
+    margin: 0;
+    background-color: #ffffff;
+    border: 1px solid var(--color-primary);
+
+  }
+  #botaoAvancar {
+    border-radius: var(--bd-rad-c);
+    padding: 14px;
+    border: 0;
+    font-size: 18px;
+    box-shadow: 0px 4px 4px 0px rgba(55, 54, 61, 0.20);
+    margin: 0;
+    background-color: #ffffff;
+    border: 1px solid var(--color-primary);
+  }
