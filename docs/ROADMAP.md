@@ -28,3 +28,8 @@
 - Não afirmar que o app foi lançado sem infraestrutura conectada e testes de aceitação.
 - Não alterar a marca, logotipo oficial nem os tons institucionais.
 - Documentar cada implementação e decisão em \`docs/CHANGELOG.md\`.
+
+## Incrementos posteriores ao primeiro ciclo de testes
+- [x] Recuperação de senha por e-mail
+- [x] Substituição e remoção de fotografias no editor de itens
+- [x] Auditoria npm bloqueando falhas de severidade alta/crítica
