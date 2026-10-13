@@ -18,6 +18,10 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install
+      - name: Print dependency security report
+        run: |
+          npm audit --json > audit-report.json || true
+          node -e "const r=require('./audit-report.json'); for(const [name,v] of Object.entries(r.vulnerabilities||{})){console.log(name+' '+v.severity+' '+v.range+' fix='+JSON.stringify(v.fixAvailable))}"
       - name: Unit tests
         run: npm test
       - name: Typecheck
