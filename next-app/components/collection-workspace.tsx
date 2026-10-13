@@ -1,7 +1,7 @@
 'use client'
 import { useCallback,useEffect,useState,type CSSProperties } from 'react'
 import Link from 'next/link'
-import { ArrowRight,Check,ChevronLeft,Copy,Edit3,Eye,EyeOff,FolderPlus,Plus,Trash2 } from 'lucide-react'
+import { ArrowRight,Check,ChevronLeft,Copy,Edit3,Eye,EyeOff,FolderPlus,Plus,Trash2,Layers3 } from 'lucide-react'
 import { AuthGate } from './auth-gate'
 import { CategoryArt } from './category-art'
 import { CATEGORIES } from '@/lib/local-catalog'
