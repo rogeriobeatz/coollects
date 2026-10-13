@@ -1,43 +1,35 @@
-# Roadmap — Coollects
+# Coollects — Roadmap do MVP
 
-## Etapa 0 — Base visual e histórica
-- [x] Analisar fluxos de colecionismo do PHP original e preservar seu código
-- [x] Documentar visão, arquitetura, decisões e histórico
-- [x] Criar aplicação Next.js + TypeScript mobile-first em \`next-app/\`
-- [x] Reutilizar logo original, Work Sans e cores exatas \`#6125BF\` / \`#F15700\`
-- [x] Redesenhar Home, Coleções, Cadastrar e Explorar com microinterações
-- [x] Criar navegação inferior de 5 ações e telas de estado vazio
-- [x] Fluxo local de criação, filtro, listagem e exclusão de coleções
-- [x] Entrada de câmera/galeria com prévia, cadastro manual local de item e vínculo local à coleção
-- [ ] Adicionar ícones instaláveis completos e service worker da PWA
+## Código implementado (validar integração em produção)
+- [x] Next.js 16 + TypeScript, identidade visual original e design mobile editorial
+- [x] Supabase Auth (cadastro, login, sessão, perfil)
+- [x] Schema PostgreSQL com RLS e coleção privada por padrão
+- [x] CRUD de coleções com links públicos, categorias, cores e descrições
+- [x] CRUD de itens e vínculos a várias coleções
+- [x] Storage privado com upload de fotografias e URLs assinadas
+- [x] Explorar coleções públicas reais e perfil de usuário
+- [x] Leitura multimodal OCR/IA opcional com revisão e cota diária
+- [x] Importador voluntário do protótipo local
+- [x] Estrutura básica PWA com manifest, ícone SVG e página offline
+- [x] Documentação e configuração CI (npm install, testes, tipos, build)
 
-## Etapa 1 — Dados e autenticação
-- [ ] Conectar Supabase e versionar migrations PostgreSQL
-- [ ] Criar login/cadastro/logout e perfis privados/públicos
-- [ ] Aplicar RLS a toda tabela de usuário e armazenamento
-- [ ] Migrar coleções e itens locais mediante consentimento do usuário
-- [ ] Implementar CRUD persistente de coleções e itens com imagens
-- [ ] Automatizar testes de permissão e isolamento de dados
+## Infraestrutura e lançamento — bloqueado até configuração e validação
+- [ ] Criar e conectar **projeto real Supabase**; executar migração SQL
+- [ ] Configurar URL/redirect de Auth e SMTP de e-mails
+- [ ] Adicionar variáveis de ambiente na Vercel e chave de IA se desejada
+- [ ] Testar ponta a ponta com dois usuários (RLS, storage e compartilhamento)
+- [ ] Testar Android, iOS e PWA instalada; ícone PNG dedicado para iOS se necessário
+- [ ] Configurar rate limits por IP/CAPTCHA de cadastro, prevenção contra abuso e observabilidade de custos
+- [ ] Canal de suporte, política de privacidade/termos completos e revisão de LGPD
+- [ ] Migração do PHP/MySQL histórico, se houver dump utilizável (não encontrado no repositório)
+- [ ] Beta controlado → correções → lançamento público
 
-## Etapa 2 — Comunidade
-- [ ] Coleções públicas/privadas, URLs compartilháveis
-- [ ] Explorar coleções **reais**, filtros, pesquisa, perfis
-- [ ] Seguir favoritos (opcional depois do feed inicial)
-- [ ] Blindar endpoints públicos contra exposição de dados privados
+## Regra permanente
+- Não afirmar que o app foi lançado sem infraestrutura conectada e testes de aceitação.
+- Não alterar a marca, logotipo oficial nem os tons institucionais.
+- Documentar cada implementação e decisão em \`docs/CHANGELOG.md\`.
 
-## Etapa 3 — Digitalização inteligente
-- [ ] Persistir fotos com compressão e validação de arquivo
-- [ ] Backend OCR + IA com limites/rate limits e custo controlado
-- [ ] Mostrar confiança e confirmação humana antes de salvar
-
-## Etapa 4 — Publicação
-- [ ] Testar PWA e instalação iOS/Android
-- [ ] Testes E2E, acessibilidade e desempenho em celulares reais
-- [ ] Privacidade, LGPD, observabilidade, Vercel e domínio
-- [ ] Beta com usuários e melhoria guiada por uso
-
-## Atenção
-- Não chamar protótipo local de sistema online/sincronizado.
-- Não representar temas ilustrativos como coleções ou perfis reais.
-- Mudanças de identidade visual dependem de aprovação explícita.
-- Cada etapa exige build e documentação atualizados.
+## Incrementos posteriores ao primeiro ciclo de testes
+- [x] Recuperação de senha por e-mail
+- [x] Substituição e remoção de fotografias no editor de itens
+- [x] Auditoria npm bloqueando falhas de severidade alta/crítica

@@ -1,14 +1,10 @@
 name: Coollects Next.js checks
 on:
   pull_request:
-    paths:
-      - 'next-app/**'
-      - '.github/workflows/next-app.yml'
+    paths: ['next-app/**','.github/workflows/next-app.yml']
   push:
     branches: [main]
-    paths:
-      - 'next-app/**'
-      - '.github/workflows/next-app.yml'
+    paths: ['next-app/**','.github/workflows/next-app.yml']
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,6 +18,14 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install
+      - name: Print dependency security report
+        run: |
+          npm audit --json > audit-report.json || true
+          node -e "const r=require('./audit-report.json'); for(const [name,v] of Object.entries(r.vulnerabilities||{})){console.log(name+' '+v.severity+' '+v.range+' fix='+JSON.stringify(v.fixAvailable))}"
+      - name: Reject high and critical dependency vulnerabilities
+        run: npm audit --audit-level=high
+      - name: Unit tests
+        run: npm test
       - name: Typecheck
         run: npm run typecheck
       - name: Build
