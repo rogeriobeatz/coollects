@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { House, Compass, Plus, Layers3, UserRound } from 'lucide-react'
-type Tab = 'inicio'|'explorar'|'cadastrar'|'colecoes'
+type Tab = 'inicio'|'explorar'|'cadastrar'|'colecoes'|'perfil'
 const tabs = [
  {id:'inicio',label:'Início',url:'/',Icon:House},
  {id:'colecoes',label:'Coleções',url:'/colecoes',Icon:Layers3},
