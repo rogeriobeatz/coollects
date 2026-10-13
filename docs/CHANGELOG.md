@@ -1,3 +1,8 @@
+## 2026-10-13 — Correção de contraste da marca
+- Identificado que o logotipo original é branco com fundo transparente (arquivo correto no repositório).
+- Corrigido o cabeçalho, antes branco, para o roxo oficial `#6125BF` e preservado o logotipo sem nenhuma edição.
+- Ajustada a proporção da imagem para 566 × 125 e estilos de foco no menu.
+
 # Diário de desenvolvimento
 
 ## 2026-10-13 — Identidade oficial e primeiro fluxo de coleções
