@@ -15,3 +15,10 @@
 
 ## Histórico anterior
 Ver commits e pull requests #1–#4 do repositório \`rogeriobeatz/coollects\`. Eles registram fundação do Next.js, guia de identidade, protótipo local, redesign editorial e correção do contraste do logotipo.
+
+### 2026-10-13 — Ajustes finais do MVP
+- Recuperação de senha via e-mail e atualização de senha dentro de sessão autenticada.
+- Edição de fotos de itens com substituição e remoção no armazenamento privado.
+- Auditoria npm adicionada ao CI; pacote de testes atualizado para Vitest 5 + Vite 8, sem vulnerabilidades reportadas nessa combinação.
+- Navegação de perfil com estado ativo e links para privacidade e termos.
+- Pendência crítica: integração com Supabase real e teste de autenticação/row-level security antes do lançamento.
