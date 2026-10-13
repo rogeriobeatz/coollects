@@ -1,10 +1,20 @@
 {
   "name": "Coollects — Suas coleções em um só lugar",
   "short_name": "Coollects",
-  "description": "Digitalize, organize e compartilhe coleções.",
+  "description": "Digitalize, organize e compartilhe suas coleções.",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#FFFEFB",
   "theme_color": "#6125BF",
-  "lang": "pt-BR"
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }

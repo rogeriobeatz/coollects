@@ -1,13 +1,15 @@
 import type { Metadata, Viewport } from 'next'
+import { PwaRegister } from '@/components/pwa-register'
 import './globals.css'
-export const metadata: Metadata = {
- title: { default:'Coollects — Suas coleções em um só lugar',template:'%s | Coollects' },
+export const metadata:Metadata={
+ title:{default:'Coollects — Suas coleções em um só lugar',template:'%s | Coollects'},
  description:'Digitalize, organize, descubra e compartilhe suas coleções.',
  applicationName:'Coollects',
  manifest:'/manifest.webmanifest',
+ icons:{icon:[{url:'/icon.svg',type:'image/svg+xml'}],apple:[{url:'/brand/coollects.png'}]},
  appleWebApp:{capable:true,title:'Coollects',statusBarStyle:'default'},
 }
-export const viewport: Viewport = {width:'device-width',initialScale:1,themeColor:'#6125BF'}
+export const viewport:Viewport={width:'device-width',initialScale:1,themeColor:'#6125BF'}
 export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){
- return <html lang="pt-BR"><body>{children}</body></html>
+ return <html lang="pt-BR"><body>{children}<PwaRegister/></body></html>
 }

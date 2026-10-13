@@ -1,40 +1,28 @@
-# Coollects Mobile — Next.js + TypeScript
+# Coollects — PWA Next.js + TypeScript
 
-Nova aplicação em \`next-app/\`. PHP original **preservado na raiz**.
+A nova aplicação fica em \`next-app/\`, mantendo intacto o PHP original na raiz do repositório.
 
-## Executar
-\`\`\`sh
+## Tecnologias
+Next.js 16, React 19, TypeScript, Supabase Auth/PostgreSQL/Storage e Gemini (opcional). Interface preserva logotipo PNG original, Work Sans, roxo \`#6125BF\` e laranja \`#F15700\`.
+
+## Desenvolvimento
+\`\`\`bash
 cd next-app
+cp .env.example .env.local
 npm install
+npm test
+npm run typecheck
 npm run dev
 \`\`\`
-Visite http://localhost:3000
+Configure Supabase e aplique \`supabase/migrations/20261013_initial.sql\` antes de usar login e persistência.
 
-## Visual atual
-Interface editorial mobile-first: logo original, roxo \`#6125BF\`, laranja \`#F15700\`, Work Sans, cards geométricos, microinterações, navegação inferior. Ver \`../docs/DESIGN_SYSTEM.md\`.
+## Vercel
+Root Directory: **\`next-app\`**, Node 22.x. Leia \`../docs/DEPLOY_VERCEL.md\` antes de publicar.
 
-## O que funciona neste protótipo
-- Criar, listar, filtrar e excluir coleções; dados no \`localStorage\`.
-- Abrir câmera ou galeria em dispositivos compatíveis, visualizar a fotografia **sem upload**.
-- Cadastrar nome, marca, categoria e observações de item, opcionalmente associando-o a uma coleção **local**. Foto não é persistida.
-- Home exibe contagens reais do armazenamento local.
-- Explorar permite filtrar **temas ilustrativos**, ainda sem usuários reais.
+## Funcionalidades implementadas em código
+Cadastro/login, perfis, coleções privadas/públicas, itens com foto e várias coleções, compartilhamento e Explorar com dados reais, OCR/IA opcional, PWA básica e migração manual de protótipo local.
 
-## O que não está pronto
-Não há autenticação, banco, sincronização, upload persistente, IA/OCR, feed real ou compartilhamento de coleções. Não use a versão de demonstração para dados críticos; o navegador pode limpar o armazenamento local.
-
-## Deploy Vercel
-- Repositório \`rogeriobeatz/coollects\`
-- Branch \`main\`
-- Root Directory: **\`next-app\`**
-- Framework: Next.js
-- Node.js: 22.x
-- Build: \`npm run build\`
-- Install: \`npm install\`
+**Atenção:** não há ambiente Supabase configurado neste repositório. O código precisa passar por testes de integração no seu projeto Supabase, conforme checklist no DEPLOY_VERCEL.md.
 
 ## Documentação
-- \`../docs/PRODUCT_VISION.md\`
-- \`../docs/ARCHITECTURE.md\`
-- \`../docs/DESIGN_SYSTEM.md\`
-- \`../docs/ROADMAP.md\`
-- \`../docs/CHANGELOG.md\`
+Visão: \`../docs/PRODUCT_VISION.md\` · Arquitetura: \`../docs/ARCHITECTURE.md\` · Guia visual: \`../docs/DESIGN_SYSTEM.md\` · Roadmap: \`../docs/ROADMAP.md\` · Histórico: \`../docs/CHANGELOG.md\`.
