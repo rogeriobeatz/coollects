@@ -1,7 +1,10 @@
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, MoreHorizontal } from 'lucide-react'
 import { BrandLogo } from './brand-logo'
 import { MobileNav } from './mobile-nav'
-export function Screen({title,subtitle,active,children}:{title:string;subtitle:string;active:'inicio'|'explorar'|'cadastrar'|'colecoes';children:React.ReactNode}) {
- return <main className="app-frame"><header className="topbar"><Link href="/" className="back" aria-label="Voltar ao início"><ArrowLeft size={22}/></Link><Link href="/" aria-label="Coollects — início"><BrandLogo/></Link></header><section className="content screen-content"><p className="eyebrow">COOLLECTS / {active.toUpperCase()}</p><h1 className="page-title">{title}</h1><p className="page-subtitle">{subtitle}</p>{children}</section><MobileNav active={active}/></main>
+export function Screen({title,accent,subtitle,active,children,variant='light'}:{title:string;accent?:string;subtitle:string;active:'inicio'|'explorar'|'cadastrar'|'colecoes';children:React.ReactNode;variant?:'light'|'dark'}) {
+ return <main className={'app-frame screen-'+variant}>
+ <header className="topbar"><Link href="/" className="back" aria-label="Voltar ao início"><ArrowLeft size={22}/></Link><Link href="/" className="screen-logo" aria-label="Coollects — início"><BrandLogo/></Link><span className="topbar-more" aria-hidden="true"><MoreHorizontal size={22}/></span></header>
+ <section className="screen-intro"><p className="kicker">{active==='explorar'?'UM MUNDO DE DESCOBERTAS':active==='colecoes'?'DO SEU JEITO':'SEU PRÓXIMO TESOURO'}</p><h1>{title}{accent&&<><br/><span>{accent}</span></>}</h1><p>{subtitle}</p><span className="intro-doodle" aria-hidden="true">✳</span></section>
+ <div className="screen-body">{children}</div><MobileNav active={active}/></main>
 }

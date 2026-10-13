@@ -1,30 +1,40 @@
-# Coollects — Nova aplicação mobile
+# Coollects Mobile — Next.js + TypeScript
 
-Esta é a fundação Next.js + TypeScript, **não** uma versão funcional completa. O PHP original permanece preservado na raiz do repositório.
+Nova aplicação em \`next-app/\`. PHP original **preservado na raiz**.
 
-## Desenvolvimento local
-```bash
+## Executar
+\`\`\`sh
 cd next-app
 npm install
 npm run dev
-```
+\`\`\`
+Visite http://localhost:3000
 
-Abra http://localhost:3000
+## Visual atual
+Interface editorial mobile-first: logo original, roxo \`#6125BF\`, laranja \`#F15700\`, Work Sans, cards geométricos, microinterações, navegação inferior. Ver \`../docs/DESIGN_SYSTEM.md\`.
 
-## Vercel
-- Importar repositório `rogeriobeatz/coollects`
-- Branch: `main` após merge da implementação
-- **Root Directory: `next-app`**
+## O que funciona neste protótipo
+- Criar, listar, filtrar e excluir coleções; dados no \`localStorage\`.
+- Abrir câmera ou galeria em dispositivos compatíveis, visualizar a fotografia **sem upload**.
+- Cadastrar nome, marca, categoria e observações de item, opcionalmente associando-o a uma coleção **local**. Foto não é persistida.
+- Home exibe contagens reais do armazenamento local.
+- Explorar permite filtrar **temas ilustrativos**, ainda sem usuários reais.
+
+## O que não está pronto
+Não há autenticação, banco, sincronização, upload persistente, IA/OCR, feed real ou compartilhamento de coleções. Não use a versão de demonstração para dados críticos; o navegador pode limpar o armazenamento local.
+
+## Deploy Vercel
+- Repositório \`rogeriobeatz/coollects\`
+- Branch \`main\`
+- Root Directory: **\`next-app\`**
 - Framework: Next.js
-- Install: `npm install`
-- Build: `npm run build`
 - Node.js: 22.x
-
-## O que existe
-Interface mobile com navegação e páginas institucionais para iniciar o MVP. O manifest inclui metadados de instalação, mas **PWA completo ainda precisa de ícones e service worker**.
+- Build: \`npm run build\`
+- Install: \`npm install\`
 
 ## Documentação
-Leia `../docs/PRODUCT_VISION.md`, `../docs/ARCHITECTURE.md`, `../docs/ROADMAP.md` e `../docs/CHANGELOG.md`.
-
-## Avisos
-As páginas de digitalização, coleções e explorar ainda são telas iniciais, sem persistência e sem integração com a câmera ou com IA. Não devem ser tratadas como funções entregues.
+- \`../docs/PRODUCT_VISION.md\`
+- \`../docs/ARCHITECTURE.md\`
+- \`../docs/DESIGN_SYSTEM.md\`
+- \`../docs/ROADMAP.md\`
+- \`../docs/CHANGELOG.md\`
