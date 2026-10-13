@@ -1,27 +1,29 @@
-## 2026-10-13 — Correção de contraste da marca
-- Identificado que o logotipo original é branco com fundo transparente (arquivo correto no repositório).
-- Corrigido o cabeçalho, antes branco, para o roxo oficial `#6125BF` e preservado o logotipo sem nenhuma edição.
-- Ajustada a proporção da imagem para 566 × 125 e estilos de foco no menu.
-
 # Diário de desenvolvimento
 
+## 2026-10-13 — Redesign editorial e interações mobile
+- Implementadas telas redesenhadas: Início, Coleções, Cadastrar e Explorar, além de uma tela inicial de Perfil.
+- Mantido logotipo oficial branco original em cabeçalhos roxos \`#6125BF\`; laranja institucional \`#F15700\`; fonte Work Sans original.
+- Novo sistema visual: hero editorial, botão grande de digitalização, cards coloridos, arte geométrica, filtros, estados vazios, navegação inferior 5 itens, transições e modo de movimento reduzido.
+- Coleções: preservada compatibilidade com o armazenamento local antigo; nova aparência do wizard de quatro etapas e listagem filtrável.
+- Home: contagem de coleções e itens lida do armazenamento local, nunca dados fictícios.
+- Cadastrar: câmera/galeria via entrada do dispositivo com prévia; cadastro manual de metadados com vínculo a uma coleção local; foto **não persistida**, IA/OCR **não conectados**.
+- Explorar: temas ilustrativos filtráveis; nenhum perfil, número de seguidores ou coleção de usuário inventados.
+- Criado \`docs/DESIGN_SYSTEM.md\` com regras visuais e limites de funcionalidade.
+- Integração Supabase, usuários reais, persistência de fotos, IA e compartilhamento público seguem pendentes.
+
+## 2026-10-13 — Correção de contraste da marca
+- Identificado que o logotipo original é branco com fundo transparente.
+- Corrigido o cabeçalho para roxo oficial \`#6125BF\` e preservado o logotipo sem edição.
+- Ajustada a proporção do PNG para 566 × 125.
+
 ## 2026-10-13 — Identidade oficial e primeiro fluxo de coleções
-- Reutilizado o logo PNG e fontes Work Sans da versão PHP original (sem recriação).
-- Fixados roxo `#6125BF` e laranja `#F15700` no tema.
-- Implementado primeiro fluxo interativo de criação de coleções: categoria → nome → cor → descrição.
-- Implementados lista, exclusão e persistência **somente no localStorage** para teste do fluxo no dispositivo.
-- Adicionado `docs/BRAND_GUIDELINES.md` como contrato de marca.
-- **Limitação**: essas coleções ainda NÃO são sincronizadas no Supabase nem públicas. Sem conta/autenticação ou upload de itens. localStorage pode ser removido pelo navegador.
+- Reutilizado o logo PNG e fontes Work Sans da versão PHP original.
+- Fixados roxo \`#6125BF\` e laranja \`#F15700\` no tema.
+- Implementado fluxo de criação de coleções em quatro etapas e armazenamento apenas no navegador.
+- Adicionado \`docs/BRAND_GUIDELINES.md\`.
 
 ## 2026-10-13 — Início da nova versão mobile
-**Decisão:** reconstruir a partir do PHP original, usando Next.js + TypeScript com foco PWA e deploy Vercel. Não retomar a arquitetura da antiga Coollects V2 como base.
-
-**Auditoria do PHP:** início/login/cadastro, pre-home com 4 atalhos, criação de coleções em formulário multietapas, categorias, cores e listagem; scripts de itens referenciados mas ausentes.
-
-**Implementado na primeira entrega:** shell mobile-first, navegação inferior, páginas de início, coleções, explorar e cadastrar; manifest PWA; preparação de projeto Next.js e documentação.
-
-**Ainda não implementado:** autenticação, banco, persistência remota, câmera, OCR/IA, dados públicos e sincronização. Interface sinaliza recursos ainda indisponíveis e não fabrica coleções.
-
-**Segurança legado:** `config.php` possui credenciais e scripts usam SQL concatenado/MD5; não reutilizar. Evitar vazamento de dados/segredos nos commits.
-
-**Próxima etapa:** validar build e implementar Supabase Auth, banco e primeiro CRUD completo de coleções/itens.
+- Decisão: reconstruir a partir do PHP original, usando Next.js + TypeScript/PWA e Vercel, mantendo legado intacto.
+- Auditoria do PHP: cadastro/login, pre-home, categorias, coleções e lacunas na implementação de itens.
+- Criados app shell, navegação, manifesto inicial e documentação.
+- Risco histórico: credenciais expostas no \`config.php\`, SQL concatenado e MD5 no legado. Nunca reutilizar essas credenciais/senhas.

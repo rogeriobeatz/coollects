@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Compass } from 'lucide-react'
 import { Screen } from '@/components/screen'
+import { ExploreShowcase } from '@/components/explore-showcase'
 export const metadata:Metadata={title:'Explorar'}
-export default function ExplorePage(){return <Screen active="explorar" title="Explorar" subtitle="Conheça as histórias por trás das coleções."><div className="empty-state"><Compass size={42}/><h2>Um universo para descobrir</h2><p>O feed de coleções públicas e os perfis dos colecionadores serão implementados após a integração com o banco de dados.</p></div></Screen>}
+export default function ExplorePage(){return <Screen active="explorar" title="Explorar" accent="universos." subtitle="Inspiração para quem vê histórias em cada objeto."><ExploreShowcase/></Screen>}
