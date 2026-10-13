@@ -146,7 +146,7 @@ create policy "read visible item images" on storage.objects for select to anon,a
   select 1 from public.items i
   join public.collection_items ci on ci.item_id=i.id
   join public.collections c on c.id=ci.collection_id
-  where i.photo_path=name and c.is_public
+  where i.photo_path=storage.objects.name and c.is_public
  )
  )
 );
