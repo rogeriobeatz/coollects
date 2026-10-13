@@ -68,3 +68,9 @@
 - Reconhecimento depende de uma chave Google; pode ter custo e erros.
 - Falta revisão jurídica e um canal de contato real antes de um lançamento aberto.
 - A migração automática do banco PHP não está incluída (SQL dump original não foi localizado); importador apenas migra o antigo armazenamento local.
+
+## Recuperação de senha
+Inclua o redirect `https://SEU-DOMINIO.vercel.app/auth/callback` na configuração do Supabase. O link de recuperação abre a rota `/redefinir` após autenticação PKCE. Teste validade e expiração do link.
+
+## Observação sobre exclusão da conta
+Antes do lançamento aberto, crie um canal de suporte e um procedimento operacional de exclusão integral da conta e dos arquivos privados (incluindo a exclusão do usuário no Auth). O MVP ainda não oferece exclusão autônoma de conta. Não afirme conformidade LGPD definitiva sem auditoria.
