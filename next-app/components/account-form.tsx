@@ -39,6 +39,7 @@ export function AccountForm({mode}:{mode:'login'|'register'}){
  <label className="field-label">Senha<input required minLength={8} type="password" autoComplete={register?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres"/></label>
  <button disabled={busy} className="save-item-button">{busy?'Aguarde...':register?'Criar minha conta':'Entrar'} <ArrowRight size={19}/></button>
  </form>{message&&<p className="auth-message" role="status">{message}</p>}
+ {!register&&<Link href="/recuperar" className="auth-back">Esqueceu sua senha?</Link>}
  <div className="auth-toggle">{register?'Já tem uma conta?':'Ainda não tem conta?'} <Link href={register?'/entrar':'/registrar'}>{register?'Entrar':'Cadastre-se'}</Link></div>
- <Link className="auth-back" href="/">Voltar para o Coollects</Link></div></main>
+ <Link className="auth-back" href="/">Voltar para o Coollects</Link><p className="auth-legal">Ao continuar, confira nossa <Link href="/privacidade">política de privacidade</Link> e nossos <Link href="/termos">termos</Link>.</p></div></main>
 }
