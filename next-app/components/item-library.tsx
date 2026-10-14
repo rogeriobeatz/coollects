@@ -1,5 +1,5 @@
 'use client'
-import { useCallback,useEffect,useState } from 'react'
+import { useCallback,useEffect,useRef,useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight,ImageIcon,Plus,Trash2,Edit3,Check,X,Search } from 'lucide-react'
 import { AuthGate } from './auth-gate'
@@ -11,6 +11,8 @@ export function ItemLibrary(){return <AuthGate>{userId=><Library userId={userId}
 type ViewItem=ItemRow&{url:string|null}
 function Library({userId}:{userId:string}){
  const [search,setSearch]=useState('')
+ const deepLinkHandled=useRef(false)
+ const [returnCollection,setReturnCollection]=useState<string|null>(null)
  const [items,setItems]=useState<ViewItem[]>([])
  const [collections,setCollections]=useState<CollectionRow[]>([])
  const [links,setLinks]=useState<{collection_id:string;item_id:string}[]>([])
@@ -33,6 +35,18 @@ function Library({userId}:{userId:string}){
   setItems(urls);setCollections((cols||[]) as CollectionRow[]);setLinks((joined||[]) as typeof links);setLoading(false)
  },[userId])
  useEffect(()=>{void refresh()},[refresh])
+ useEffect(()=>{
+  if(loading||deepLinkHandled.current||!items.length)return
+  deepLinkHandled.current=true
+  const params=new URLSearchParams(window.location.search)
+  const requested=params.get('editar')
+  const item=items.find(i=>i.id===requested)
+  const returnId=params.get('voltar')
+  if(returnId&&/^[0-9a-f-]{36}$/i.test(returnId))setReturnCollection(returnId)
+  if(item)edit(item)
+ // Deep-linked editor should run once after the initial list is loaded.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[loading,items])
  function edit(item:ItemRow){
   setEditPhoto(null);setRemovePhoto(false);setEditing(item.id);setForm({name:item.name,brand:item.brand,category:item.category,notes:item.notes,collectionIds:links.filter(x=>x.item_id===item.id).map(x=>x.collection_id)});setMessage('')
  }
@@ -74,7 +88,7 @@ function Library({userId}:{userId:string}){
   void refresh()
  }
  const visible=items.filter(i=>[i.name,i.brand,i.category,i.notes].join(" ").toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR")))
- return <section className="item-library"><label className="collection-search"><Search size={18}/><input aria-label="Buscar no meu acervo" placeholder="Buscar item, marca ou categoria…" value={search} onChange={e=>setSearch(e.target.value)}/></label><Link href="/cadastrar" className="pill-btn"><Plus size={18}/> Cadastrar outro item</Link>{message&&<p role="status" className="scan-notice">{message}</p>}
+ return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>← Voltar à coleção</Link>}<label className="collection-search"><Search size={18}/><input aria-label="Buscar no meu acervo" placeholder="Buscar item, marca ou categoria…" value={search} onChange={e=>setSearch(e.target.value)}/></label><Link href="/cadastrar" className="pill-btn"><Plus size={18}/> Cadastrar outro item</Link>{message&&<p role="status" className="scan-notice">{message}</p>}
  {loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list">{visible.length===0&&<p role="status">Nenhum item corresponde à busca.</p>}{visible.map(item=><article className="item-row" key={item.id}>
   {item.url?<img src={item.url} alt={item.name} className="item-photo"/>:<span className="item-no-photo"><ImageIcon size={28}/></span>}
   <div className="item-row-copy"><small>{item.category}</small><strong>{item.name}</strong><span>{item.brand||'Sem fabricante'} · {links.filter(l=>l.item_id===item.id).length} coleções</span><div className="item-actions"><button onClick={()=>edit(item)}><Edit3 size={15}/> Editar</button><button onClick={()=>void remove(item)}><Trash2 size={15}/> Excluir</button></div></div>

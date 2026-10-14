@@ -99,3 +99,9 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .collection-picker{max-height:min(80dvh,700px);display:flex;flex-direction:column}.collection-picker>p{font-size:13px;color:#655c6b}.picker-options{display:grid;gap:6px;overflow-y:auto;overscroll-behavior:contain;min-height:60px;flex:1;padding:4px 0}.picker-option{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e0d8eb;border-radius:12px}.picker-option input{width:20px;height:20px;flex-shrink:0;accent-color:#6125BF}.picker-option span{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}.picker-option strong{font-size:13px;overflow-wrap:anywhere}.picker-option small{color:#7b7388;font-size:11px}.collection-picker .save-item-button{margin-top:12px;flex-shrink:0}
 @media(min-width:900px){.floating-add{right:calc(max(24px,(100vw - 540px)/2 + 16px))}}
 @media(prefers-reduced-motion:reduce){.floating-add{transition:none}}
+
+/* Contextual navigation between collections and individual items */
+.library-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:5px;border-radius:14px;background:#efe7fb;margin:0 0 19px}
+.library-switch>*{display:flex;align-items:center;justify-content:center;gap:5px;min-height:43px;padding:9px;text-align:center;font-size:12px;font-weight:900;color:#6125BF;border-radius:10px}
+.library-switch [aria-current=page]{background:white;box-shadow:0 2px 8px #30204712}
+.edit-in-collection{display:inline-flex;align-items:center;gap:5px;border-radius:9px;padding:8px 10px;color:#6125BF;background:#eee6ff;font-size:11px;font-weight:800;width:max-content}
