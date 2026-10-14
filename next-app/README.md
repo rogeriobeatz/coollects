@@ -7,7 +7,7 @@ O aplicativo Next.js 16 fica em `next-app/`. O código PHP original permanece na
 ```sh
 cd next-app
 cp .env.example .env.local
-npm install
+npm ci
 npm test
 npm run dev
 ```
@@ -40,3 +40,6 @@ Leia `../docs/RELEASE_QA.md` e `../docs/DEPLOY_VERCEL.md` antes da abertura púb
 
 ## Estado do hardening de dados
 O banco real Coollects possui migrações `20261014_release_integrity.sql`, `20261014_username_entropy.sql` e `20261014_item_transactions.sql`, com testes SQL em transações revertidas. **Não execute novamente migrações já aplicadas.** A Edge Function `delete-account` está ativa no Supabase e requer JWT. Consulte `../docs/RELEASE_INTEGRITY_AUDIT.md` para os cenários bloqueantes antes de disponibilizar ao público.
+
+## Build reproduzível
+O arquivo `package-lock.json` foi obtido de uma execução aprovada do GitHub Actions. Use `npm ci` para instalar as versões testadas; não atualize dependências sem executar auditoria npm, testes unitários, smoke HTTP, TypeScript, build e Playwright.

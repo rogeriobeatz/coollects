@@ -22,8 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install dependencies
-        run: npm install
+      - name: Install pinned dependencies
+        run: npm ci
       - name: Dependency security audit
         run: npm audit --audit-level=high
       - name: Unit tests and release copy
