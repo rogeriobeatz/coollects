@@ -38,3 +38,13 @@ for(const viewport of [{width:320,height:780},{width:390,height:844}]){
   })
  })
 }
+
+test('PWA oferece ação contextual e campos sem zoom automático',async({page})=>{
+ await page.setViewportSize({width:390,height:844})
+ await page.goto('/colecao/00000000-0000-0000-0000-000000000000')
+ await expect(page.getByRole('link',{name:'Cadastrar novo item'})).toBeVisible()
+ await expect(page.getByRole('navigation',{name:'Navegação principal'}).getByRole('link')).toHaveCount(4)
+ await page.goto('/entrar')
+ const font=await page.getByLabel('E-mail').evaluate(e=>parseFloat(getComputedStyle(e).fontSize))
+ expect(font).toBeGreaterThanOrEqual(16)
+})

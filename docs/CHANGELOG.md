@@ -1,3 +1,13 @@
+## 2026-10-14 — Coleções como centro da experiência (mobile-first)
+- A tela de uma coleção permite procurar itens já vinculados, cadastrar item novo com vínculo contextual e adicionar diversos itens existentes em lote.
+- A opção “Remover desta coleção” remove somente a associação, preservando o item no acervo geral.
+- Cadastro com query param `?colecao=UUID` pré-seleciona a coleção, mantendo-a ao cadastrar outro item.
+- Navegação principal simplificada para quatro destinos, com botão flutuante global de cadastro.
+- Tratamento de safe areas, scroll horizontal e fonte de inputs ≥16 px para evitar zoom automático involuntário no iOS sem bloquear a ampliação acessível.
+- Manifest orientado à experiência standalone; PWA continua com cache restrito à página offline.
+- Teste automatizado de navegação da barra e tamanho de fonte.
+- Ações de vínculo são protegidas por RLS do Supabase, não excluem registros de itens.
+
 ## 2026-10-14 — Auditoria real de banco, transações e ciclo de vida da conta
 - Corrigida recursão de políticas RLS que impedia leitura e escrita de vínculos de itens.
 - Corrigida colisão sistemática de usernames automáticos; verificação contra dois UUIDs de mesmo prefixo.
