@@ -1,3 +1,13 @@
+## Auditoria contextual — 14/10/2026
+- Verificadas rotas de navegação, fluxo Home → Coleções → Coleção → Item e retorno, navegação principal e os estados de ausência de coleção.
+- Corrigido acesso direto à edição de item a partir da coleção: `/itens?editar=UUID&voltar=UUID`, incluindo link de retorno.
+- Criado atalho visível `Todos os itens` logo no topo das coleções; anteriormente o único atalho ficava no rodapé.
+- A seta da tela de coleção agora retorna para `/colecoes` em vez de mandar o usuário à Home.
+- Ao tornar uma coleção indisponível, a interface limpa os dados antigos antes de mostrar o estado vazio.
+- Adicionados testes de regressão para URLs internas literais, links de edição/retorno e para evitar exclusão acidental de itens.
+- Verificação SQL no Supabase real com dados existentes dentro de `BEGIN/ROLLBACK` comprovou que o proprietário consegue vincular e desvincular item de coleção sem alterar os dados persistentes.
+- Limites: verificação visual/mobile automatizada não substitui execução completa com conta e dados reais em navegador/dispositivo físico. A plataforma não recebe certificação de 100% por esses testes.
+
 ## 2026-10-14 — Coleções como centro da experiência (mobile-first)
 - A tela de uma coleção permite procurar itens já vinculados, cadastrar item novo com vínculo contextual e adicionar diversos itens existentes em lote.
 - A opção “Remover desta coleção” remove somente a associação, preservando o item no acervo geral.

@@ -67,7 +67,7 @@ function Workspace({userId}:{userId:string}){
  }
  const visible=collections.filter(c=>filter==='Todas'||c.category===filter)
  const filters=['Todas',...Array.from(new Set(collections.map(c=>c.category)))]
- return <section className="collection-workspace">
+ return <section className="collection-workspace"><nav className="library-switch" aria-label="Navegar no acervo"><span aria-current="page">Coleções</span><Link href="/itens">Todos os itens <ArrowRight size={15}/></Link></nav>
   <div className="workspace-toolbar"><div><p className="kicker">SUA BIBLIOTECA</p><strong>{busy?'—':collections.length} coleções <span aria-hidden="true">✳</span></strong></div><button className="round-add" onClick={()=>start()} aria-label="Criar coleção"><Plus size={24}/></button></div>
   <p className="local-banner"><span>●</span> Conta conectada: suas coleções ficam sincronizadas. Apenas coleções públicas aparecem na busca.</p>
   {message&&<p role="status" className="status-inline">{message}</p>}
