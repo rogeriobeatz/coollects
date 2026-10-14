@@ -74,3 +74,12 @@ Inclua o redirect `https://SEU-DOMINIO.vercel.app/auth/callback` na configuraç�
 
 ## Observação sobre exclusão da conta
 Antes do lançamento aberto, crie um canal de suporte e um procedimento operacional de exclusão integral da conta e dos arquivos privados (incluindo a exclusão do usuário no Auth). O MVP ainda não oferece exclusão autônoma de conta. Não afirme conformidade LGPD definitiva sem auditoria.
+
+## Proteção adicional de lançamento (14/10/2026)
+O banco Supabase do Coollects **já foi criado** em São Paulo e duas migrações foram aplicadas. Não é preciso criar outro projeto nem reaplicar automaticamente as migrações.
+
+**Obrigatório na Vercel:** `COOLLECTS_SITE_MODE=maintenance` (padrão). O sistema mostra apenas uma página institucional se a aplicação não for liberada ou se as chaves públicas estiverem ausentes.
+
+Para o beta de QA, configurar `NEXT_PUBLIC_SUPABASE_URL=https://zegjmrogiyyptccstofs.supabase.co`, chave publicável do projeto, redirecionamentos de Auth e SMTP. Só mudar `COOLLECTS_SITE_MODE=open` quando a equipe tiver concluído os cenários do `RELEASE_QA.md`.
+
+O endpoint `/api/health` retorna 503 enquanto fechado e só responde 200 quando a liberação está habilitada **e** a consulta pública ao banco funciona. Esse teste não substitui autenticação com duas contas e upload real.

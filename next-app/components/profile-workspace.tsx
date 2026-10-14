@@ -17,7 +17,7 @@ function ProfileEditor({userId}:{userId:string}){
   let active=true
   void db.from('profiles').select('*').eq('id',userId).single().then(({data,error})=>{
    if(!active)return
-   if(error){setMessage('Perfil indisponível: '+error.message);return}
+   if(error){setMessage('Não conseguimos carregar o perfil agora. Tente novamente.');return}
    if(data){const p=data as ProfileRow;setProfile(p);setDisplayName(p.display_name);setUsername(p.username);setBio(p.bio)}
   })
   return ()=>{active=false}
@@ -26,7 +26,7 @@ function ProfileEditor({userId}:{userId:string}){
   if(displayName.trim().length<2||!/^[a-z0-9_]{3,30}$/.test(username)){setMessage('Nome com pelo menos 2 caracteres; usuário de 3 a 30 letras minúsculas, números ou _.');return}
   setBusy(true);const db=getBrowserClient();if(!db)return
   const {error}=await db.from('profiles').update({display_name:displayName.trim(),username,bio:bio.trim()}).eq('id',userId)
-  setMessage(error?'Erro: '+error.message:'Perfil atualizado!')
+  setMessage(error?'Não foi possível atualizar o perfil. O nome de usuário pode já estar em uso.':'Perfil atualizado!')
   if(!error)setProfile(p=>p?{...p,display_name:displayName.trim(),username,bio:bio.trim()}:p)
   setBusy(false)
  }

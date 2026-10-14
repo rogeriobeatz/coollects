@@ -26,7 +26,7 @@ function Library({userId}:{userId:string}){
    db.from('collections').select('*').eq('owner_id',userId),
    db.from('collection_items').select('collection_id,item_id')
   ])
-  if(error)setMessage(error.message)
+  if(error)setMessage('Não conseguimos carregar seus itens. Tente novamente.')
   const source=(rows||[]) as ItemRow[]
   const urls=await Promise.all(source.map(async row=>({...row,url:await signedImage(db,row.photo_path)})))
   setItems(urls);setCollections((cols||[]) as CollectionRow[]);setLinks((joined||[]) as typeof links);setLoading(false)
@@ -54,10 +54,10 @@ function Library({userId}:{userId:string}){
     if(photoError)setMessage('Item atualizado; a foto antiga não pôde ser removida do armazenamento.')
    }
    const {error:unlinkError}=await db.from('collection_items').delete().eq('item_id',editing)
-   if(unlinkError)throw new Error('Dados atualizados, mas vínculos não alterados: '+unlinkError.message)
+   if(unlinkError)throw new Error('Os dados foram salvos, mas os vínculos não puderam ser atualizados.')
    if(form.collectionIds.length){
     const {error:linkError}=await db.from('collection_items').insert(form.collectionIds.map(id=>({collection_id:id,item_id:editing})))
-    if(linkError)throw new Error('Dados atualizados, mas os vínculos falharam: '+linkError.message)
+    if(linkError)throw new Error('Os dados foram salvos, mas não foi possível associar às coleções.')
    }
    setEditing(null);setEditPhoto(null);setRemovePhoto(false);setMessage('Item atualizado!');void refresh()
   }catch(e){
@@ -66,14 +66,14 @@ function Library({userId}:{userId:string}){
     const {data:current}=await db.from('items').select('photo_path').eq('id',editing).maybeSingle()
     if(current?.photo_path!==uploaded)await db.storage.from(BUCKET).remove([uploaded])
    }
-   setMessage(e instanceof Error?e.message:'Não foi possível salvar o item.')
+   setMessage('Não foi possível concluir a edição. Confira os dados e tente novamente.')
   }finally{setSavingEdit(false)}
  }
  async function remove(item:ItemRow){
   if(!confirm('Excluir permanentemente o item "'+item.name+'"?'))return
   const db=getBrowserClient();if(!db)return
   const {error}=await db.from('items').delete().eq('id',item.id).eq('owner_id',userId)
-  if(error){setMessage(error.message);return}
+  if(error){setMessage('Não foi possível excluir o item. Tente novamente.');return}
   if(item.photo_path){const {error:photoError}=await db.storage.from(BUCKET).remove([item.photo_path]);if(photoError)setMessage('Item excluído, mas a fotografia não pôde ser removida do armazenamento.')}
   void refresh()
  }

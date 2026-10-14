@@ -1,0 +1,1 @@
+export default function LoadingPage(){return <main className="status-page"><div role="status" className="status-body"><span className="status-mark status-spinning" aria-hidden="true">✳</span><p className="kicker">COOLLECTS</p><h1>Preparando seu universo…</h1></div></main>}

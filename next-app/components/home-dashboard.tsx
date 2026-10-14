@@ -7,7 +7,7 @@ import { getBrowserClient } from '@/lib/supabase/client'
 import { CollectionRow,ItemRow,safeColor } from '@/lib/catalog'
 import { CategoryArt } from './category-art'
 export function HomeDashboard(){
- const {user,loading,configured}=useAccount()
+ const {user,loading}=useAccount()
  const [collections,setCollections]=useState<CollectionRow[]>([])
  const [items,setItems]=useState<ItemRow[]>([])
  useEffect(()=>{
@@ -29,8 +29,7 @@ export function HomeDashboard(){
   <span className="hero-sticker" aria-hidden="true">✦<br/>COOL!</span>
  </section>
  <section className="dashboard-content">
-  {!configured&&<p className="local-banner">Conecte o Supabase para liberar contas, coleções e itens. Veja o guia no repositório.</p>}
-  <div className="stat-strip" aria-label="Resumo das coleções"><div><span className="stat-symbol"><Package size={20}/></span><strong>{loading?'–':items.length}</strong><small>Itens</small></div><div><span className="stat-symbol"><Layers3 size={20}/></span><strong>{loading?'–':collections.length}</strong><small>Coleções</small></div><div><span className="stat-symbol"><Sparkles size={20}/></span><strong>01</strong><small>Universo</small></div></div>
+  <div className="stat-strip" aria-label="Resumo das coleções"><div><span className="stat-symbol"><Package size={20}/></span><strong>{loading?'–':items.length}</strong><small>Itens</small></div><div><span className="stat-symbol"><Layers3 size={20}/></span><strong>{loading?'–':collections.length}</strong><small>Coleções</small></div><div><span className="stat-symbol"><Sparkles size={20}/></span><strong>✳</strong><small>Seu espaço</small></div></div>
   <div className="editorial-heading"><div><p className="kicker">SEU ACERVO</p><h2>Minhas<br/><em>coleções.</em></h2></div><Link href="/colecoes" className="text-link">Ver todas <ArrowRight size={17}/></Link></div>
   {collections.length>0?<div className="poster-carousel">{collections.map(c=><Link href={'/colecao/'+c.id} key={c.id} className="collection-poster" style={{'--poster-accent':safeColor(c.color)} as CSSProperties}><CategoryArt category={c.category}/><div className="poster-info"><small>{c.category}</small><strong>{c.name}</strong><span>{c.is_public?'Pública':'Privada'} <ArrowRight size={15}/></span></div></Link>)}</div>
   :<div className="empty-editorial"><span className="empty-star" aria-hidden="true">✳</span><div><strong>Seu primeiro universo começa aqui.</strong><p>{user?'Crie uma coleção e dê vida ao seu acervo.':'Entre ou crie uma conta para começar.'}</p><Link href={user?'/colecoes':'/registrar'}>{user?'Criar coleção':'Criar conta'} <ArrowRight size={16}/></Link></div></div>}

@@ -12,11 +12,11 @@ export function ExploreShowcase(){
  const [loading,setLoading]=useState(true),[error,setError]=useState('')
  useEffect(()=>{
   const db=getBrowserClient()
-  if(!db){setError('Supabase ainda não configurado.');setLoading(false);return}
+  if(!db){setError('Não conseguimos acessar as coleções agora. Tente novamente mais tarde.');setLoading(false);return}
   let active=true
   void db.from('collections').select('*').eq('is_public',true).order('created_at',{ascending:false}).limit(60).then(async({data,error})=>{
    if(!active)return
-   if(error){setError(error.message);setLoading(false);return}
+   if(error){setError('Não foi possível carregar as coleções. Tente novamente.');setLoading(false);return}
    const cols=(data||[]) as CollectionRow[]
    const owners=[...new Set(cols.map(x=>x.owner_id))]
    if(owners.length){

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { BUCKET } from './catalog'
 export async function signedImage(client:SupabaseClient,path:string|null):Promise<string|null>{
  if(!path)return null
- const {data,error}=await client.storage.from(BUCKET).createSignedUrl(path,1800)
+ const {data,error}=await client.storage.from(BUCKET).createSignedUrl(path,120)
  return error?null:data.signedUrl
 }
 export async function uploadImage(client:SupabaseClient,userId:string,file:File):Promise<string>{

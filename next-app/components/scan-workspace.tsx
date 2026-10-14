@@ -7,8 +7,8 @@ import { getBrowserClient } from '@/lib/supabase/client'
 import { BUCKET,CollectionRow } from '@/lib/catalog'
 import { uploadImage } from '@/lib/images'
 import { CATEGORIES } from '@/lib/local-catalog'
-export function ScanWorkspace(){return <AuthGate>{userId=><Editor userId={userId}/>}</AuthGate>}
-function Editor({userId}:{userId:string}){
+export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
+function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const fileRef=useRef<HTMLInputElement>(null),cameraRef=useRef<HTMLInputElement>(null)
  const [file,setFile]=useState<File|null>(null),[image,setImage]=useState('')
  const [name,setName]=useState(''),[brand,setBrand]=useState(''),[category,setCategory]=useState<string>('Miniaturas')
@@ -39,7 +39,7 @@ function Editor({userId}:{userId:string}){
    if(s.name)setName(s.name);if(s.brand)setBrand(s.brand)
    if(CATEGORIES.some(c=>c.name===s.category))setCategory(s.category)
    if(s.notes||s.visibleText)setNotes([s.notes,s.visibleText?'Texto visível: '+s.visibleText:''].filter(Boolean).join(' | ').slice(0,300))
-   setNotice('Sugestões preenchidas (confiança '+s.confidence+'). Confira e corrija tudo antes de salvar.')
+   setNotice('Sugestões adicionadas. Confira cada informação antes de salvar.')
   }catch(e){setNotice(e instanceof Error?e.message:'Não foi possível reconhecer o item.')}
   finally{setRecognizing(false)}
  }
@@ -54,12 +54,12 @@ function Editor({userId}:{userId:string}){
    if(error||!item)throw error||new Error('Não foi possível salvar o item.')
    if(collectionIds.length){
     const {error:linkError}=await db.from('collection_items').insert(collectionIds.map(id=>({collection_id:id,item_id:item.id})))
-    if(linkError){setNotice('Item salvo, mas não foi possível associar às coleções: '+linkError.message);setSaved(true);setSaving(false);return}
+    if(linkError){setNotice('Item salvo, mas não foi possível associá-lo às coleções. Você pode editar os vínculos em Meus itens.');setSaved(true);setSaving(false);return}
    }
    setSaved(true);setNotice('Item e fotografia salvos na sua conta!')
   }catch(e){
    if(photoPath){await db.storage.from(BUCKET).remove([photoPath])}
-   setNotice(e instanceof Error?e.message:'Falha ao salvar o item.')
+   setNotice('Não foi possível salvar o item agora. Verifique a fotografia e tente novamente.')
   }finally{setSaving(false)}
  }
  function reset(){setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds([]);setSaved(false);setNotice('')}
@@ -73,8 +73,8 @@ function Editor({userId}:{userId:string}){
   <div className="scan-methods"><button onClick={()=>cameraRef.current?.click()}><Camera size={16}/> Tirar foto</button><button onClick={()=>fileRef.current?.click()}><ImagePlus size={16}/> Galeria</button></div>
   <input className="visually-hidden" aria-label="Capturar foto" ref={cameraRef} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={pick}/>
   <input className="visually-hidden" aria-label="Escolher foto" ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={pick}/>
-  <div className="ai-ribbon"><Sparkles size={24}/><div><strong>Leitura inteligente</strong><p>OCR e IA sugerem os dados visíveis. Você decide o que salvar. Limite de 10 leituras por dia.</p></div></div>
-  <button className="ai-button" type="button" disabled={!file||recognizing||saving} onClick={()=>void recognize()}><Sparkles size={18}/>{recognizing?'Analisando imagem…':'Reconhecer com IA'}</button>
+  {aiEnabled&&<><div className="ai-ribbon"><Sparkles size={24}/><div><strong>Leitura inteligente</strong><p>OCR e IA sugerem os dados visíveis. Você decide o que salvar. Limite de 10 leituras por dia.</p></div></div>
+  <button className="ai-button" type="button" disabled={!file||recognizing||saving} onClick={()=>void recognize()}><Sparkles size={18}/>{recognizing?'Analisando imagem…':'Reconhecer com IA'}</button></>}
   <div className="item-form"><div className="section-title-inline"><div><p className="kicker">REVISE ANTES DE SALVAR</p><h2>Ficha do<br/><em>seu item.</em></h2></div><span className="form-sticker" aria-hidden="true">✦</span></div>
    <label className="field-label" htmlFor="item-name">Nome do item *<input id="item-name" maxLength={90} value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Porsche 911 GT3 RS"/></label>
    <div className="form-double"><label className="field-label" htmlFor="item-brand">Marca<input id="item-brand" maxLength={70} value={brand} onChange={e=>setBrand(e.target.value)} placeholder="Fabricante"/></label><label className="field-label" htmlFor="item-category">Categoria<span className="select-wrap"><select id="item-category" value={category} onChange={e=>setCategory(e.target.value)}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select><ChevronDown size={17}/></span></label></div>
