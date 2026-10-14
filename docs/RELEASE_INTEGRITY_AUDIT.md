@@ -20,8 +20,14 @@ Executado com **duas identidades simuladas dentro de BEGIN/ROLLBACK**, sem criar
 - [x] Edição usa `update_item_with_collections`; a fotografia antiga só é removida depois do commit.
 - [x] Importação legada não sobrescreve dados existentes.
 - [x] Verifica assinaturas mágicas reais JPG, PNG e WebP e limites de tamanho.
-- [x] Exclusão de conta com confirmação e reautenticação; função privilegiada separada do frontend. A função deve ser testada com conta descartável **antes** do lançamento.
+- [x] Exclusão de conta com confirmação e reautenticação; função privilegiada separada do frontend. Edge Function `delete-account` versão 1 **ativa no Supabase, JWT obrigatório**. Fluxo destrutivo ainda depende de teste com conta descartável.
 - [x] Credenciais administrativas não são versionadas nem expostas ao navegador.
+
+## Verificação do CI (branch de auditoria)
+- [x] 26 testes unitários aprovados.
+- [x] 8 testes de navegação no Chromium, 320 px e 390 px.
+- [x] HTTP smoke de todas as páginas públicas, página 404 e modo de manutenção.
+- [x] TypeScript, build Next.js e auditoria npm com zero vulnerabilidades reportadas.
 
 ## Bloqueios restantes, sem os quais o lançamento não recebe status "Ready"
 - [ ] Teste de ponta a ponta via HTTP com duas contas Supabase reais e uploads reais (não apenas SQL).
