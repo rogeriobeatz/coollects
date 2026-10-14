@@ -38,6 +38,14 @@ jobs:
           server=$!
           trap 'kill $server || true' EXIT
           node scripts/smoke-pages.mjs open 3200
+      - name: Install headless Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser tests on 320px and 390px
+        run: |
+          ./node_modules/.bin/next start -p 3202 >/tmp/coollects-browser.log 2>&1 &
+          server=$!
+          trap 'kill $server || true' EXIT
+          npm run test:browser
       - name: Maintenance-mode smoke test
         env:
           COOLLECTS_SITE_MODE: maintenance

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:browser": "playwright test --reporter=list"
   },
   "dependencies": {
     "next": "^16.4.0",
@@ -24,6 +25,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "vitest": "^5.0.4",
-    "vite": "^8.3.4"
+    "vite": "^8.3.4",
+    "@playwright/test": "^1.58.0"
   }
 }
