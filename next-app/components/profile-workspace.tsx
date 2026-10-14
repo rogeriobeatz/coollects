@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight,Check,Copy,LogOut,UserRound } from 'lucide-react'
 import { AuthGate } from './auth-gate'
 import { LegacyImport } from './legacy-import'
+import { AccountDeletion } from './account-deletion'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { ProfileRow,publicUrlPath } from '@/lib/catalog'
 import { useRouter } from 'next/navigation'
@@ -43,6 +44,7 @@ function ProfileEditor({userId}:{userId:string}){
   <button className="save-item-button" disabled={busy||!profile} onClick={()=>void save()}><Check size={18}/>{busy?'Salvando...':'Salvar perfil'}</button>
   {message&&<p role="status" className="scan-notice">{message}</p>}
   <LegacyImport userId={userId}/>
+  <AccountDeletion/>
   <div className="profile-links">
    {profile&&<><Link href={publicUrlPath(profile.username)}>Ver perfil público <ArrowRight size={16}/></Link><button onClick={()=>void share()}>Copiar link <Copy size={16}/></button></>}
    <Link href="/itens">Gerenciar meus itens <ArrowRight size={16}/></Link>

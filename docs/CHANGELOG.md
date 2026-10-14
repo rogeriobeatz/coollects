@@ -1,3 +1,12 @@
+## 2026-10-14 — Auditoria real de banco, transações e ciclo de vida da conta
+- Corrigida recursão de políticas RLS que impedia leitura e escrita de vínculos de itens.
+- Corrigida colisão sistemática de usernames automáticos; verificação contra dois UUIDs de mesmo prefixo.
+- Testes SQL no Supabase real com duas contas simuladas, testes de isolamento de dados públicos/privados e rollback.
+- Criação e edição atômica de itens+associações, impedindo perda parcial de vínculos.
+- Nova experiência de exclusão da conta (requer validação de ponta a ponta com conta real antes do lançamento).
+- Verificação de assinatura mágica em uploads de imagens, além de MIME e tamanho.
+- Proteção do importador local contra sobrescrita de registros de nuvem.
+
 ## 2026-10-14 — Auditoria de rastros de desenvolvimento e liberação protegida
 - Identificadas mensagens técnicas do Supabase e outros estados não apropriados para usuários.
 - Implementada página institucional de espera por padrão até liberação explícita `COOLLECTS_SITE_MODE=open` e configuração de acesso.
