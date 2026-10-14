@@ -16,7 +16,8 @@ A aplicação usa **fail closed**: `COOLLECTS_SITE_MODE` ausente ou diferente de
 - [x] Políticas de privacidade e termos sem avisos de desenvolvimento.
 - [x] Health endpoint para sinalizar 503 quando lançamento não liberado ou banco indisponível.
 - [x] Teste de cópia para impedir regressão de mensagens internas.
-- [x] Script CI de smoke HTTP de todas as rotas sem autenticação (depende de build verde).
+- [x] Script CI de smoke HTTP de todas as rotas sem autenticação (build verde: 14 rotas, 404 e manutenção).
+- [x] Playwright/Chromium: **8 testes passaram**, com viewport 320 px e 390 px, navegação, Home, login, estado 404 e ausência de mensagens internas.
 - [x] URLs de imagens assinadas reduzidas de 30 minutos para 2 minutos, reduzindo exposição de URLs antigas após tornar uma coleção privada.
 
 ## Rotas cobertas pelo smoke HTTP
