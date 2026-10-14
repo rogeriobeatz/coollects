@@ -40,33 +40,28 @@ function Library({userId}:{userId:string}){
   setSavingEdit(true);setMessage('')
   const original=items.find(i=>i.id===editing)
   let uploaded:string|null=null
-  try {
+  try{
    if(editPhoto)uploaded=await uploadImage(db,userId,editPhoto)
-   const values:{name:string;brand:string;category:string;notes:string;photo_path?:string|null}={
-    name:form.name.trim(),brand:form.brand.trim(),category:form.category,notes:form.notes.trim()
-   }
-   if(uploaded)values.photo_path=uploaded
-   else if(removePhoto)values.photo_path=null
-   const {error}=await db.from('items').update(values).eq('id',editing).eq('owner_id',userId)
+   const newPhotoPath=uploaded||(removePhoto?null:original?.photo_path||null)
+   const {error}=await db.rpc('update_item_with_collections',{
+    p_item_id:editing,p_name:form.name.trim(),p_brand:form.brand.trim(),
+    p_category:form.category,p_notes:form.notes.trim(),p_photo_path:newPhotoPath,
+    p_collection_ids:form.collectionIds
+   })
    if(error)throw error
+   // Only after the transaction commits, remove the previous image.
+   let cleanupWarning=false
    if((uploaded||removePhoto)&&original?.photo_path){
     const {error:photoError}=await db.storage.from(BUCKET).remove([original.photo_path])
-    if(photoError)setMessage('Item atualizado; a foto antiga não pôde ser removida do armazenamento.')
+    cleanupWarning=Boolean(photoError)
    }
-   const {error:unlinkError}=await db.from('collection_items').delete().eq('item_id',editing)
-   if(unlinkError)throw new Error('Os dados foram salvos, mas os vínculos não puderam ser atualizados.')
-   if(form.collectionIds.length){
-    const {error:linkError}=await db.from('collection_items').insert(form.collectionIds.map(id=>({collection_id:id,item_id:editing})))
-    if(linkError)throw new Error('Os dados foram salvos, mas não foi possível associar às coleções.')
-   }
-   setEditing(null);setEditPhoto(null);setRemovePhoto(false);setMessage('Item atualizado!');void refresh()
-  }catch(e){
-   if(uploaded && !items.some(i=>i.photo_path===uploaded)){
-    // Apenas remover upload órfão se o item não tiver passado a usá-lo.
-    const {data:current}=await db.from('items').select('photo_path').eq('id',editing).maybeSingle()
-    if(current?.photo_path!==uploaded)await db.storage.from(BUCKET).remove([uploaded])
-   }
-   setMessage('Não foi possível concluir a edição. Confira os dados e tente novamente.')
+   setEditing(null);setEditPhoto(null);setRemovePhoto(false)
+   setMessage(cleanupWarning?'Item salvo. A fotografia anterior ainda precisa ser removida.':'Item atualizado!')
+   void refresh()
+  }catch{
+   // A failed RPC leaves the original item and links unchanged.
+   if(uploaded)await db.storage.from(BUCKET).remove([uploaded])
+   setMessage('Não foi possível concluir a edição. Nenhuma alteração parcial foi salva.')
   }finally{setSavingEdit(false)}
  }
  async function remove(item:ItemRow){
