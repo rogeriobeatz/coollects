@@ -86,3 +86,16 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
 @media(prefers-reduced-motion:reduce){.launch-spark,.status-spinning{animation:none}}
 
 .account-danger{padding:20px;margin:24px 0 0;background:#fff1ed;border:1px solid #ffcebe;border-radius:16px;text-align:left}.account-danger h3{font-size:17px;letter-spacing:-.03em;margin:0 0 9px}.account-danger p{font-size:12px;line-height:1.6;color:#7c4c44}.account-delete-button{display:inline-flex;justify-content:center;align-items:center;gap:9px;padding:12px 16px;border:1px solid #b73624;background:#fff;color:#a12a1b;border-radius:13px;font-size:12px;font-weight:900}.account-delete-button:disabled{opacity:.45}.account-warn-icon{display:inline-grid;place-items:center;width:55px;height:55px;border-radius:50%;background:#fff0e9;color:#ba3321}
+
+/* Collection-first navigation and mobile PWA ergonomics */
+html{min-width:320px;overflow-x:clip;-webkit-text-size-adjust:100%}body{overflow-x:clip;overscroll-behavior-y:contain}
+input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{touch-action:manipulation}
+.app-frame{min-height:100dvh;padding-bottom:calc(108px + env(safe-area-inset-bottom,0px))}
+.bottom-nav{padding-bottom:env(safe-area-inset-bottom,0px)}
+.floating-add{position:fixed;z-index:31;right:max(16px,env(safe-area-inset-right,0px) + 16px);bottom:calc(91px + env(safe-area-inset-bottom,0px));width:58px;height:58px;display:grid;place-items:center;color:white;background:#F15700;border:3px solid white;border-radius:50%;box-shadow:0 8px 28px #441b9750;touch-action:manipulation}
+.collection-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:20px 0}.collection-actions .pill-btn{width:100%;min-width:0;font-size:12px;line-height:1.25;padding:13px 9px;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center}.collection-actions .secondary{border:1px solid #6125BF;background:#f0e9ff;color:#6125BF;cursor:pointer}
+.collection-search{display:flex;align-items:center;gap:10px;min-height:48px;background:#fff;border:1px solid #ded3ef;border-radius:15px;padding:8px 14px;margin:14px 0;color:#6125BF}.collection-search input{border:0;background:transparent;outline:0;width:100%;min-width:0;font-size:16px;color:#271b3c}
+.remove-from-collection{width:max-content;display:flex;gap:5px;align-items:center;border:0;background:#fff0e9;border-radius:9px;padding:8px 10px;color:#982e18;font-size:11px;font-weight:800;margin-top:6px;cursor:pointer}
+.collection-picker{max-height:min(80dvh,700px);display:flex;flex-direction:column}.collection-picker>p{font-size:13px;color:#655c6b}.picker-options{display:grid;gap:6px;overflow-y:auto;overscroll-behavior:contain;min-height:60px;flex:1;padding:4px 0}.picker-option{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #e0d8eb;border-radius:12px}.picker-option input{width:20px;height:20px;flex-shrink:0;accent-color:#6125BF}.picker-option span{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}.picker-option strong{font-size:13px;overflow-wrap:anywhere}.picker-option small{color:#7b7388;font-size:11px}.collection-picker .save-item-button{margin-top:12px;flex-shrink:0}
+@media(min-width:900px){.floating-add{right:calc(max(24px,(100vw - 540px)/2 + 16px))}}
+@media(prefers-reduced-motion:reduce){.floating-add{transition:none}}

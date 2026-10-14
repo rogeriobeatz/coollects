@@ -1,6 +1,7 @@
 'use client'
 import { useEffect,useRef,useState,type ChangeEvent } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ArrowRight,Camera,Check,ChevronDown,ImagePlus,Layers3,ScanLine,Sparkles,X } from 'lucide-react'
 import { AuthGate } from './auth-gate'
 import { getBrowserClient } from '@/lib/supabase/client'
@@ -9,6 +10,8 @@ import { uploadImage } from '@/lib/images'
 import { CATEGORIES } from '@/lib/local-catalog'
 export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
 function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
+ const params=useSearchParams()
+ const preferredCollection=params.get('colecao')
  const fileRef=useRef<HTMLInputElement>(null),cameraRef=useRef<HTMLInputElement>(null)
  const [file,setFile]=useState<File|null>(null),[image,setImage]=useState('')
  const [name,setName]=useState(''),[brand,setBrand]=useState(''),[category,setCategory]=useState<string>('Miniaturas')
@@ -18,8 +21,8 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const [notice,setNotice]=useState(''),[saved,setSaved]=useState(false)
  useEffect(()=>{
   const db=getBrowserClient();if(!db)return
-  void db.from('collections').select('*').eq('owner_id',userId).order('created_at').then(({data})=>setCollections((data||[]) as CollectionRow[]))
- },[userId])
+  void db.from('collections').select('*').eq('owner_id',userId).order('created_at').then(({data})=>{const list=(data||[]) as CollectionRow[];setCollections(list);if(preferredCollection&&list.some(x=>x.id===preferredCollection))setCollectionIds([preferredCollection])})
+ },[userId,preferredCollection])
  useEffect(()=>{if(!file){setImage('');return};const url=URL.createObjectURL(file);setImage(url);return ()=>URL.revokeObjectURL(url)},[file])
  function pick(e:ChangeEvent<HTMLInputElement>){
   const f=e.target.files?.[0];e.target.value='';if(!f)return
@@ -63,7 +66,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
   }finally{setSaving(false)}
  }
- function reset(){setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds([]);setSaved(false);setNotice('')}
+ function reset(){setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
  return <section className="scan-workspace">
   <div className={'scanner-stage '+(image?'has-image':'')}>
    {image?<img className="scanner-photo" src={image} alt="Prévia da fotografia do item"/>:<div className="scanner-placeholder"><div className="scanner-symbol"><ScanLine size={58}/></div><strong>Aponte. Fotografe.<br/>Colecione.</strong><p>Seu acervo, um item de cada vez.</p></div>}
@@ -83,7 +86,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    <label className="field-label" htmlFor="item-notes">Observações (podem ser visíveis em coleções públicas)<textarea id="item-notes" rows={3} maxLength={300} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Detalhes da edição, ano, estado..."/></label>
    <button type="button" disabled={saving||saved} className="save-item-button" onClick={()=>void save()}>{saved?<Check size={23}/>:<ArrowRight size={22}/>} {saving?'Salvando…':saved?'Item salvo!':'Salvar no meu acervo'}</button>
    {notice&&<p role="status" className="scan-notice">{notice}</p>}
-   {saved&&<div className="saved-actions"><Link href="/itens">Ver meus itens <ArrowRight size={16}/></Link><button onClick={reset}>Cadastrar outro</button></div>}
+   {saved&&<div className="saved-actions">{preferredCollection&&<Link href={'/colecao/'+encodeURIComponent(preferredCollection)}>Voltar à coleção <ArrowRight size={16}/></Link>}<Link href="/itens">Ver meus itens <ArrowRight size={16}/></Link><button onClick={reset}>Cadastrar outro</button></div>}
   </div>
  </section>
 }
