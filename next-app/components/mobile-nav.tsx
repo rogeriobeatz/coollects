@@ -8,5 +8,5 @@ const tabs = [
  {id:'perfil',label:'Perfil',url:'/perfil',Icon:UserRound},
 ] as const
 export function MobileNav({active}:{active:Tab}){
- return <><nav className="bottom-nav" aria-label="Navegação principal">{tabs.map(({id,label,url,Icon})=><Link href={url} key={id} className={'nav-link '+(active===id?'selected ':'')} aria-label={label} aria-current={active===id?'page':undefined}><span className="nav-icon"><Icon size={id==='cadastrar'?28:21} strokeWidth={id===active?2.7:2}/></span><span className="nav-label">{label}</span></Link>)}</nav><Link href="/cadastrar" className="floating-add" aria-label="Cadastrar novo item"><Plus size={27} strokeWidth={2.6}/></Link></>
+ return <><nav className="bottom-nav" aria-label="Navegação principal">{tabs.map(({id,label,url,Icon})=><Link href={url} key={id} className={'nav-link '+(active===id?'selected ':'')} aria-label={label} aria-current={active===id?'page':undefined}><span className="nav-icon"><Icon size={21} strokeWidth={id===active?2.7:2}/></span><span className="nav-label">{label}</span></Link>)}</nav><Link href="/cadastrar" className="floating-add" aria-label="Cadastrar novo item"><Plus size={27} strokeWidth={2.6}/></Link></>
 }
