@@ -15,7 +15,7 @@ export default function PrivacyPage(){
   <h2>Segurança e controle</h2>
   <p>Fotos de coleções privadas são mantidas em armazenamento com regras de acesso, e coleções compartilhadas podem gerar links temporários para exibição das imagens. Recomendamos não inserir informações sensíveis em nomes, fotografias ou descrições públicas.</p>
   <h2>Seus direitos</h2>
-  <p>Você pode editar ou excluir seus itens e coleções nas respectivas páginas. Para solicitações relativas à conta, incluindo exclusão integral e outros direitos sobre seus dados, procure o atendimento oficial do Coollects.</p>
+  <p>Você pode editar ou excluir seus itens e coleções nas respectivas páginas. Você pode solicitar a exclusão permanente da conta em Perfil → Controle da conta, mediante confirmação de senha. Para os demais direitos relacionados aos seus dados, utilize o canal de atendimento oficial do Coollects.</p>
   <p>Última atualização: 14 de outubro de 2026.</p>
  </main>
 }

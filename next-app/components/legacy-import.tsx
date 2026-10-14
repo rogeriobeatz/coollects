@@ -24,7 +24,7 @@ export function LegacyImport({userId}:{userId:string}){
     const {error}=await db.from('collections').upsert({
      id:c.id,owner_id:userId,name:c.name.slice(0,70),category:c.category.slice(0,50),
      color:safeColor(c.color),description:(c.description||'').slice(0,300),is_public:false
-    },{onConflict:'id'})
+    },{onConflict:'id',ignoreDuplicates:true})
     if(error)throw error
    }
    for(const item of items){
@@ -36,7 +36,7 @@ export function LegacyImport({userId}:{userId:string}){
     if(item.collectionId && collections.some(c=>c.id===item.collectionId)){
      const {error:linkError}=await db.from('collection_items').upsert({
       collection_id:item.collectionId,item_id:item.id
-     },{onConflict:'collection_id,item_id'})
+     },{onConflict:'collection_id,item_id',ignoreDuplicates:true})
      if(linkError)throw linkError
     }
    }
