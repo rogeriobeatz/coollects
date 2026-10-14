@@ -37,3 +37,6 @@ Leia `../docs/RELEASE_QA.md` e `../docs/DEPLOY_VERCEL.md` antes da abertura púb
 - `npm run build`: build.
 - O CI sobe um servidor Next.js e valida todas as rotas públicas, o 404 e a página de manutenção.
 - Isso **não substitui testes reais** de contas e dados privados com o Supabase, upload, IA, privacidade, nem testes de UI nos navegadores iOS/Android.
+
+## Estado do hardening de dados
+O banco real Coollects possui migrações `20261014_release_integrity.sql`, `20261014_username_entropy.sql` e `20261014_item_transactions.sql`, com testes SQL em transações revertidas. **Não execute novamente migrações já aplicadas.** A Edge Function `delete-account` está ativa no Supabase e requer JWT. Consulte `../docs/RELEASE_INTEGRITY_AUDIT.md` para os cenários bloqueantes antes de disponibilizar ao público.
