@@ -3,7 +3,7 @@
 - Implementada página institucional de espera por padrão até liberação explícita `COOLLECTS_SITE_MODE=open` e configuração de acesso.
 - Removidos textos internos e erros crus de múltiplas telas; estados 404/erro/loading com marca.
 - IA exibida apenas quando houver configuração; atualização dos termos/privacidade sem placeholders de desenvolvimento.
-- Testes automatizados de texto e smoke HTTP com 14 rotas, modo manutenção e 404.
+- Testes automatizados de texto, smoke HTTP com 14 rotas, modo manutenção e 404, mais 8 testes Playwright em Chromium nas larguras 320/390 px (todos aprovados no CI do PR #7).
 - Health endpoint para readiness, bloqueio de indexação durante manutenção, URLs assinadas com validade de 2 minutos.
 - Documentado checklist com bloqueios de lançamento em `docs/RELEASE_QA.md`.
 - Nota: validação de UI interativa e autenticação/armazenamento na Vercel ainda exige acesso e ambiente real.
