@@ -91,7 +91,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{
 html{min-width:320px;overflow-x:clip;-webkit-text-size-adjust:100%}body{overflow-x:clip;overscroll-behavior-y:contain}
 input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{touch-action:manipulation}
 .app-frame{min-height:100dvh;padding-bottom:calc(108px + env(safe-area-inset-bottom,0px))}
-.bottom-nav{padding-bottom:env(safe-area-inset-bottom,0px)}
+.bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 .floating-add{position:fixed;z-index:31;right:max(16px,env(safe-area-inset-right,0px) + 16px);bottom:calc(91px + env(safe-area-inset-bottom,0px));width:58px;height:58px;display:grid;place-items:center;color:white;background:#F15700;border:3px solid white;border-radius:50%;box-shadow:0 8px 28px #441b9750;touch-action:manipulation}
 .collection-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:20px 0}.collection-actions .pill-btn{width:100%;min-width:0;font-size:12px;line-height:1.25;padding:13px 9px;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center}.collection-actions .secondary{border:1px solid #6125BF;background:#f0e9ff;color:#6125BF;cursor:pointer}
 .collection-search{display:flex;align-items:center;gap:10px;min-height:48px;background:#fff;border:1px solid #ded3ef;border-radius:15px;padding:8px 14px;margin:14px 0;color:#6125BF}.collection-search input{border:0;background:transparent;outline:0;width:100%;min-width:0;font-size:16px;color:#271b3c}
