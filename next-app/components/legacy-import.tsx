@@ -42,7 +42,7 @@ export function LegacyImport({userId}:{userId:string}){
    }
    localStorage.setItem(key,'true');setDone(true)
    setMessage('Dados locais importados! Atualize a página para visualizar seu acervo.')
-  }catch(e){setMessage('Importação interrompida: '+(e instanceof Error?e.message:'erro inesperado')+'. Nenhum dado local foi apagado.')}
+  }catch(e){setMessage('Não foi possível concluir a importação. Seus dados deste aparelho continuam preservados.')}
   finally{setImporting(false)}
  }
  if(done)return <p className="local-banner">Importação deste navegador concluída. Seus dados locais originais não foram apagados.</p>

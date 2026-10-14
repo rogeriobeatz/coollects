@@ -1,28 +1,39 @@
-# Coollects — PWA Next.js + TypeScript
+# Coollects — Aplicação mobile-first
 
-A nova aplicação fica em \`next-app/\`, mantendo intacto o PHP original na raiz do repositório.
+O aplicativo Next.js 16 fica em `next-app/`. O código PHP original permanece na raiz.
 
-## Tecnologias
-Next.js 16, React 19, TypeScript, Supabase Auth/PostgreSQL/Storage e Gemini (opcional). Interface preserva logotipo PNG original, Work Sans, roxo \`#6125BF\` e laranja \`#F15700\`.
+## Desenvolvimento local
 
-## Desenvolvimento
-\`\`\`bash
+```sh
 cd next-app
 cp .env.example .env.local
 npm install
 npm test
-npm run typecheck
 npm run dev
-\`\`\`
-Configure Supabase e aplique \`supabase/migrations/20261013_initial.sql\` antes de usar login e persistência.
+```
 
-## Vercel
-Root Directory: **\`next-app\`**, Node 22.x. Leia \`../docs/DEPLOY_VERCEL.md\` antes de publicar.
+Configure a URL e a chave publicável do projeto Supabase. Rode as migrações documentadas. O modo padrão é **manutenção**, por segurança: nenhuma tela de cadastro parcialmente configurada é apresentada ao visitante.
 
-## Funcionalidades implementadas em código
-Cadastro/login, perfis, coleções privadas/públicas, itens com foto e várias coleções, compartilhamento e Explorar com dados reais, OCR/IA opcional, PWA básica e migração manual de protótipo local.
+Para liberar o aplicativo **somente em ambiente de QA**, após configurar o banco e verificar os fluxos, defina `COOLLECTS_SITE_MODE=open`.
 
-**Atenção:** não há ambiente Supabase configurado neste repositório. O código precisa passar por testes de integração no seu projeto Supabase, conforme checklist no DEPLOY_VERCEL.md.
+## Implantação Vercel
 
-## Documentação
-Visão: \`../docs/PRODUCT_VISION.md\` · Arquitetura: \`../docs/ARCHITECTURE.md\` · Guia visual: \`../docs/DESIGN_SYSTEM.md\` · Roadmap: \`../docs/ROADMAP.md\` · Histórico: \`../docs/CHANGELOG.md\`.
+- Repositório `rogeriobeatz/coollects`, branch `main`
+- Root Directory: `next-app`
+- Node.js: 22
+- `NEXT_PUBLIC_SUPABASE_URL` = endereço do projeto Coollects
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` = chave publicável do projeto
+- `COOLLECTS_SITE_MODE` = `maintenance` até a validação
+- `GOOGLE_GENERATIVE_AI_API_KEY` = opcional; sem ela a interface de IA fica oculta
+
+O servidor verifica configuração e liberação a cada requisição. `/api/health` retorna 503 quando o serviço não está liberado ou o banco não responde.
+
+Leia `../docs/RELEASE_QA.md` e `../docs/DEPLOY_VERCEL.md` antes da abertura pública.
+
+## Testes
+
+- `npm test`: testes de código e detecção de textos internos na interface.
+- `npm run typecheck`: tipos.
+- `npm run build`: build.
+- O CI sobe um servidor Next.js e valida todas as rotas públicas, o 404 e a página de manutenção.
+- Isso **não substitui testes reais** de contas e dados privados com o Supabase, upload, IA, privacidade, nem testes de UI nos navegadores iOS/Android.

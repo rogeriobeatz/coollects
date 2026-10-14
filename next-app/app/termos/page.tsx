@@ -1,2 +1,21 @@
 import Link from 'next/link'
-export default function TermsPage(){return <main className="legal-page"><Link href="/">← Voltar</Link><h1>Termos de uso — versão inicial</h1><p>O Coollects é uma plataforma para organizar e compartilhar coleções. Você é responsável pelas informações e imagens que publica e deve respeitar direitos de terceiros.</p><h2>Dados e conteúdo</h2><p>Você controla a publicação de suas coleções. Conteúdo ofensivo, ilegal ou que viole direitos de terceiros pode ser removido conforme regras futuras de moderação.</p><h2>Identificação com IA</h2><p>As sugestões automáticas podem conter erros. Verifique manualmente informações de marca, modelo, edição e ano.</p><h2>Disponibilidade</h2><p>Serviços externos podem sofrer interrupções e estão sujeitos a limites de uso. O aplicativo ainda está em desenvolvimento e não oferece negociação, pagamentos ou garantia de avaliação de preços.</p><p>Antes do lançamento público, completar identificação do operador, política de moderação e canais de suporte.</p></main>}
+import type { Metadata } from 'next'
+export const metadata:Metadata={title:'Termos de uso'}
+export default function TermsPage(){
+ return <main className="legal-page">
+  <Link href="/">← Voltar ao Coollects</Link>
+  <h1>Termos de uso</h1>
+  <p>O Coollects permite organizar e compartilhar acervos de itens colecionáveis. Ao usar a plataforma, você concorda em fornecer informações adequadas e respeitar os direitos das outras pessoas.</p>
+  <h2>Seu conteúdo</h2>
+  <p>Você é responsável pelas fotografias e descrições que publica. Envie apenas conteúdo que tenha direito de compartilhar; não divulgue dados pessoais de terceiros nem conteúdo ilegal, abusivo ou que viole direitos autorais.</p>
+  <h2>Privacidade e compartilhamento</h2>
+  <p>Novas coleções são privadas por padrão. Quando você escolhe tornar uma coleção pública, seus itens associados e respectivas imagens e descrições poderão ser vistos por visitantes.</p>
+  <h2>Identificação de itens</h2>
+  <p>O reconhecimento automático, quando disponível, produz sugestões e pode errar. Cabe a você conferir marcas, modelos, anos e edições antes de salvar.</p>
+  <h2>Uso responsável</h2>
+  <p>É proibido tentar acessar acervos privados, comprometer contas de terceiros ou usar a plataforma de forma automatizada para prejudicar o serviço. Conteúdo que infrinja essas condições poderá ter seu acesso restringido.</p>
+  <h2>Limites do serviço</h2>
+  <p>O Coollects não realiza compra, venda ou pagamento de colecionáveis e não garante preços, autenticidade ou raridade. A disponibilidade do serviço pode variar por motivos de manutenção ou falhas externas.</p>
+  <p>Última atualização: 14 de outubro de 2026.</p>
+ </main>
+}

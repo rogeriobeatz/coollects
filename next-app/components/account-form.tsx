@@ -16,7 +16,7 @@ export function AccountForm({mode}:{mode:'login'|'register'}){
  async function submit(event:FormEvent<HTMLFormElement>){
   event.preventDefault()
   const client=getBrowserClient()
-  if(!client){setMessage('Supabase ainda não foi configurado.');return}
+  if(!client){setMessage('O acesso está temporariamente indisponível. Tente novamente em alguns minutos.');return}
   if(password.length<8){setMessage('A senha deve ter pelo menos 8 caracteres.');return}
   if(register&&name.trim().length<2){setMessage('Informe um nome com pelo menos 2 caracteres.');return}
   setBusy(true);setMessage('')
@@ -30,7 +30,7 @@ export function AccountForm({mode}:{mode:'login'|'register'}){
     if(error)throw error
     router.replace('/perfil');router.refresh()
    }
-  }catch(e){setMessage(e instanceof Error?e.message:'Não foi possível autenticar.')}
+  }catch{setMessage(register?'Não foi possível concluir o cadastro. Confira os dados e tente novamente.':'Não foi possível entrar. Confira seu e-mail e senha.')}
   finally{setBusy(false)}
  }
  return <main className="auth-page"><div className="auth-brand"><Link href="/" aria-label="Coollects início"><BrandLogo/></Link><p>SUAS COLEÇÕES. SUAS HISTÓRIAS.</p><span aria-hidden="true">✳</span></div><div className="auth-sheet"><span className="auth-emblem">{register?<UserRound size={26}/>:<LockKeyhole size={26}/>}</span><h1>{register?'Comece seu':'Bem-vindo de'}<br/><em>{register?'universo.':'volta!'}</em></h1><p>{register?'Crie sua conta e guarde suas paixões em um só lugar.':'Seu acervo está esperando por você.'}</p><form onSubmit={submit}>

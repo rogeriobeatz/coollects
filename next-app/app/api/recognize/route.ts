@@ -18,7 +18,7 @@ function recognizedMime(b:Uint8Array):string|null{
 }
 export async function POST(request:Request){
  const apiKey=process.env.GOOGLE_GENERATIVE_AI_API_KEY
- if(!apiKey)return NextResponse.json({error:'Reconhecimento ainda não configurado.'},{status:503})
+ if(!apiKey)return NextResponse.json({error:'A leitura automática está temporariamente indisponível.'},{status:503})
  try{
   const supabase=await createSupabaseServerClient()
   const {data:{user},error:authError}=await supabase.auth.getUser()
@@ -30,10 +30,10 @@ export async function POST(request:Request){
   const mime=recognizedMime(raw)
   if(!mime)return NextResponse.json({error:'Formato inválido: use JPG, PNG ou WebP.'},{status:400})
   const {data:allowed,error:quotaError}=await supabase.rpc('consume_scan_quota')
-  if(quotaError)return NextResponse.json({error:'Limite de reconhecimento não disponível; verifique a migração do banco.'},{status:503})
+  if(quotaError)return NextResponse.json({error:'Não foi possível iniciar o reconhecimento. Tente novamente mais tarde.'},{status:503})
   if(!allowed)return NextResponse.json({error:'Você atingiu o limite de 10 leituras de IA por dia.'},{status:429})
   const model=process.env.GEMINI_MODEL||'gemini-2.5-flash'
-  if(!/^gemini-[a-z0-9.-]+$/.test(model))return NextResponse.json({error:'Modelo inválido.'},{status:500})
+  if(!/^gemini-[a-z0-9.-]+$/.test(model))return NextResponse.json({error:'A leitura automática está indisponível.'},{status:500})
   const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',{
    method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
    body:JSON.stringify({

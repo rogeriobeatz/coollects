@@ -11,6 +11,12 @@ jobs:
     defaults:
       run:
         working-directory: next-app
+    # Synthetic, non-working values only for rendering the unauthenticated pages.
+    # Real backend interactions require separate staging/production acceptance tests.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-key-not-for-production
+      COOLLECTS_SITE_MODE: open
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,15 +24,25 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install
-      - name: Print dependency security report
-        run: |
-          npm audit --json > audit-report.json || true
-          node -e "const r=require('./audit-report.json'); for(const [name,v] of Object.entries(r.vulnerabilities||{})){console.log(name+' '+v.severity+' '+v.range+' fix='+JSON.stringify(v.fixAvailable))}"
-      - name: Reject high and critical dependency vulnerabilities
+      - name: Dependency security audit
         run: npm audit --audit-level=high
-      - name: Unit tests
+      - name: Unit tests and release copy
         run: npm test
       - name: Typecheck
         run: npm run typecheck
-      - name: Build
+      - name: Production build
         run: npm run build
+      - name: HTTP smoke test all public routes
+        run: |
+          ./node_modules/.bin/next start -p 3200 >/tmp/coollects-open.log 2>&1 &
+          server=$!
+          trap 'kill $server || true' EXIT
+          node scripts/smoke-pages.mjs open 3200
+      - name: Maintenance-mode smoke test
+        env:
+          COOLLECTS_SITE_MODE: maintenance
+        run: |
+          ./node_modules/.bin/next start -p 3201 >/tmp/coollects-hold.log 2>&1 &
+          server=$!
+          trap 'kill $server || true' EXIT
+          node scripts/smoke-pages.mjs maintenance 3201

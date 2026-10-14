@@ -30,7 +30,7 @@ function Workspace({userId}:{userId:string}){
    db.from('collections').select('*').eq('owner_id',userId).order('created_at',{ascending:false}),
    db.from('collection_items').select('collection_id')
   ])
-  if(error)setMessage('Não foi possível carregar coleções: '+error.message)
+  if(error)setMessage('Não foi possível carregar suas coleções. Tente novamente.')
   setCollections((data||[]) as CollectionRow[])
   const next:Record<string,number>={};(links||[]).forEach(l=>{next[l.collection_id]=(next[l.collection_id]||0)+1});setCounts(next)
   setBusy(false)
@@ -44,20 +44,20 @@ function Workspace({userId}:{userId:string}){
   const values={name:name.trim(),category,color,description:description.trim(),is_public:isPublic}
   const response=editId?await db.from('collections').update(values).eq('id',editId).eq('owner_id',userId):await db.from('collections').insert({...values,owner_id:userId})
   setSaving(false)
-  if(response.error){setMessage('Erro ao salvar: '+response.error.message);return}
+  if(response.error){setMessage('Não foi possível salvar a coleção. Verifique os dados e tente novamente.');return}
   reset();setFilter('Todas');setMessage('Coleção salva e sincronizada!');void refresh()
  }
  async function remove(c:CollectionRow){
   if(!window.confirm('Excluir a coleção "'+c.name+'"? Os itens permanecerão na sua biblioteca.'))return
   const db=getBrowserClient();if(!db)return
   const {error}=await db.from('collections').delete().eq('id',c.id).eq('owner_id',userId)
-  setMessage(error?'Erro ao excluir: '+error.message:'Coleção excluída. Os itens foram preservados.')
+  setMessage(error?'Não foi possível excluir a coleção. Tente novamente.':'Coleção excluída. Os itens foram preservados.')
   if(!error)void refresh()
  }
  async function toggle(c:CollectionRow){
   const db=getBrowserClient();if(!db)return
   const {error}=await db.from('collections').update({is_public:!c.is_public}).eq('id',c.id).eq('owner_id',userId)
-  setMessage(error?'Erro de privacidade: '+error.message:!c.is_public?'Coleção publicada. Você pode compartilhar o link!':'Coleção privada novamente.')
+  setMessage(error?'Não conseguimos alterar a visibilidade agora. Tente novamente.':!c.is_public?'Coleção publicada. Você pode compartilhar o link!':'Coleção privada novamente.')
   if(!error)void refresh()
  }
  async function share(c:CollectionRow){

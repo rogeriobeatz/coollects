@@ -1,3 +1,13 @@
+## 2026-10-14 — Auditoria de rastros de desenvolvimento e liberação protegida
+- Identificadas mensagens técnicas do Supabase e outros estados não apropriados para usuários.
+- Implementada página institucional de espera por padrão até liberação explícita `COOLLECTS_SITE_MODE=open` e configuração de acesso.
+- Removidos textos internos e erros crus de múltiplas telas; estados 404/erro/loading com marca.
+- IA exibida apenas quando houver configuração; atualização dos termos/privacidade sem placeholders de desenvolvimento.
+- Testes automatizados de texto e smoke HTTP com 14 rotas, modo manutenção e 404.
+- Health endpoint para readiness, bloqueio de indexação durante manutenção, URLs assinadas com validade de 2 minutos.
+- Documentado checklist com bloqueios de lançamento em `docs/RELEASE_QA.md`.
+- Nota: validação de UI interativa e autenticação/armazenamento na Vercel ainda exige acesso e ambiente real.
+
 # Diário de desenvolvimento do Coollects
 
 ## 2026-10-13 — Integração de todas as frentes do MVP (em validação)

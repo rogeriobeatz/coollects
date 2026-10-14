@@ -13,7 +13,7 @@ export function PublicCollection({id}:{id:string}){
  const [items,setItems]=useState<VisibleItem[]>([])
  const [loading,setLoading]=useState(true),[message,setMessage]=useState('')
  useEffect(()=>{
-  const db=getBrowserClient();if(!db){setMessage('Supabase não configurado.');setLoading(false);return}
+  const db=getBrowserClient();if(!db){setMessage('Não foi possível abrir esta coleção agora. Tente novamente mais tarde.');setLoading(false);return}
   let active=true
   void (async()=>{
    const {data,error}=await db.from('collections').select('*').eq('id',id).maybeSingle()
