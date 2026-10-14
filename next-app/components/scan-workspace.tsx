@@ -47,19 +47,20 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   if(!name.trim()){setNotice('Dê um nome ao item.');document.getElementById('item-name')?.focus();return}
   const db=getBrowserClient();if(!db)return
   setSaving(true);setNotice('');setSaved(false)
-  let photoPath:string|null=null
-  try{
-   if(file)photoPath=await uploadImage(db,userId,file)
-   const {data:item,error}=await db.from('items').insert({owner_id:userId,name:name.trim(),brand:brand.trim(),category,notes:notes.trim(),photo_path:photoPath}).select('id').single()
-   if(error||!item)throw error||new Error('Não foi possível salvar o item.')
-   if(collectionIds.length){
-    const {error:linkError}=await db.from('collection_items').insert(collectionIds.map(id=>({collection_id:id,item_id:item.id})))
-    if(linkError){setNotice('Item salvo, mas não foi possível associá-lo às coleções. Você pode editar os vínculos em Meus itens.');setSaved(true);setSaving(false);return}
-   }
-   setSaved(true);setNotice('Item e fotografia salvos na sua conta!')
-  }catch(e){
-   if(photoPath){await db.storage.from(BUCKET).remove([photoPath])}
-   setNotice('Não foi possível salvar o item agora. Verifique a fotografia e tente novamente.')
+  let uploaded:string|null=null
+  try {
+   if(file)uploaded=await uploadImage(db,userId,file)
+   const {data:itemId,error}=await db.rpc('create_item_with_collections',{
+    p_name:name.trim(),p_brand:brand.trim(),p_category:category,p_notes:notes.trim(),
+    p_photo_path:uploaded,p_collection_ids:collectionIds
+   })
+   if(error||!itemId)throw error||new Error('Não foi possível salvar o item.')
+   setSaved(true)
+   setNotice('Seu item foi salvo com sucesso!')
+  }catch{
+   // The RPC commits both metadata and relationships or neither.
+   if(uploaded)await db.storage.from(BUCKET).remove([uploaded])
+   setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
   }finally{setSaving(false)}
  }
  function reset(){setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds([]);setSaved(false);setNotice('')}
