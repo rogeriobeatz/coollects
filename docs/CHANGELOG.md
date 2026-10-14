@@ -3,8 +3,8 @@
 - Corrigida colisão sistemática de usernames automáticos; verificação contra dois UUIDs de mesmo prefixo.
 - Testes SQL no Supabase real com duas contas simuladas, testes de isolamento de dados públicos/privados e rollback.
 - Criação e edição atômica de itens+associações, impedindo perda parcial de vínculos.
-- Nova experiência de exclusão da conta (requer validação de ponta a ponta com conta real antes do lançamento).
-- Verificação de assinatura mágica em uploads de imagens, além de MIME e tamanho.
+- Nova experiência de exclusão da conta e Edge Function `delete-account` implantada com JWT obrigatório (requer validação de ponta a ponta com conta real antes do lançamento).
+- Verificação de assinatura mágica em uploads de imagens, além de MIME e tamanho. CI verde: 26 testes unitários, 8 testes Chromium, 14 rotas HTTP, build e auditoria npm.
 - Proteção do importador local contra sobrescrita de registros de nuvem.
 
 ## 2026-10-14 — Auditoria de rastros de desenvolvimento e liberação protegida
