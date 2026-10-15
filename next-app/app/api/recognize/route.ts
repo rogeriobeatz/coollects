@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server'
-import { z } from 'zod'
+import { parseKieSuggestion } from '@/lib/kie-parser'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { BUCKET } from '@/lib/catalog'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
-const schema=z.object({name:z.string().max(90).optional().default(''),brand:z.string().max(70).optional().default(''),category:z.string().max(50).optional().default('Miniaturas'),notes:z.string().max(300).optional().default(''),visibleText:z.string().max(500).optional().default(''),confidence:z.enum(['low','medium','high']).optional().default('low')}).strip()
-const prompt='Você cataloga colecionáveis brasileiros. Examine a foto de uma cartela ou embalagem e devolva SOMENTE JSON com name,brand,category,notes,visibleText,confidence (low,medium,high). Para Hot Wheels identifique nome do carro na faixa inferior, marca da MINIATURA, série, ano e numeração somente se realmente legíveis; coloque estes detalhes em notes. Exemplo: name Porsche 911 Carrera T; brand Hot Wheels; category Miniaturas. Não invente números nem edições. Transcreva apenas texto verificável em visibleText. Em caso de dúvida deixe campos vazios e confidence low. Categoria entre Miniaturas, Cartas, Tênis, Games, Quadrinhos, Discos, Action figures, Moedas, Outros.'
-export function parseKieSuggestion(text:string){
- const cleaned=text.trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'')
- const start=cleaned.indexOf('{'),end=cleaned.lastIndexOf('}')
- if(start<0||end<=start)throw new Error('invalid-json')
- return schema.parse(JSON.parse(cleaned.slice(start,end+1)))
-}
 function mimeHeader(data:Uint8Array):string|null {
  if(data.length>=3&&data[0]===255&&data[1]===216&&data[2]===255)return'image/jpeg'
  if(data.length>=8&&[137,80,78,71,13,10,26,10].every((v,i)=>data[i]===v))return'image/png'
