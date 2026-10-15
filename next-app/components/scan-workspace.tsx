@@ -7,6 +7,7 @@ import { AuthGate } from './auth-gate'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { BUCKET,CollectionRow } from '@/lib/catalog'
 import { uploadImage } from '@/lib/images'
+import { preparePhoto } from '@/lib/photo-preparation'
 import { recognizeLocal } from '@/lib/ocr'
 import { CATEGORIES } from '@/lib/local-catalog'
 export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
@@ -14,7 +15,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const params=useSearchParams()
  const preferredCollection=params.get('colecao')
  const fileRef=useRef<HTMLInputElement>(null),cameraRef=useRef<HTMLInputElement>(null)
- const [file,setFile]=useState<File|null>(null),[image,setImage]=useState('')
+ const [file,setFile]=useState<File|null>(null),[image,setImage]=useState(''),[preparing,setPreparing]=useState(false)
  const [name,setName]=useState(''),[brand,setBrand]=useState(''),[category,setCategory]=useState<string>('Miniaturas')
  const [collectionIds,setCollectionIds]=useState<string[]>([]),[notes,setNotes]=useState('')
  const [collections,setCollections]=useState<CollectionRow[]>([])
@@ -25,13 +26,18 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   void db.from('collections').select('*').eq('owner_id',userId).order('created_at').then(({data})=>{const list=(data||[]) as CollectionRow[];setCollections(list);if(preferredCollection&&list.some(x=>x.id===preferredCollection))setCollectionIds([preferredCollection])})
  },[userId,preferredCollection])
  useEffect(()=>{if(!file){setImage('');return};const url=URL.createObjectURL(file);setImage(url);return ()=>URL.revokeObjectURL(url)},[file])
- function pick(e:ChangeEvent<HTMLInputElement>){
-  const f=e.target.files?.[0];e.target.value='';if(!f)return
-  if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>5*1024*1024){setNotice('Use JPG, PNG ou WebP de até 5 MB.');return}
-  setFile(f);setOcrText('');setOcrProgress(0);setSaved(false);setNotice('Foto selecionada. Use Ler textos da foto para preencher a ficha.')
+ async function pick(e:ChangeEvent<HTMLInputElement>){
+  const chosen=e.target.files?.[0];e.target.value='';if(!chosen)return
+  setPreparing(true);setNotice('Preparando a fotografia…')
+  try{
+   const prepared=await preparePhoto(chosen)
+   setFile(prepared.file);setOcrText('');setOcrProgress(0);setSaved(false)
+   setNotice(prepared.converted?'Fotografia preparada em JPEG. Pronta para ler e salvar.':'Fotografia carregada. Você já pode ler os textos ou salvar.')
+  }catch(error){setNotice(error instanceof Error?error.message:'Não foi possível abrir a fotografia. Tente novamente.')}
+  finally{setPreparing(false)}
  }
  async function localOcr(){
-  if(!file||ocrBusy)return
+  if(!file||ocrBusy||preparing)return
   setOcrBusy(true);setOcrProgress(0);setNotice('Preparando leitura da fotografia…')
   try{
    const suggestion=await recognizeLocal(file,setOcrProgress)
@@ -87,11 +93,12 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    <div className="scanner-corners" aria-hidden="true"><i/><i/><i/><i/></div><span className="scanner-pill"><span/> CÂMERA / GALERIA</span>
    {file&&<button type="button" className="photo-clear" aria-label="Remover imagem" onClick={()=>setFile(null)}><X size={20}/></button>}
   </div>
+  {preparing&&<p role="status" className="scan-notice">Preparando fotografia para o cadastro…</p>}
   <div className="capture-button-row"><button className="capture-secondary" onClick={()=>fileRef.current?.click()} aria-label="Selecionar fotografia"><ImagePlus size={26}/></button><button className="shutter-button" onClick={()=>cameraRef.current?.click()} aria-label="Abrir a câmera"><Camera size={34}/></button><button className="capture-secondary" onClick={()=>document.getElementById('item-name')?.focus()} aria-label="Preencher manualmente"><Layers3 size={25}/></button></div>
   <div className="scan-methods"><button onClick={()=>cameraRef.current?.click()}><Camera size={16}/> Tirar foto</button><button onClick={()=>fileRef.current?.click()}><ImagePlus size={16}/> Galeria</button></div>
-  <input className="visually-hidden" aria-label="Capturar foto" ref={cameraRef} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={pick}/>
-  <input className="visually-hidden" aria-label="Escolher foto" ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={pick}/>
-  <div className="ocr-panel"><div className="ai-ribbon"><ScanLine size={24}/><div><strong>Leitura automática de cartelas</strong><p>OCR gratuito no seu aparelho, sem Gemini. Leia textos da embalagem e confira as sugestões.</p></div></div><button className="ai-button" type="button" disabled={!file||ocrBusy||recognizing||saving||saved} onClick={()=>void localOcr()}><ScanLine size={18}/>{ocrBusy?'Lendo textos… '+ocrProgress+'%':'Ler textos da foto (OCR)'}</button>{ocrText&&<details className="ocr-extracted"><summary>Ver textos encontrados</summary><p>{ocrText}</p><span>O OCR não garante a identificação exata do modelo ou edição.</span></details>}</div>
+  <input className="visually-hidden" aria-label="Capturar foto" ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={e=>void pick(e)}/>
+  <input className="visually-hidden" aria-label="Escolher foto" ref={fileRef} type="file" accept="image/*,.heic,.heif" onChange={e=>void pick(e)}/>
+  <div className="ocr-panel"><div className="ai-ribbon"><ScanLine size={24}/><div><strong>Leitura automática de cartelas</strong><p>OCR gratuito no seu aparelho, sem Gemini. Leia textos da embalagem e confira as sugestões.</p></div></div><button className="ai-button" type="button" disabled={!file||ocrBusy||preparing||recognizing||saving||saved} onClick={()=>void localOcr()}><ScanLine size={18}/>{ocrBusy?'Lendo textos… '+ocrProgress+'%':'Ler textos da foto (OCR)'}</button>{ocrText&&<details className="ocr-extracted"><summary>Ver textos encontrados</summary><p>{ocrText}</p><span>O OCR não garante a identificação exata do modelo ou edição.</span></details>}</div>
   {aiEnabled&&<><div className="ai-ribbon"><Sparkles size={24}/><div><strong>Leitura inteligente</strong><p>OCR e IA sugerem os dados visíveis. Você decide o que salvar. Limite de 10 leituras por dia.</p></div></div>
   <button className="ai-button" type="button" disabled={!file||recognizing||ocrBusy||saving} onClick={()=>void recognize()}><Sparkles size={18}/>{recognizing?'Analisando imagem…':'Reconhecer com IA'}</button></>}
   <div className="item-form"><div className="section-title-inline"><div><p className="kicker">REVISE ANTES DE SALVAR</p><h2>Ficha do<br/><em>seu item.</em></h2></div><span className="form-sticker" aria-hidden="true">✦</span></div>
@@ -99,7 +106,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    <div className="form-double"><label className="field-label" htmlFor="item-brand">Marca<input id="item-brand" maxLength={70} value={brand} onChange={e=>setBrand(e.target.value)} placeholder="Fabricante"/></label><label className="field-label" htmlFor="item-category">Categoria<span className="select-wrap"><select id="item-category" value={category} onChange={e=>setCategory(e.target.value)}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select><ChevronDown size={17}/></span></label></div>
    <fieldset className="collection-selector"><legend>Adicionar a coleções (opcional)</legend>{collections.length?collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}/>{c.name}</label>):<p>Você ainda não possui coleções. <Link href="/colecoes">Criar coleção</Link></p>}</fieldset>
    <label className="field-label" htmlFor="item-notes">Observações (podem ser visíveis em coleções públicas)<textarea id="item-notes" rows={3} maxLength={300} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Detalhes da edição, ano, estado..."/></label>
-   <button type="button" disabled={saving||saved} className="save-item-button" onClick={()=>void save()}>{saved?<Check size={23}/>:<ArrowRight size={22}/>} {saving?'Salvando…':saved?'Item salvo!':'Salvar no meu acervo'}</button>
+   <button type="button" disabled={saving||preparing||saved} className="save-item-button" onClick={()=>void save()}>{saved?<Check size={23}/>:<ArrowRight size={22}/>} {saving?'Salvando…':saved?'Item salvo!':'Salvar no meu acervo'}</button>
    {notice&&<p role="status" className="scan-notice">{notice}</p>}
    {saved&&<div className="saved-actions">{preferredCollection&&<Link href={'/colecao/'+encodeURIComponent(preferredCollection)}>Voltar à coleção <ArrowRight size={16}/></Link>}<Link href="/itens">Ver meus itens <ArrowRight size={16}/></Link><button onClick={reset}>Cadastrar outro</button></div>}
   </div>
