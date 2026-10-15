@@ -13,7 +13,7 @@ export function extractModelLine(raw:string):string{
  // OCR commonly reads the leading '9' as S, $ or 5 on Porsche 911 cards.
  const porsche=line.match(/\bPORSCHE\s+(?:911|S11|\$11|5I1|SII)\s+CARRERA(?:\s+[A-Z0-9-]+){0,2}/i)
  if(porsche)return porsche[0].replace(/\s+(?:S11|\$11|5I1|SII)\s+/i,' 911 ').replace(/\s+3\s*\+?$/,'').trim()
- const found=cars.find(car=>new RegExp('\\b'+car.replace(/[.*+?^${}()|[\]\\]/g,'\\export function suggestFromOcr(raw:string):OcrSuggestion{')+'\\b','i').test(line))
+ const found=cars.find(car=>line.toLowerCase().includes(car.toLowerCase()))
  if(!found)return ''
  const start=line.toLowerCase().indexOf(found.toLowerCase())
  const tail=line.slice(start).replace(/[^\p{L}\p{N}\s+./-]/gu,' ').replace(/\s+/g,' ').trim()
