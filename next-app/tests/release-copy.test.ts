@@ -44,6 +44,6 @@ describe('Conformidade dos textos de interface',()=>{
   const src=readFileSync(resolve(process.cwd(),'components/scan-workspace.tsx'),'utf8')
   expect(src).toContain('aiEnabled&&')
   const route=readFileSync(resolve(process.cwd(),'app/cadastrar/page.tsx'),'utf8')
-  expect(route).toContain('GOOGLE_GENERATIVE_AI_API_KEY')
+  expect(route).toContain('KIE_API_KEY')
  })
 })
