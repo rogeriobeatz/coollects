@@ -124,3 +124,13 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .scanner-stage .scanner-photo{object-fit:contain}
 
 .ocr-debug-region{border:1px solid #ded3ef;border-radius:12px;padding:10px;margin:9px 0;background:#fff}.ocr-debug-region strong{color:#6125BF;font-size:12px}.ocr-debug-region p{margin:6px 0;max-height:120px;overflow-y:auto;white-space:pre-wrap}
+
+/* Visual OCR debugger: image and bounding boxes share the same native aspect ratio. */
+.scanner-stage.has-image{min-height:0;padding:12px}
+.ocr-preview-frame{position:relative;width:100%;max-width:420px;margin:auto}
+.ocr-preview-frame .scanner-photo{position:relative;inset:auto;width:100%;height:auto;display:block;object-fit:contain}
+.ocr-image-box{position:absolute;z-index:4;pointer-events:none;border:2px solid #2ce6ae;border-radius:4px;background:#2ce6ae18}
+.ocr-image-box.uncertain{border-color:#ffb44b;background:#ffb44b18}
+.ocr-overlay-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;margin:14px 0;color:#49346a}
+.ocr-overlay-toggle label{display:flex;gap:7px;align-items:center;font-weight:800}
+.ocr-overlay-toggle input{accent-color:#6125BF;width:18px;height:18px}

@@ -75,7 +75,7 @@ function scoreLine(text:string,y:number,height:number):number{
 function bounds(region:Rectangle){return {left:region.left,top:region.top,width:region.width,height:region.height}}
 export function refineOcrModel(text:string):string{
  // Contextual disambiguation, not arbitrary substitution: only 911 Carrera on Porsche labels.
- return text.replace(/\\b(PORSCHE\\s+)(?:S11|\\$11|5I1|SII)(\\s+CARRERA\\b)/gi,'$1911$2')
+ return text.replace(/\\b(PORSCHE\\s+)(?:S11|\\$11|5I1|SII)(\\s+CARRERA\\b)/gi,(_match,a:string,b:string)=>a+'911'+b)
 }
 async function readCanvas(file:File,onProgress?:(progress:number)=>void):Promise<{readings:OcrRegionResult[];boxes:OcrBox[];width:number;height:number}>{
  const url=URL.createObjectURL(file)
