@@ -1,4 +1,4 @@
-import { createWorker } from 'tesseract.js'
+import { createWorker, PSM } from 'tesseract.js'
 
 export type OcrBox={left:number;top:number;width:number;height:number;confidence:number;text:string;source:string}
 export type OcrRegionResult={region:string;text:string;confidence:number;box?:Omit<OcrBox,'confidence'|'text'|'source'>}
@@ -99,7 +99,7 @@ async function readCanvas(file:File,onProgress?:(progress:number)=>void):Promise
    if(r.width<15||r.height<12)continue
    const canvas=await enhancedCrop(image,r)
    // Treat a tightly cropped printed label as a text line, not a page.
-   await worker.setParameters({tessedit_pageseg_mode:r.label==='Nome do modelo'?'7':'6'})
+   await worker.setParameters({tessedit_pageseg_mode:r.label==='Nome do modelo'?PSM.SINGLE_LINE:PSM.SINGLE_BLOCK})
    const {data}=await worker.recognize(canvas)
    const confidence=Math.round(data.confidence||0),text=(data.text||'').trim()
    all.push({region:r.label,text,confidence,box:bounds(r)})
