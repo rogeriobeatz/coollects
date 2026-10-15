@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest'
-import {parseKieSuggestion} from '../app/api/recognize/route'
+import {parseKieSuggestion} from '../lib/kie-parser'
 describe('Kie multimodal response validation',()=>{
  const item='{"name":"Porsche 911 Carrera T","brand":"Hot Wheels","category":"Miniaturas","notes":"Factory Fresh · 15/250","confidence":"high"}'
  it('accepts a correct JSON response',()=>{expect(parseKieSuggestion(item).name).toBe('Porsche 911 Carrera T')})
