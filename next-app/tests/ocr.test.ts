@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest'
-import {suggestFromOcr,ocrRegions,selectOcrText,proposedLineRegions,refineOcrModel} from '../lib/ocr'
+import {suggestFromOcr,ocrRegions,selectOcrText,extractModelLine,proposedLineRegions,refineOcrModel} from '../lib/ocr'
 describe('OCR local para miniaturas',()=>{
  it('identifica Hot Wheels e modelo Porsche sem inventar edição',()=>{
   const s=suggestFromOcr('HOT WHEELS\nPORSCHE 911 GT3 RS\n3/10\nMADE IN MALAYSIA')
@@ -33,7 +33,7 @@ describe('OCR local para miniaturas',()=>{
    {region:'Cabeçalho da embalagem',text:'HOT WHEELS',confidence:61},
   ])
   expect(selected).not.toContain('FAS')
-  expect(selected).toContain('PORSCHE S11 CARRERA T')
+  expect(selected).toContain('PORSCHE 911 CARRERA T')
   expect(selected).toContain('HOT WHEELS')
  })
  it('evita adicionar regiões com confiança muito baixa',()=>{
@@ -51,6 +51,21 @@ describe('OCR local para miniaturas',()=>{
  it('corrige S11 somente em contexto Porsche Carrera, preservando outros códigos',()=>{
   expect(refineOcrModel('PORSCHE S11 CARRERA T')).toBe('PORSCHE 911 CARRERA T')
   expect(refineOcrModel('FORD S11 GT')).toBe('FORD S11 GT')
+ })
+
+ it('recupera o modelo Porsche da saída real com ruído',()=>{
+   const raw='cas 4\nUS vi. |\nPORSCHE $11 CARRERA T 3'
+   expect(extractModelLine(raw)).toBe('PORSCHE 911 CARRERA T')
+ })
+ it('seleciona só texto automotivo e evita ruído da ilustração',()=>{
+  const text=selectOcrText([
+   {region:'Cartela completa',confidence:52,text:'FAS BN ra O Pá'},
+   {region:'Nome do modelo',confidence:42,text:'iad]'},
+   {region:'Texto detectado 1',confidence:69,text:'cas 4\nUS vi. |\nPORSCHE $11 CARRERA T 3'},
+   {region:'Texto detectado 2',confidence:33,text:'oN v) | — = h ='},
+   {region:'Texto detectado 3',confidence:25,text:'NW |e 22)'},
+  ])
+  expect(text.trim()).toBe('PORSCHE 911 CARRERA T')
  })
 
 })

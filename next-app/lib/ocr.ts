@@ -7,13 +7,28 @@ export type OcrSuggestion={name:string;brand:string;category:'Miniaturas';notes:
 const brands=['Hot Wheels','Matchbox','MINI GT','Kaido House','Tomica','Majorette','GreenLight','Johnny Lightning','Auto World','Inno64','Tarmac Works','Maisto','Bburago','Jada Toys']
 const cars=['Porsche','Nissan','Toyota','Honda','Ford','Chevrolet','Volkswagen','BMW','Mercedes-Benz','Mercedes','Lamborghini','Ferrari','McLaren','Audi','Dodge','Mazda','Subaru','Mitsubishi','Volvo','Jeep','Jaguar','Aston Martin','Hyundai','Kia']
 const noise=/^(hot wheels|matchbox|mini gt|kaido house|die.?cast|made in|collect them all|ages? ?\d+|\d+\/?\d*|\d+:\d+|warning|advertencia|choking hazard|not for children|mattel|©|www\.|[0-9]{8,14})$/i
+/** Distinguish recognizable printed model labels from drawing artifacts. */
+export function extractModelLine(raw:string):string{
+ const line=raw.replace(/\s+/g,' ').trim()
+ // OCR commonly reads the leading '9' as S, $ or 5 on Porsche 911 cards.
+ const porsche=line.match(/\bPORSCHE\s+(?:911|S11|\$11|5I1|SII)\s+CARRERA(?:\s+[A-Z0-9-]+){0,2}/i)
+ if(porsche)return porsche[0].replace(/\s+(?:S11|\$11|5I1|SII)\s+/i,' 911 ').replace(/\s+3\s*\+?$/,'').trim()
+ const found=cars.find(car=>line.toLowerCase().includes(car.toLowerCase()))
+ if(!found)return ''
+ const start=line.toLowerCase().indexOf(found.toLowerCase())
+ const tail=line.slice(start).replace(/[^\p{L}\p{N}\s+./-]/gu,' ').replace(/\s+/g,' ').trim()
+ const tokens=tail.split(' ')
+ // Model extraction requires an additional plausible token; maker alone is not a model.
+ if(tokens.length<2||tokens[1].length<2&&!/\d/.test(tokens[1]))return ''
+ return tokens.slice(0,8).join(' ').slice(0,90)
+}
 export function suggestFromOcr(raw:string):OcrSuggestion{
  const lines=raw.split(/\r?\n/).map(s=>s.replace(/\s+/g,' ').trim()).filter(x=>x.length>=3).slice(0,60)
  const combined=lines.join(' ')
  const foundBrand=brands.find(b=>new RegExp(b.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&').replace(/\s+/g,'\\s*'),'i').test(combined))||''
  const candidate=lines.filter(line=>!noise.test(line)&&line.length<=65&&!/https?:|@|copyright|[©®™]|\b(safety|warning|advertencia|fabricado|made in|ages|escala|series)\b/i.test(line))
- const vehicle=candidate.find(line=>cars.some(b=>line.toLowerCase().includes(b.toLowerCase()))&&line.length<55)
- const model=vehicle||candidate.find(line=>/\b(19|20)\d{2}\b|\b(gt|gtr|rs|911|supra|skyline|civic|mustang|camaro|corvette|silvia)\b/i.test(line))||''
+ const vehicle=candidate.map(extractModelLine).find(Boolean)
+ const model=vehicle||''
  const strong=Boolean(model&&foundBrand)
  return {name:model.slice(0,90),brand:foundBrand,category:'Miniaturas',notes:'',visibleText:lines.join(' | ').slice(0,450),confidence:strong?'medium':model||foundBrand?'low':'low'}
 }
@@ -46,7 +61,10 @@ export function selectOcrText(readings:OcrRegionResult[]):string{
  // Prefer the printed model label over decorative artwork; low-confidence full-card
  // hallucinations are retained only in the diagnostics, not in the item suggestion.
  const accepted=readings.filter(r=>r.confidence>=24 && r.text.trim().length>=3 && r.region!=='Cartela completa')
- return accepted.map(r=>r.text).join('\n')
+ const candidates=accepted.flatMap(r=>r.text.split(/\r?\n/).map(text=>({text,model:extractModelLine(text),confidence:r.confidence})))
+ const valid=candidates.filter(x=>x.model).sort((a,b)=>b.confidence-a.confidence)
+ const other=accepted.flatMap(r=>r.text.split(/\r?\n/)).filter(x=>brands.some(b=>x.toLowerCase().includes(b.toLowerCase())))
+ return [...valid.slice(0,2).map(x=>x.model),...other].join('\n')
 }
 type Rectangle={left:number;top:number;width:number;height:number}
 type TesseractLine={text:string;confidence:number;bbox:{x0:number;y0:number;x1:number;y1:number}}
