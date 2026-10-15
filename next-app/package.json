@@ -17,7 +17,8 @@
     "lucide-react": "^0.500.0",
     "@supabase/supabase-js": "^2.117.1",
     "@supabase/ssr": "^0.12.7",
-    "zod": "^3.25.0"
+    "zod": "^3.25.0",
+    "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "typescript": "^5.9.0",
