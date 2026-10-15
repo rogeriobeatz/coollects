@@ -7,6 +7,7 @@ import { AuthGate } from './auth-gate'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { BUCKET,CollectionRow } from '@/lib/catalog'
 import { uploadImage } from '@/lib/images'
+import { recognizeLocal } from '@/lib/ocr'
 import { CATEGORIES } from '@/lib/local-catalog'
 export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
 function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
@@ -17,7 +18,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const [name,setName]=useState(''),[brand,setBrand]=useState(''),[category,setCategory]=useState<string>('Miniaturas')
  const [collectionIds,setCollectionIds]=useState<string[]>([]),[notes,setNotes]=useState('')
  const [collections,setCollections]=useState<CollectionRow[]>([])
- const [saving,setSaving]=useState(false),[recognizing,setRecognizing]=useState(false)
+ const [saving,setSaving]=useState(false),[recognizing,setRecognizing]=useState(false),[ocrBusy,setOcrBusy]=useState(false),[ocrProgress,setOcrProgress]=useState(0),[ocrText,setOcrText]=useState('')
  const [notice,setNotice]=useState(''),[saved,setSaved]=useState(false)
  useEffect(()=>{
   const db=getBrowserClient();if(!db)return
@@ -27,7 +28,20 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  function pick(e:ChangeEvent<HTMLInputElement>){
   const f=e.target.files?.[0];e.target.value='';if(!f)return
   if(!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>5*1024*1024){setNotice('Use JPG, PNG ou WebP de até 5 MB.');return}
-  setFile(f);setSaved(false);setNotice('Foto selecionada. Revise os dados antes de salvar.')
+  setFile(f);setOcrText('');setOcrProgress(0);setSaved(false);setNotice('Foto selecionada. Use Ler textos da foto para preencher a ficha.')
+ }
+ async function localOcr(){
+  if(!file||ocrBusy)return
+  setOcrBusy(true);setOcrProgress(0);setNotice('Preparando leitura da fotografia…')
+  try{
+   const suggestion=await recognizeLocal(file,setOcrProgress)
+   setOcrText(suggestion.visibleText)
+   if(suggestion.name)setName(v=>v||suggestion.name)
+   if(suggestion.brand)setBrand(v=>v||suggestion.brand)
+   if(suggestion.name||suggestion.brand)setCategory('Miniaturas')
+   setNotice(suggestion.name||suggestion.brand?'Leitura concluída! Confira o nome e os dados sugeridos antes de salvar.':'Leitura concluída, mas não foi possível identificar o modelo. Confira o texto ou preencha manualmente.')
+  }catch{setNotice('Não foi possível ler esta foto. Experimente luz uniforme, cartela reta e texto em foco.')}
+  finally{setOcrBusy(false)}
  }
  async function recognize(){
   if(!file)return setNotice('Tire uma foto ou escolha uma imagem primeiro.')
@@ -66,7 +80,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
   }finally{setSaving(false)}
  }
- function reset(){setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
+ function reset(){setOcrText('');setOcrProgress(0);setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
  return <section className="scan-workspace">
   <div className={'scanner-stage '+(image?'has-image':'')}>
    {image?<img className="scanner-photo" src={image} alt="Prévia da fotografia do item"/>:<div className="scanner-placeholder"><div className="scanner-symbol"><ScanLine size={58}/></div><strong>Aponte. Fotografe.<br/>Colecione.</strong><p>Seu acervo, um item de cada vez.</p></div>}
@@ -77,8 +91,9 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   <div className="scan-methods"><button onClick={()=>cameraRef.current?.click()}><Camera size={16}/> Tirar foto</button><button onClick={()=>fileRef.current?.click()}><ImagePlus size={16}/> Galeria</button></div>
   <input className="visually-hidden" aria-label="Capturar foto" ref={cameraRef} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={pick}/>
   <input className="visually-hidden" aria-label="Escolher foto" ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={pick}/>
+  <div className="ocr-panel"><div className="ai-ribbon"><ScanLine size={24}/><div><strong>Leitura automática de cartelas</strong><p>OCR gratuito no seu aparelho, sem Gemini. Leia textos da embalagem e confira as sugestões.</p></div></div><button className="ai-button" type="button" disabled={!file||ocrBusy||recognizing||saving||saved} onClick={()=>void localOcr()}><ScanLine size={18}/>{ocrBusy?'Lendo textos… '+ocrProgress+'%':'Ler textos da foto (OCR)'}</button>{ocrText&&<details className="ocr-extracted"><summary>Ver textos encontrados</summary><p>{ocrText}</p><span>O OCR não garante a identificação exata do modelo ou edição.</span></details>}</div>
   {aiEnabled&&<><div className="ai-ribbon"><Sparkles size={24}/><div><strong>Leitura inteligente</strong><p>OCR e IA sugerem os dados visíveis. Você decide o que salvar. Limite de 10 leituras por dia.</p></div></div>
-  <button className="ai-button" type="button" disabled={!file||recognizing||saving} onClick={()=>void recognize()}><Sparkles size={18}/>{recognizing?'Analisando imagem…':'Reconhecer com IA'}</button></>}
+  <button className="ai-button" type="button" disabled={!file||recognizing||ocrBusy||saving} onClick={()=>void recognize()}><Sparkles size={18}/>{recognizing?'Analisando imagem…':'Reconhecer com IA'}</button></>}
   <div className="item-form"><div className="section-title-inline"><div><p className="kicker">REVISE ANTES DE SALVAR</p><h2>Ficha do<br/><em>seu item.</em></h2></div><span className="form-sticker" aria-hidden="true">✦</span></div>
    <label className="field-label" htmlFor="item-name">Nome do item *<input id="item-name" maxLength={90} value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Porsche 911 GT3 RS"/></label>
    <div className="form-double"><label className="field-label" htmlFor="item-brand">Marca<input id="item-brand" maxLength={70} value={brand} onChange={e=>setBrand(e.target.value)} placeholder="Fabricante"/></label><label className="field-label" htmlFor="item-category">Categoria<span className="select-wrap"><select id="item-category" value={category} onChange={e=>setCategory(e.target.value)}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select><ChevronDown size={17}/></span></label></div>
