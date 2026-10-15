@@ -33,7 +33,7 @@ describe('OCR local para miniaturas',()=>{
    {region:'Cabeçalho da embalagem',text:'HOT WHEELS',confidence:61},
   ])
   expect(selected).not.toContain('FAS')
-  expect(selected).toContain('PORSCHE S11 CARRERA T')
+  expect(selected).toContain('PORSCHE 911 CARRERA T')
   expect(selected).toContain('HOT WHEELS')
  })
  it('evita adicionar regiões com confiança muito baixa',()=>{
