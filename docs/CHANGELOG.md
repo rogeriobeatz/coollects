@@ -1,3 +1,12 @@
+## 2026-10-15 — OCR local no cadastro de itens
+- Motor Tesseract.js 6 com idiomas inglês + português, executado no navegador após o usuário selecionar uma fotografia e acionar **Ler textos da foto (OCR)**.
+- Reconhecimento sem chave Gemini e sem enviar o conteúdo da fotografia a uma API de IA generativa; o navegador baixa o motor/idiomas na primeira utilização. A foto continua sendo enviada ao Supabase Storage apenas quando o usuário decide salvar o item.
+- Sugestões cautelosas de marca (Hot Wheels, Matchbox, MINI GT, Kaido House e outras) e nome de veículo com pistas textuais; sem inventar numeração, raridade, ano ou versão.
+- Não sobrescreve nome ou marca já preenchidos. Os textos encontrados ficam disponíveis para inspeção e toda a ficha exige revisão humana.
+- Progresso de leitura, estados de erro compreensíveis e cadastro manual funcionando sem OCR.
+- Testes unitários do interpretador, mais pipeline de typecheck/build/navegação. Falta validar OCR ótico de ponta a ponta em fotografias reais no iPhone/Android, inclusive reflexos e cartelas com fontes pequenas.
+- Esta entrega NÃO inclui identificação inequívoca por catálogo, scanner de código de barras ou leitura totalmente offline na primeira instalação.
+
 ## Auditoria contextual — 14/10/2026
 - Verificadas rotas de navegação, fluxo Home → Coleções → Coleção → Item e retorno, navegação principal e os estados de ausência de coleção.
 - Corrigido acesso direto à edição de item a partir da coleção: `/itens?editar=UUID&voltar=UUID`, incluindo link de retorno.
