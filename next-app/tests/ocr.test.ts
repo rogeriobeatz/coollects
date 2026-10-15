@@ -17,12 +17,12 @@ describe('OCR local para miniaturas',()=>{
   expect(r[1].scale).toBe(3)
  })
  it('extrai a identificação legível de uma cartela Hot Wheels 2026',()=>{
-  const s=suggestFromOcr('HOT WHEELS\\nNEW FOR 2026\\n15/250\\nFACTORY FRESH\\nPORSCHE 911 CARRERA T')
+  const s=suggestFromOcr('HOT WHEELS\nNEW FOR 2026\n15/250\nFACTORY FRESH\nPORSCHE 911 CARRERA T')
   expect(s.brand).toBe('Hot Wheels')
   expect(s.name).toBe('PORSCHE 911 CARRERA T')
  })
  it('não preenche um modelo inventado quando o OCR falha',()=>{
-  const s=suggestFromOcr('FAS\\nBN +\\nra O Pá\\nA A PA v5\\npao am 3+ ss')
+  const s=suggestFromOcr('FAS\nBN +\nra O Pá\nA A PA v5\npao am 3+ ss')
   expect(s.name).toBe('')
  })
 })
