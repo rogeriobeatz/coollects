@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest'
-import {suggestFromOcr,ocrRegions,selectOcrText} from '../lib/ocr'
+import {suggestFromOcr,ocrRegions,selectOcrText,proposedLineRegions,refineOcrModel} from '../lib/ocr'
 describe('OCR local para miniaturas',()=>{
  it('identifica Hot Wheels e modelo Porsche sem inventar edição',()=>{
   const s=suggestFromOcr('HOT WHEELS\nPORSCHE 911 GT3 RS\n3/10\nMADE IN MALAYSIA')
@@ -38,6 +38,19 @@ describe('OCR local para miniaturas',()=>{
  })
  it('evita adicionar regiões com confiança muito baixa',()=>{
   expect(selectOcrText([{region:'Nome do modelo',text:'P O RX',confidence:12}])).toBe('')
+ })
+
+ it('propõe releitura de blocos detectados sem depender de recortes fixos',()=>{
+  const rectangles=proposedLineRegions([
+   {left:100,top:1100,width:330,height:25,confidence:82,text:'PORSCHE S11 CARRERA T',source:'Detecção automática'},
+   {left:80,top:500,width:400,height:200,confidence:10,text:'ARTE RUÍDO',source:'Detecção automática'},
+  ],788,1200)
+  expect(rectangles).toHaveLength(1)
+  expect(rectangles[0].top).toBeGreaterThan(1000)
+ })
+ it('corrige S11 somente em contexto Porsche Carrera, preservando outros códigos',()=>{
+  expect(refineOcrModel('PORSCHE S11 CARRERA T')).toBe('PORSCHE 911 CARRERA T')
+  expect(refineOcrModel('FORD S11 GT')).toBe('FORD S11 GT')
  })
 
 })
