@@ -122,3 +122,5 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 /* Show the entire photographed card/blister instead of cropping it in the capture preview. */
 .scanner-stage.has-image{background:#161321}
 .scanner-stage .scanner-photo{object-fit:contain}
+
+.ocr-debug-region{border:1px solid #ded3ef;border-radius:12px;padding:10px;margin:9px 0;background:#fff}.ocr-debug-region strong{color:#6125BF;font-size:12px}.ocr-debug-region p{margin:6px 0;max-height:120px;overflow-y:auto;white-space:pre-wrap}
