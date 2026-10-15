@@ -8,7 +8,7 @@ import { getBrowserClient } from '@/lib/supabase/client'
 import { BUCKET,CollectionRow } from '@/lib/catalog'
 import { uploadImage } from '@/lib/images'
 import { preparePhoto } from '@/lib/photo-preparation'
-import { recognizeLocal } from '@/lib/ocr'
+import { recognizeLocal,type OcrRegionResult } from '@/lib/ocr'
 import { CATEGORIES } from '@/lib/local-catalog'
 export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
 function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
@@ -20,6 +20,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const [collectionIds,setCollectionIds]=useState<string[]>([]),[notes,setNotes]=useState('')
  const [collections,setCollections]=useState<CollectionRow[]>([])
  const [saving,setSaving]=useState(false),[recognizing,setRecognizing]=useState(false),[ocrBusy,setOcrBusy]=useState(false),[ocrProgress,setOcrProgress]=useState(0),[ocrText,setOcrText]=useState('')
+ const [ocrDebug,setOcrDebug]=useState<OcrRegionResult[]>([])
  const [notice,setNotice]=useState(''),[saved,setSaved]=useState(false)
  useEffect(()=>{
   const db=getBrowserClient();if(!db)return
@@ -31,7 +32,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   setPreparing(true);setNotice('Preparando a fotografia…')
   try{
    const prepared=await preparePhoto(chosen)
-   setFile(prepared.file);setOcrText('');setOcrProgress(0);setSaved(false)
+   setFile(prepared.file);setOcrDebug([]);setOcrText('');setOcrProgress(0);setSaved(false)
    setNotice(prepared.converted?'Fotografia preparada em JPEG. Pronta para ler e salvar.':'Fotografia carregada. Você já pode ler os textos ou salvar.')
   }catch(error){setNotice(error instanceof Error?error.message:'Não foi possível abrir a fotografia. Tente novamente.')}
   finally{setPreparing(false)}
@@ -42,6 +43,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   try{
    const suggestion=await recognizeLocal(file,setOcrProgress)
    setOcrText(suggestion.visibleText)
+   setOcrDebug(suggestion.debug||[])
    if(suggestion.name)setName(v=>v||suggestion.name)
    if(suggestion.brand)setBrand(v=>v||suggestion.brand)
    if(suggestion.name||suggestion.brand)setCategory('Miniaturas')
@@ -86,7 +88,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
   }finally{setSaving(false)}
  }
- function reset(){setOcrText('');setOcrProgress(0);setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
+ function reset(){setOcrDebug([]);setOcrText('');setOcrProgress(0);setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
  return <section className="scan-workspace">
   <div className={'scanner-stage '+(image?'has-image':'')}>
    {image?<img className="scanner-photo" src={image} alt="Prévia da fotografia do item"/>:<div className="scanner-placeholder"><div className="scanner-symbol"><ScanLine size={58}/></div><strong>Aponte. Fotografe.<br/>Colecione.</strong><p>Seu acervo, um item de cada vez.</p></div>}
@@ -98,7 +100,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   <div className="scan-methods"><button onClick={()=>cameraRef.current?.click()}><Camera size={16}/> Tirar foto</button><button onClick={()=>fileRef.current?.click()}><ImagePlus size={16}/> Galeria</button></div>
   <input className="visually-hidden" aria-label="Capturar foto" ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={e=>void pick(e)}/>
   <input className="visually-hidden" aria-label="Escolher foto" ref={fileRef} type="file" accept="image/*,.heic,.heif" onChange={e=>void pick(e)}/>
-  <div className="ocr-panel"><div className="ai-ribbon"><ScanLine size={24}/><div><strong>Leitura automática de cartelas</strong><p>OCR gratuito no seu aparelho, sem Gemini. Leia textos da embalagem e confira as sugestões.</p></div></div><button className="ai-button" type="button" disabled={!file||ocrBusy||preparing||recognizing||saving||saved} onClick={()=>void localOcr()}><ScanLine size={18}/>{ocrBusy?'Lendo textos… '+ocrProgress+'%':'Ler textos da foto (OCR)'}</button>{ocrText&&<details className="ocr-extracted"><summary>Ver textos encontrados</summary><p>{ocrText}</p><span>O OCR não garante a identificação exata do modelo ou edição.</span></details>}</div>
+  <div className="ocr-panel"><div className="ai-ribbon"><ScanLine size={24}/><div><strong>Leitura automática de cartelas</strong><p>OCR gratuito no seu aparelho, sem Gemini. Leia textos da embalagem e confira as sugestões.</p></div></div><button className="ai-button" type="button" disabled={!file||ocrBusy||preparing||recognizing||saving||saved} onClick={()=>void localOcr()}><ScanLine size={18}/>{ocrBusy?'Lendo textos… '+ocrProgress+'%':'Ler textos da foto (OCR)'}</button>{ocrDebug.length>0&&<details className="ocr-extracted"><summary>Diagnóstico da leitura ({ocrDebug.length} regiões)</summary><p>O resultado de cada região é mostrado separadamente. Confiança baixa pode indicar reflexos, letras estilizadas ou leitura da ilustração.</p>{ocrDebug.map(r=><section key={r.region} className="ocr-debug-region"><strong>{r.region} · confiança {r.confidence}%</strong><p>{r.text||'Nenhum texto legível'}</p></section>)}<span>Somente regiões com confiança mínima são usadas para sugerir os campos. Confira os dados antes de salvar.</span></details>}</div>
   {aiEnabled&&<><div className="ai-ribbon"><Sparkles size={24}/><div><strong>Leitura inteligente</strong><p>OCR e IA sugerem os dados visíveis. Você decide o que salvar. Limite de 10 leituras por dia.</p></div></div>
   <button className="ai-button" type="button" disabled={!file||recognizing||ocrBusy||saving} onClick={()=>void recognize()}><Sparkles size={18}/>{recognizing?'Analisando imagem…':'Reconhecer com IA'}</button></>}
   <div className="item-form"><div className="section-title-inline"><div><p className="kicker">REVISE ANTES DE SALVAR</p><h2>Ficha do<br/><em>seu item.</em></h2></div><span className="form-sticker" aria-hidden="true">✦</span></div>
