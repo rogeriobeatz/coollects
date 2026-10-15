@@ -118,3 +118,7 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .ocr-extracted summary{cursor:pointer;font-weight:900;color:#6125BF;padding:8px 0}
 .ocr-extracted p{max-height:150px;overflow-y:auto;background:#fff;border-radius:9px;padding:10px;white-space:pre-wrap}
 .ocr-extracted span{display:block;margin-top:6px}
+
+/* Show the entire photographed card/blister instead of cropping it in the capture preview. */
+.scanner-stage.has-image{background:#161321}
+.scanner-stage .scanner-photo{object-fit:contain}
