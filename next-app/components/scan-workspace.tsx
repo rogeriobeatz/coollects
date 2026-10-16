@@ -2,7 +2,7 @@
 import { useEffect,useRef,useState,type ChangeEvent } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { ArrowRight,Camera,Check,ChevronDown,ImagePlus,Layers3,Sparkles,X } from 'lucide-react'
+import { ArrowRight,Camera,Check,ChevronDown,ImagePlus,Layers3,ScanLine,Sparkles,X } from 'lucide-react'
 import { AuthGate } from './auth-gate'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { BUCKET,CollectionRow } from '@/lib/catalog'
@@ -34,7 +34,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   setPreparing(true);setNotice('Preparando a fotografia…')
   try{
    const prepared=await preparePhoto(chosen)
-   setFile(prepared.file);setSaved(false);setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
+   setFile(prepared.file);setSaved(false);setName('');setBrand('');setNotes('');setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
    setNotice('Fotografia preparada. Nossa equipe digital está identificando o item…')
   }catch(error){setNotice(error instanceof Error?error.message:'Não foi possível abrir a fotografia. Tente novamente.')}
   finally{setPreparing(false)}
@@ -116,7 +116,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    ] as const).map(([key,label,placeholder])=><label key={key} className="field-label">{label}<input value={details[key]} onChange={e=>setDetails(v=>({...v,[key]:e.target.value}))} placeholder={placeholder} maxLength={key==='year'?4:90} inputMode={key==='year'?'numeric':'text'}/></label>)}</div></section>}
    <fieldset className="collection-selector"><legend>Adicionar a coleções (opcional)</legend>{collections.length?collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}/>{c.name}</label>):<p>Você ainda não possui coleções. <Link href="/colecoes">Criar coleção</Link></p>}</fieldset>
    <label className="field-label" htmlFor="item-notes">Observações pessoais (podem ser visíveis em coleções públicas)<textarea id="item-notes" rows={3} maxLength={300} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="História, origem, conservação ou notas pessoais..."/></label>
-   <button type="button" disabled={saving||preparing||saved} className="save-item-button" onClick={()=>void save()}>{saved?<Check size={23}/>:<ArrowRight size={22}/>} {saving?'Salvando…':saved?'Item salvo!':'Salvar no meu acervo'}</button>
+   <button type="button" disabled={saving||preparing||recognizing||saved} className="save-item-button" onClick={()=>void save()}>{saved?<Check size={23}/>:<ArrowRight size={22}/>} {saving?'Salvando…':saved?'Item salvo!':'Salvar no meu acervo'}</button>
    {notice&&<p role="status" className="scan-notice">{notice}</p>}
    {saved&&<div className="saved-actions">{preferredCollection&&<Link href={'/colecao/'+encodeURIComponent(preferredCollection)}>Voltar à coleção <ArrowRight size={16}/></Link>}<Link href="/itens">Ver meus itens <ArrowRight size={16}/></Link><button onClick={reset}>Cadastrar outro</button></div>}
   </div>
