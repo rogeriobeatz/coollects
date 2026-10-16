@@ -42,7 +42,8 @@ describe('Conformidade dos textos de interface',()=>{
  })
  it('a IA só aparece quando o serviço estiver habilitado',()=>{
   const src=readFileSync(resolve(process.cwd(),'components/scan-workspace.tsx'),'utf8')
-  expect(src).toContain('aiEnabled&&')
+  expect(src).toContain('aiEnabled')
+  expect(src).not.toContain('recognizeLocal')
   const route=readFileSync(resolve(process.cwd(),'app/cadastrar/page.tsx'),'utf8')
   expect(route).toContain('KIE_API_KEY')
  })
