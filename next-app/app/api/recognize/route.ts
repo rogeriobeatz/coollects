@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { parseKieSuggestion } from '@/lib/kie-parser'
+import { parseKieSuggestion, prompt } from '@/lib/kie-parser'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { BUCKET } from '@/lib/catalog'
 export const runtime='nodejs'
@@ -40,11 +40,13 @@ export async function POST(request:Request){
   const {data:signed,error:signedError}=await db.storage.from(BUCKET).createSignedUrl(temporary,180)
   if(signedError||!signed?.signedUrl)throw new Error('signed-url-failed')
   stage='provider_request'
-  const response=await fetch('https://api.kie.ai/gemini-3-flash/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({stream:false,messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:signed.signedUrl}}]}]}),signal:AbortSignal.timeout(45000),cache:'no-store'})
+  console.info('[KIE_VISION]',JSON.stringify({trace,stage:'provider_request_start',model:'gemini-3-8-flash'}))
+  const response=await fetch('https://api.kie.ai/gemini-3-8-flash-openai/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({stream:false,messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:signed.signedUrl}}]}]}),signal:AbortSignal.timeout(45000),cache:'no-store'})
+  console.info('[KIE_VISION]',JSON.stringify({trace,stage:'provider_http',status:response.status}))
   if(!response.ok)return failure('KIE_HTTP_'+response.status,'O provedor recusou a análise da foto.',502)
   stage='provider_response'
   const payload=await response.json() as {code?:number;choices?:{message?:{content?:string|{text?:string}[]}}[]}
-  if(payload.code&&payload.code!==200)return failure('KIE_CODE_'+String(payload.code).slice(0,5),'O provedor retornou um erro. Verifique os créditos e a disponibilidade do modelo.',502)
+  if(payload.code!==undefined&&payload.code!==200)return failure('KIE_CODE_'+String(payload.code).slice(0,5),'O provedor retornou um erro. Verifique os créditos e a disponibilidade do modelo.',502)
   const content=payload.choices?.[0]?.message?.content
   const text=typeof content==='string'?content:Array.isArray(content)?content.map(x=>x.text||'').join(''):''
   if(!text)throw new Error('empty-response')
