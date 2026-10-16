@@ -6,7 +6,7 @@ for(const viewport of [{width:320,height:780},{width:390,height:844}]){
   test.use({viewport})
   test('Home carrega logo, navegação e não tem rolagem horizontal',async({page})=>{
    await page.goto('/')
-   await expect(page.getByRole('heading',{name:/Suas paixões/i})).toBeVisible()
+   await expect(page.getByRole('heading',{name:/Meu acervo/i})).toBeVisible()
    await expect(page.locator('.official-logo')).toBeVisible()
    await expect(page.getByRole('navigation',{name:'Navegação principal'})).toBeVisible()
    await expect(page.locator('body')).not.toContainText(leaked)
