@@ -20,22 +20,15 @@ export function HomeDashboard(){
   ]).then(([cs,is])=>{if(active){setCollections((cs.data||[]) as CollectionRow[]);setItems((is.data||[]) as ItemRow[])}})
   return ()=>{active=false}
  },[user])
+ const recent=items.slice(0,4)
  return <>
- <section className="home-hero"><span className="orbit orbit-one" aria-hidden="true"/><span className="orbit orbit-two" aria-hidden="true"/>
-  <p className="kicker kicker-light">O UNIVERSO É SEU ◌</p>
-  <h1>Suas paixões.<br/><span>Sem limites.</span></h1>
-  <p className="hero-copy">Toda coleção tem uma história. Qual é a próxima?</p>
-  <Link href={user?'/cadastrar':'/entrar'} className="scan-action"><span className="scan-icon"><Camera size={27} strokeWidth={2.8}/></span><span>{user?'Escanear':'Entre para'}<br/>{user?'novo item':'colecionar'}</span><span className="circle-arrow"><ArrowRight size={24}/></span></Link>
-  <span className="hero-sticker" aria-hidden="true">✦<br/>COOL!</span>
- </section>
- <section className="dashboard-content">
-  <div className="stat-strip" aria-label="Resumo das coleções"><div><span className="stat-symbol"><Package size={20}/></span><strong>{loading?'–':items.length}</strong><small>Itens</small></div><div><span className="stat-symbol"><Layers3 size={20}/></span><strong>{loading?'–':collections.length}</strong><small>Coleções</small></div><div><span className="stat-symbol"><Sparkles size={20}/></span><strong>✳</strong><small>Seu espaço</small></div></div>
-  <div className="editorial-heading"><div><p className="kicker">SEU ACERVO</p><h2>Minhas<br/><em>coleções.</em></h2></div><Link href="/colecoes" className="text-link">Ver todas <ArrowRight size={17}/></Link></div>
-  {collections.length>0?<div className="poster-carousel">{collections.map(c=><Link href={'/colecao/'+c.id} key={c.id} className="collection-poster" style={{'--poster-accent':safeColor(c.color)} as CSSProperties}><CategoryArt category={c.category}/><div className="poster-info"><small>{c.category}</small><strong>{c.name}</strong><span>{c.is_public?'Pública':'Privada'} <ArrowRight size={15}/></span></div></Link>)}</div>
-  :<div className="empty-editorial"><span className="empty-star" aria-hidden="true">✳</span><div><strong>Seu primeiro universo começa aqui.</strong><p>{user?'Crie uma coleção e dê vida ao seu acervo.':'Entre ou crie uma conta para começar.'}</p><Link href={user?'/colecoes':'/registrar'}>{user?'Criar coleção':'Criar conta'} <ArrowRight size={16}/></Link></div></div>}
-  <div className="editorial-heading explore-title"><div><p className="kicker">NÃO PARE POR AQUI</p><h2>Explore<br/><em>mais.</em></h2></div><WandSparkles size={31} color="#F15700"/></div>
-  <div className="discovery-band"><span className="discovery-scribble" aria-hidden="true">✳</span><span className="discovery-copy"><strong>Colecionar conecta.</strong><small>Descubra coleções públicas e pessoas com a mesma paixão.</small></span><Link href="/explorar" aria-label="Ir para explorar"><ArrowRight size={22}/></Link></div>
-  {user&&<Link href="/itens" className="next-step-link"><span><Package size={20}/></span><strong>Gerenciar todos os meus itens</strong><ArrowRight size={19}/></Link>}
+ <section className="collector-dashboard-head"><div><p className="kicker">MEU UNIVERSO / COOLLECTS</p><h1>Meu <em>acervo.</em></h1><p>Suas descobertas, sempre à mão.</p></div><Link href={user?'/cadastrar':'/entrar'} className="collector-dashboard-add"><Camera size={21}/> {user?'Adicionar':'Entrar'} <ArrowRight size={17}/></Link></section>
+ <section className="collector-dashboard" aria-label="Painel do colecionador">
+ <div className="collector-metrics"><Link href="/itens" className="collector-metric collector-metric-main"><Package size={19}/><strong>{loading?'—':items.length}</strong><span>Itens no acervo <ArrowRight size={14}/></span></Link><Link href="/colecoes" className="collector-metric"><Layers3 size={19}/><strong>{loading?'—':collections.length}</strong><span>Coleções <ArrowRight size={14}/></span></Link><Link href="/explorar" className="collector-metric collector-metric-discover"><Sparkles size={20}/><strong>✳</strong><span>Explorar <ArrowRight size={14}/></span></Link></div>
+ <div className="collector-section-bar"><div><p className="kicker">SEUS UNIVERSOS</p><h2>Coleções</h2></div><Link href="/colecoes">Ver todas <ArrowRight size={15}/></Link></div>
+ {collections.length?<div className="collector-collection-grid">{collections.slice(0,6).map(c=><Link className="collector-collection-card" href={'/colecao/'+c.id} key={c.id} style={{'--poster-accent':safeColor(c.color)} as CSSProperties}><div className="collector-collection-art"><CategoryArt category={c.category}/></div><span>{c.category}</span><strong>{c.name}</strong></Link>)}</div>:<div className="collector-empty"><strong>Comece sua primeira coleção</strong><Link href="/colecoes">Criar coleção <ArrowRight size={15}/></Link></div>}
+ <div className="collector-section-bar"><div><p className="kicker">RECÉM-DESCOBERTOS</p><h2>Últimos itens</h2></div><Link href="/itens">Ver acervo <ArrowRight size={15}/></Link></div>
+ {recent.length?<div className="collector-recent-grid">{recent.map((item,index)=><Link href={'/item/'+encodeURIComponent(item.id)} key={item.id} className="collector-recent-card"><span className="collector-recent-number">{String(index+1).padStart(2,'0')}</span><Package size={27}/><strong>{item.name}</strong><small>{item.brand||item.category}</small><ArrowRight className="collector-recent-arrow" size={17}/></Link>)}</div>:<Link className="collector-empty" href="/cadastrar">Sua próxima descoberta merece uma ficha. <ArrowRight size={18}/></Link>}
  </section>
  </>
 }

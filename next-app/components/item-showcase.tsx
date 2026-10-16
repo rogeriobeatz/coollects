@@ -46,20 +46,20 @@ export function ItemShowcase({id}:{id:string}){
  const isOwner=user?.id===item.owner_id
  const publicCollection=collections.some(c=>c.is_public)
  const details=Object.entries(item.details||{}).filter(([key,val])=>Boolean(detailLabels[key])&&val!==null&&String(val).trim()!=='')
- return <article className="item-showcase">
-  <div className="item-showcase-heading"><Link href="/itens" className="item-showcase-back"><ArrowLeft size={17}/> Meu acervo</Link><span className="item-showcase-tag">{item.category}</span></div>
-  <div className="item-showcase-hero">
-   <div className="item-showcase-photo">{item.photoUrl?<img src={item.photoUrl} alt={'Fotografia de '+item.name}/>:<div className="item-showcase-empty"><ImageIcon size={48}/><span>Fotografia indisponível</span></div>}</div>
-   <div className="item-showcase-intro"><p className="kicker">COOLLECTS / FICHA TÉCNICA</p><h1>{item.name}</h1><p>{item.brand||'Colecionável'} · {item.category}</p>
-    {owner&&<div className="item-showcase-owner"><span>DO ACERVO DE</span><Link href={publicUrlPath(owner.username)}>{owner.display_name||owner.username} <ExternalLink size={14}/></Link></div>}
-    <button type="button" className="item-showcase-share" disabled={!publicCollection} onClick={()=>void share()}>{copied?<Check size={18}/>:<Share2 size={18}/>} {copied?'Link copiado!':publicCollection?'Compartilhar ficha':'Compartilhamento privado'}</button>
-    {!publicCollection&&isOwner&&<p className="item-showcase-hint">Adicione este item a uma coleção pública para liberar o compartilhamento.</p>}
-   </div>
+ return <article className="collectible-detail">
+  <div className="collectible-toolbar"><Link href="/itens"><ArrowLeft size={16}/> Acervo</Link><span>{item.category}</span>{isOwner&&<Link href={'/itens?editar='+encodeURIComponent(item.id)}>Editar <ExternalLink size={14}/></Link>}</div>
+  <div className="collectible-trump-card">
+   <div className="collectible-card-top"><span>COOLLECTS <b>✳</b> CARDS</span><span>#{item.id.slice(0,4).toUpperCase()}</span></div>
+   <div className="collectible-card-photo">{item.photoUrl?<img src={item.photoUrl} alt={'Foto de '+item.name}/>:<div className="item-showcase-empty"><ImageIcon size={43}/><span>Sem fotografia</span></div>}</div>
+   <div className="collectible-card-heading"><span>{item.brand||item.category}</span><h1>{item.name}</h1></div>
+   {details.length>0&&<div className="collectible-card-specs">{details.slice(0,6).map(([key,value])=><div key={key}><small>{detailLabels[key]}</small><strong>{String(value)}</strong></div>)}</div>}
+   <div className="collectible-card-bottom"><span>{owner?.display_name||owner?.username||'Colecionador Coollects'}</span><span>COOLLECTS ORIGINAL ✦</span></div>
   </div>
-  {details.length>0&&<section className="item-showcase-section"><p className="kicker">CADA DETALHE CONTA</p><h2>Especificações</h2><div className="item-showcase-specs">{details.map(([key,val])=><div key={key}><span>{detailLabels[key]}</span><strong>{String(val)}</strong></div>)}</div></section>}
-  <section className="item-showcase-section"><p className="kicker">ONDE ESSA PEÇA VIVE</p><h2>{collections.length===1?'Coleção':'Coleções'}</h2>{collections.length?<div className="item-showcase-collections">{collections.map(c=><Link key={c.id} href={'/colecao/'+encodeURIComponent(c.id)}><span>{c.name}</span><small>{c.is_public?'Coleção pública':'Coleção privada'}</small><ExternalLink size={17}/></Link>)}</div>:<p>Este item ainda não faz parte de uma coleção {isOwner?'— você pode adicioná-lo em Meus itens.':''}</p>}</section>
-  {item.notes&&<section className="item-showcase-section"><p className="kicker">HISTÓRIA DA PEÇA</p><h2>Observações</h2><p className="item-showcase-notes">{item.notes}</p></section>}
-  {isOwner&&<Link className="pill-btn" href={'/itens?editar='+encodeURIComponent(item.id)}>Editar ficha</Link>}
+  <div className="collectible-actions"><div className="collectible-belongs"><span>DO ACERVO DE</span>{owner?<Link href={publicUrlPath(owner.username)}>{owner.display_name||owner.username}</Link>:<strong>Coollects</strong>}{collections.length>0&&<small>{collections.map(c=>c.name).join(' · ')}</small>}</div><button type="button" className="collectible-share" disabled={!publicCollection} onClick={()=>void share()}>{copied?<Check size={18}/>:publicCollection?<Share2 size={18}/>:<LockKeyhole size={17}/>} {copied?'Copiado!':publicCollection?'Compartilhar':'Privado'}</button></div>
+  {!publicCollection&&isOwner&&<p className="item-showcase-hint">Para compartilhar, adicione esta peça a uma coleção pública.</p>}
+  {details.length>6&&<details className="collectible-more"><summary>Mais características</summary><div className="item-showcase-specs">{details.slice(6).map(([key,val])=><div key={key}><span>{detailLabels[key]}</span><strong>{String(val)}</strong></div>)}</div></details>}
+  {item.notes&&<details className="collectible-more"><summary>História e observações</summary><p>{item.notes}</p></details>}
+  {collections.length>0&&<details className="collectible-more"><summary>Ver coleções</summary><div className="item-showcase-collections">{collections.map(c=><Link href={'/colecao/'+encodeURIComponent(c.id)} key={c.id}>{c.name} <ExternalLink size={14}/></Link>)}</div></details>}
   {error&&<p role="alert">{error}</p>}
  </article>
 }
