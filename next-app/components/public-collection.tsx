@@ -5,7 +5,7 @@ import {useSearchParams} from 'next/navigation'
 import { ArrowRight,ImageIcon,Layers3,Plus,Search,Check,X,Edit3 } from 'lucide-react'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { CollectionRow,ItemRow,ProfileRow,publicUrlPath,safeColor } from '@/lib/catalog'
-import { CategoryArt } from './category-art'
+import { CollectionCover } from './collection-cover'
 import { signedImage } from '@/lib/images'
 import { useAccount } from '@/hooks/use-account'
 type VisibleItem=ItemRow&{url:string|null}
@@ -47,7 +47,7 @@ export function PublicCollection({id}:{id:string}){
  async function unlink(item:ItemRow){if(!collection||working)return;if(!confirm('Remover "'+item.name+'" desta coleção? O item continuará salvo em Meus itens.'))return;const db=getBrowserClient();if(!db)return;setWorking(true);const {error}=await db.from('collection_items').delete().eq('collection_id',collection.id).eq('item_id',item.id);setWorking(false);if(error){setMessage('Não foi possível remover o item desta coleção.');return}setMessage('Item removido da coleção, mas preservado no acervo.');refresh()}
  if(loading)return <div className="empty-collection-panel">Carregando coleção…</div>
  if(!collection)return <div className="empty-collection-panel"><h2>Essa coleção não está disponível.</h2><p>{message}</p><Link className="pill-btn" href="/explorar">Explorar coleções</Link></div>
- return <section className="public-collection"><div className="public-cover" style={{'--poster-accent':safeColor(collection.color)} as CSSProperties}><CategoryArt category={collection.category}/><span>{collection.category}</span></div>
+ return <section className="public-collection"><div className="public-cover" style={{'--poster-accent':safeColor(collection.color)} as CSSProperties}><CollectionCover id={collection.id} category={collection.category} selectedId={collection.cover_item_id}/><span>{collection.category}</span></div>
   <h2>{collection.name}</h2><p>{collection.description||'Uma coleção para compartilhar.'}</p>
   {profile&&<Link href={publicUrlPath(profile.username)} className="collector-byline">por <strong>{profile.display_name}</strong><ArrowRight size={15}/></Link>}
   {owner&&<div className="collection-actions"><Link className="pill-btn" href={'/cadastrar?colecao='+encodeURIComponent(id)}><Plus size={18}/> Cadastrar novo</Link><button className="pill-btn secondary" type="button" onClick={()=>{setPicker(true);setSearch('');setPending([])}}><Layers3 size={18}/> Adicionar existente</button></div>}
