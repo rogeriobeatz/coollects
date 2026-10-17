@@ -5,6 +5,7 @@ import {Copy,Check,Share2,ImageIcon,LockKeyhole,ExternalLink} from 'lucide-react
 import {useAccount} from '@/hooks/use-account'
 import {getBrowserClient} from '@/lib/supabase/client'
 import {signedImage} from '@/lib/images'
+import {ItemCollectionPicker} from './item-collection-picker'
 import {ItemRow,CollectionRow,ProfileRow,publicUrlPath} from '@/lib/catalog'
 const detailLabels:Record<string,string>={manufacturer:'Montadora',series:'Série',seriesNumber:'Nº na série',collectionNumber:'Nº na coleção',year:'Ano da cartela',scale:'Escala',color:'Cor',condition:'Condição'}
 type ItemInfo=ItemRow&{photoUrl:string|null}
@@ -16,6 +17,7 @@ export function ItemShowcase({id}:{id:string}){
  const [loading,setLoading]=useState(true)
  const [copied,setCopied]=useState(false)
  const [error,setError]=useState('')
+ const [picker,setPicker]=useState(false)
  const refresh=useCallback(async()=>{
   const db=getBrowserClient();if(!db){setError('Serviço indisponível.');setLoading(false);return}
   setLoading(true)
@@ -56,7 +58,8 @@ export function ItemShowcase({id}:{id:string}){
    <div className="collectible-card-bottom"><span>{owner?.display_name||owner?.username||'Colecionador Coollects'}</span><span>COOLLECTS ORIGINAL ✦</span></div>
   </div>
   <div className="collectible-actions"><div className="collectible-belongs"><span>DO ACERVO DE</span>{owner?<Link href={publicUrlPath(owner.username)}>{owner.display_name||owner.username}</Link>:<strong>Coollects</strong>}{collections.length>0&&<small>{collections.map(c=>c.name).join(' · ')}</small>}</div><button type="button" className="collectible-share" disabled={!publicCollection} onClick={()=>void share()}>{copied?<Check size={18}/>:publicCollection?<Share2 size={18}/>:<LockKeyhole size={17}/>} {copied?'Copiado!':publicCollection?'Compartilhar':'Privado'}</button></div>
-  {!publicCollection&&isOwner&&<p className="item-showcase-hint">Para compartilhar, adicione esta peça a uma coleção pública.</p>}
+  {isOwner&&<div className="item-showcase-hint"><p>{publicCollection?'Este item faz parte de uma coleção pública.':'Para compartilhar, adicione este item a uma coleção pública.'}</p><button type="button" className="pill-btn" onClick={()=>setPicker(true)}>Adicionar a uma coleção</button></div>}
+  {picker&&isOwner&&<ItemCollectionPicker itemId={item.id} onClose={()=>setPicker(false)} onChanged={()=>void refresh()}/>}
   {details.length>6&&<details className="collectible-more"><summary>Mais características</summary><div className="item-showcase-specs">{details.slice(6).map(([key,val])=><div key={key}><span>{detailLabels[key]}</span><strong>{String(val)}</strong></div>)}</div></details>}
   {item.notes&&<details className="collectible-more"><summary>História e observações</summary><p>{item.notes}</p></details>}
   {collections.length>0&&<details className="collectible-more"><summary>Ver coleções</summary><div className="item-showcase-collections">{collections.map(c=><Link href={'/colecao/'+encodeURIComponent(c.id)} key={c.id}>{c.name} <ExternalLink size={14}/></Link>)}</div></details>}
