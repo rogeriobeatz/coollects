@@ -49,7 +49,7 @@ export function ItemCollectionPicker({itemId,onClose,onChanged}:{itemId:string;o
      {linked.includes(c.id)&&<Check size={20} aria-label="Adicionada"/>}
     </button>)}</div>
    :<p>Você ainda não criou uma coleção. Crie uma para organizar este item.</p>}
-   <Link className="pill-btn" href="/colecoes"><Plus size={18}/> Nova coleção</Link>
+   <Link className="pill-btn" href={"/colecoes?criar=1&voltar=item/"+encodeURIComponent(itemId)}><Plus size={18}/> Nova coleção</Link>
    <button type="button" className="save-item-button" onClick={onClose}>Concluir</button>
   </section>
  </div>
