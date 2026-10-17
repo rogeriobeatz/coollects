@@ -255,3 +255,9 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .photo-scan-status{backdrop-filter:none;background:rgba(18,17,42,.92)}
 @keyframes coollects-laser-sweep{0%{transform:translate3d(0,28px,0)}100%{transform:translate3d(0,calc(var(--scan-travel, 280px) - 30px),0)}}
 @media(prefers-reduced-motion:reduce){.photo-scan-laser{animation:none;transform:translate3d(0,48px,0)}}
+
+/* Size-independent laser track: background position moves across the whole image, regardless of photo aspect ratio. */
+.photo-scan-laser{top:0;bottom:0;height:100%;width:100%;box-shadow:none;background:linear-gradient(180deg,transparent 0%,#8affdfa0 38%,#fff 50%,#8affdfa0 62%,transparent 100%);background-size:100% 42px;background-repeat:no-repeat;background-position:center 0%;transform:none;will-change:background-position;animation:coollects-sweep-full 2s linear infinite alternate}
+.photo-scan-laser:after{display:none}
+@keyframes coollects-sweep-full{from{background-position:center 0%}to{background-position:center 100%}}
+@media(prefers-reduced-motion:reduce){.photo-scan-laser{animation:none;background-position:center 45%}}
