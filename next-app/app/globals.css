@@ -288,3 +288,19 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .item-picker-option small{font-size:11px;color:#655473}
 .item-picker-option[aria-pressed="true"]{border-color:var(--purple);background:#f4eeff}
 @media(max-width:480px){.collection-visibility-setting{flex-direction:column;align-items:stretch}.collection-visibility-setting .pill-btn{justify-content:center}}
+
+/* Mobile polish: true centered logo, independent of back-arrow width. */
+.topbar{justify-content:center}
+.topbar>.back{position:absolute;left:18px;top:50%;transform:translateY(-50%);z-index:2;min-width:44px;min-height:44px}
+.topbar>.screen-logo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;display:grid;place-items:center;width:min(150px,52vw)}
+.topbar>.screen-logo:focus-visible,.topbar>.back:focus-visible{outline:3px solid #fff;outline-offset:3px}
+/* A composited full-height beam travels across the photo; no expensive background-position repaint. */
+.scanner-stage.is-scanning .photo-scan-laser{position:absolute;inset:0;width:100%;height:100%;top:0;bottom:auto;left:0;right:0;box-shadow:none;background:linear-gradient(180deg,transparent 43%,rgba(115,255,219,.06) 47%,rgba(145,255,236,.65) 49.5%,#fff 50%,rgba(145,255,236,.65) 50.5%,rgba(115,255,219,.08) 54%,transparent 57%);background-size:100% 100%;background-position:center;will-change:transform;animation:coollects-beam-move 2s ease-in-out infinite alternate}
+@keyframes coollects-beam-move{from{transform:translate3d(0,-46%,0)}to{transform:translate3d(0,46%,0)}}
+.scanner-stage.is-scanning .photo-scan-status svg{animation:coollects-status-pulse 1.2s ease-in-out infinite alternate}
+@keyframes coollects-status-pulse{from{opacity:.55;transform:scale(.9)}to{opacity:1;transform:scale(1.12)}}
+@media(prefers-reduced-motion:reduce){.scanner-stage.is-scanning .photo-scan-laser,.scanner-stage.is-scanning .photo-scan-status svg{animation:none;transform:none}}
+/* Home: real collectible photos; collection covers stay illustrated. */
+.collector-recent-photo{width:100%;height:128px;max-height:38vw;display:block;object-fit:contain;background:#f1ecf8;border-radius:12px;margin:1px 0 4px}
+.collector-recent-card:has(.collector-recent-photo){min-height:224px}
+@media(max-width:370px){.collector-recent-photo{height:108px}}
