@@ -1,8 +1,10 @@
 'use client'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { Screen } from '@/components/screen'
 import { PublicCollection } from '@/components/public-collection'
 export default function CollectionDetailPage(){
  const {id}=useParams<{id:string}>()
- return <Screen backHref="/colecoes" active="colecoes" title="Sua coleção," accent="seus itens." subtitle="Organize, adicione e compartilhe."><PublicCollection id={id}/></Screen>
+ const origin=useSearchParams().get('origem')
+ const fromExplore=origin==='explorar'
+ return <Screen backHref={fromExplore?"/explorar":"/colecoes"} active={fromExplore?"explorar":"colecoes"} title="Sua coleção," accent="seus itens." subtitle="Organize, adicione e compartilhe."><PublicCollection id={id}/></Screen>
 }
