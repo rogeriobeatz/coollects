@@ -1,7 +1,7 @@
 'use client'
 import {useCallback,useEffect,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,Copy,Check,Share2,ImageIcon,LockKeyhole,ExternalLink} from 'lucide-react'
+import {Copy,Check,Share2,ImageIcon,LockKeyhole,ExternalLink} from 'lucide-react'
 import {useAccount} from '@/hooks/use-account'
 import {getBrowserClient} from '@/lib/supabase/client'
 import {signedImage} from '@/lib/images'
@@ -47,7 +47,7 @@ export function ItemShowcase({id}:{id:string}){
  const publicCollection=collections.some(c=>c.is_public)
  const details=Object.entries(item.details||{}).filter(([key,val])=>Boolean(detailLabels[key])&&val!==null&&String(val).trim()!=='')
  return <article className="collectible-detail">
-  <div className="collectible-toolbar"><Link href="/itens"><ArrowLeft size={16}/> Acervo</Link><span>{item.category}</span>{isOwner&&<Link href={'/itens?editar='+encodeURIComponent(item.id)}>Editar <ExternalLink size={14}/></Link>}</div>
+  <div className="collectible-toolbar"><span>{item.category}</span>{isOwner&&<Link href={'/itens?editar='+encodeURIComponent(item.id)}>Editar <ExternalLink size={14}/></Link>}</div>
   <div className="collectible-trump-card">
    <div className="collectible-card-top"><span>COOLLECTS <b>✳</b> CARDS</span><span>#{item.id.slice(0,4).toUpperCase()}</span></div>
    <div className="collectible-card-photo">{item.photoUrl?<img src={item.photoUrl} alt={'Foto de '+item.name}/>:<div className="item-showcase-empty"><ImageIcon size={43}/><span>Sem fotografia</span></div>}</div>
