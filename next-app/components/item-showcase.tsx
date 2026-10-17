@@ -51,7 +51,7 @@ export function ItemShowcase({id}:{id:string}){
  return <article className="collectible-detail">
   <div className="collectible-toolbar"><span>{item.category}</span>{isOwner&&<Link href={'/itens?editar='+encodeURIComponent(item.id)}>Editar <ExternalLink size={14}/></Link>}</div>
   <div className="collectible-trump-card">
-   <div className="collectible-card-top"><span>COOLLECTS <b>✳</b> CARDS</span><span>#{item.id.slice(0,4).toUpperCase()}</span></div>
+   <div className="collectible-card-top"><span>COOLLECTS CARDS</span><span>#{item.id.slice(0,4).toUpperCase()}</span></div>
    <div className="collectible-card-photo">{item.photoUrl?<img src={item.photoUrl} alt={'Foto de '+item.name}/>:<div className="item-showcase-empty"><ImageIcon size={43}/><span>Sem fotografia</span></div>}</div>
    <div className="collectible-card-heading"><span>{item.brand||item.category}</span><h1>{item.name}</h1></div>
    {details.length>0&&<div className="collectible-card-specs">{details.slice(0,6).map(([key,value])=><div key={key}><small>{detailLabels[key]}</small><strong>{String(value)}</strong></div>)}</div>}
