@@ -31,7 +31,7 @@ function ProfileEditor({userId}:{userId:string}){
   if(!error)setProfile(p=>p?{...p,display_name:displayName.trim(),username,bio:bio.trim()}:p)
   setBusy(false)
  }
- async function signOut(){const db=getBrowserClient();if(!db)return;await db.auth.signOut();router.replace('/');router.refresh()}
+ async function signOut(){const db=getBrowserClient();if(!db){setMessage('Serviço indisponível. Tente novamente.');return}setBusy(true);const {error}=await db.auth.signOut();setBusy(false);if(error){setMessage('Não foi possível encerrar sua sessão. Tente novamente.');return}router.replace('/');router.refresh()}
  async function share(){
   if(!profile)return
   const url=location.origin+publicUrlPath(profile.username)
@@ -48,7 +48,7 @@ function ProfileEditor({userId}:{userId:string}){
   <div className="profile-links">
    {profile&&<><Link href={publicUrlPath(profile.username)}>Ver perfil público <ArrowRight size={16}/></Link><button onClick={()=>void share()}>Copiar link <Copy size={16}/></button></>}
    <Link href="/itens">Gerenciar meus itens <ArrowRight size={16}/></Link>
-   <button onClick={()=>void signOut()}>Sair da conta <LogOut size={16}/></button>
+   <button disabled={busy} onClick={()=>void signOut()}>Sair da conta <LogOut size={16}/></button>
   </div>
   <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seu e-mail nunca aparece no perfil.</p>
  </div>
