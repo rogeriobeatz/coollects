@@ -22,6 +22,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const [saving,setSaving]=useState(false),[recognizing,setRecognizing]=useState(false),[scanStage,setScanStage]=useState(0)
  const [details,setDetails]=useState({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
  const requestId=useRef(0)
+ const savingRef=useRef(false)
  const [analysisError,setAnalysisError]=useState('')
  const [notice,setNotice]=useState(''),[saved,setSaved]=useState(false)
  useEffect(()=>{
@@ -67,8 +68,10 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   return ()=>{controller.abort();requestId.current++}
  },[file,aiEnabled])
  async function save(){
+  if(savingRef.current||saving||preparing||recognizing||saved)return
   if(!name.trim()){setNotice('Dê um nome ao item.');document.getElementById('item-name')?.focus();return}
   const db=getBrowserClient();if(!db)return
+  savingRef.current=true
   setSaving(true);setNotice('');setSaved(false)
   let uploaded:string|null=null
   try {
@@ -84,7 +87,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    // The RPC commits both metadata and relationships or neither.
    if(uploaded)await db.storage.from(BUCKET).remove([uploaded])
    setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
-  }finally{setSaving(false)}
+  }finally{savingRef.current=false;setSaving(false)}
  }
  function reset(){requestId.current++;setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
  return <section className="scan-workspace">
