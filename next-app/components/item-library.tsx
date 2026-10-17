@@ -12,6 +12,9 @@ export function ItemLibrary(){return <AuthGate>{userId=><Library userId={userId}
 type ViewItem=ItemRow&{url:string|null}
 function Library({userId}:{userId:string}){
  const [search,setSearch]=useState('')
+ const [deferredSearch,setDeferredSearch]=useState('')
+ const [retryKey,setRetryKey]=useState(0)
+ useEffect(()=>{const timer=setTimeout(()=>setDeferredSearch(search.trim().toLocaleLowerCase('pt-BR')),250);return()=>clearTimeout(timer)},[search])
  const deepLinkHandled=useRef(false)
  const [returnCollection,setReturnCollection]=useState<string|null>(null)
  const [items,setItems]=useState<ViewItem[]>([])
@@ -34,11 +37,11 @@ function Library({userId}:{userId:string}){
    db.from('collections').select('*').eq('owner_id',userId),
    db.from('collection_items').select('collection_id,item_id')
   ])
-  if(error)setMessage('Não conseguimos carregar seus itens. Tente novamente.')
+  if(error){setMessage('Não conseguimos carregar seus itens. Tente novamente.');setLoading(false);return}
   const source=(rows||[]) as ItemRow[]
   const urls=await Promise.all(source.map(async row=>({...row,url:await signedImage(db,row.photo_path)})))
   setItems(urls);setCollections((cols||[]) as CollectionRow[]);setLinks((joined||[]) as typeof links);setLoading(false)
- },[userId])
+ },[userId,retryKey])
  useEffect(()=>{void refresh()},[refresh])
  useEffect(()=>{
   if(loading||deepLinkHandled.current||!items.length)return
@@ -94,9 +97,9 @@ function Library({userId}:{userId:string}){
   setDeleteItem(null);setMenuItem(null);setRemoving(false)
   void refresh()
  }
- const visible=items.filter(i=>[i.name,i.brand,i.category,i.notes,...Object.values(i.details||{}).map(String)].join(" ").toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR")))
- return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>← Voltar à coleção</Link>}<label className="collection-search"><Search size={18}/><input aria-label="Buscar no meu acervo" placeholder="Buscar item, marca ou categoria…" value={search} onChange={e=>setSearch(e.target.value)}/></label><Link href="/cadastrar" className="pill-btn"><Plus size={18}/> Cadastrar outro item</Link>{message&&<p role="status" className="scan-notice">{message}</p>}
- {loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list">{visible.length===0&&<p role="status">Nenhum item corresponde à busca.</p>}{visible.map(item=><article className="item-row" key={item.id}>
+ const visible=items.filter(i=>[i.name,i.brand,i.category,i.notes,...Object.values(i.details||{}).map(String)].join(" ").toLocaleLowerCase("pt-BR").includes(deferredSearch))
+ return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>← Voltar à coleção</Link>}<label className="collection-search"><Search size={18}/><input aria-label="Buscar no meu acervo" placeholder="Buscar item, marca ou categoria…" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Limpar busca" onClick={()=>setSearch("")}>Limpar</button>}</label><Link href="/cadastrar" className="pill-btn"><Plus size={18}/> Cadastrar outro item</Link>{message&&<p role="status" className="scan-notice">{message} {message.includes("carregar")&&<button type="button" onClick={()=>{setLoading(true);setRetryKey(v=>v+1)}}>Tentar novamente</button>}</p>}
+ {loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list">{visible.length===0&&<div role="status" className="empty-collection-panel"><p>Nenhum item corresponde à busca.</p><button type="button" className="pill-btn" onClick={()=>setSearch("")}>Limpar busca</button></div>}{visible.map(item=><article className="item-row" key={item.id}>
   {item.url?<img src={item.url} alt={item.name} className="item-photo"/>:<span className="item-no-photo"><ImageIcon size={28}/></span>}
   <div className="item-row-copy"><small>{item.category}</small><Link className="item-name-link" href={"/item/"+encodeURIComponent(item.id)}><strong>{item.name}</strong></Link><button type="button" className="item-collection-count" onClick={()=>setPickerItem(item.id)}>{item.brand||'Sem fabricante'} · {links.filter(l=>l.item_id===item.id).length} coleções <Layers3 size={14}/></button>{item.category==='Miniaturas'&&item.details&&<span className="miniature-meta">{[item.details.manufacturer,item.details.series,item.details.seriesNumber,item.details.collectionNumber].filter(Boolean).join(' · ')}</span>}<div className="item-actions"><button type="button" className="item-menu-trigger" aria-label={"Ações de "+item.name} aria-expanded={menuItem===item.id} onClick={()=>setMenuItem(menuItem===item.id?null:item.id)}><MoreHorizontal size={21}/></button>{menuItem===item.id&&<div className="item-more-menu"><button type="button" onClick={()=>{edit(item);setMenuItem(null)}}><Edit3 size={16}/> Editar</button><button type="button" onClick={()=>{setPickerItem(item.id);setMenuItem(null)}}><Layers3 size={16}/> Adicionar a coleção</button><button type="button" onClick={()=>{setDeleteItem(item);setMenuItem(null)}}><Trash2 size={16}/> Excluir</button></div>}</div></div>
  </article>)}</div>}
