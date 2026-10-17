@@ -1,12 +1,15 @@
 'use client'
 import { useState,type FormEvent } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter,useSearchParams } from 'next/navigation'
+import { safeAuthNext } from '@/lib/auth-redirect'
 import { ArrowRight, LockKeyhole, UserRound } from 'lucide-react'
 import { BrandLogo } from './brand-logo'
 import { getBrowserClient } from '@/lib/supabase/client'
 export function AccountForm({mode}:{mode:'login'|'register'}){
  const router=useRouter()
+ const params=useSearchParams()
+ const destination=safeAuthNext(params.get('next'))
  const [email,setEmail]=useState('')
  const [password,setPassword]=useState('')
  const [name,setName]=useState('')
@@ -22,13 +25,13 @@ export function AccountForm({mode}:{mode:'login'|'register'}){
   setBusy(true);setMessage('')
   try{
    if(register){
-    const {data,error}=await client.auth.signUp({email,password,options:{data:{display_name:name.trim()},emailRedirectTo:window.location.origin+'/auth/callback?next=/perfil'}})
+    const {data,error}=await client.auth.signUp({email,password,options:{data:{display_name:name.trim()},emailRedirectTo:window.location.origin+'/auth/callback?next='+encodeURIComponent(destination)}})
     if(error)throw error
-    if(data.session){router.replace('/perfil');router.refresh()}else setMessage('Cadastro realizado! Verifique seu e-mail para confirmar a conta.')
+    if(data.session){router.replace(destination);router.refresh()}else setMessage('Cadastro realizado! Verifique seu e-mail para confirmar a conta.')
    }else{
     const {error}=await client.auth.signInWithPassword({email,password})
     if(error)throw error
-    router.replace('/perfil');router.refresh()
+    router.replace(destination);router.refresh()
    }
   }catch{setMessage(register?'Não foi possível concluir o cadastro. Confira os dados e tente novamente.':'Não foi possível entrar. Confira seu e-mail e senha.')}
   finally{setBusy(false)}
@@ -39,7 +42,8 @@ export function AccountForm({mode}:{mode:'login'|'register'}){
  <label className="field-label">Senha<input required minLength={8} type="password" autoComplete={register?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres"/></label>
  <button disabled={busy} className="save-item-button">{busy?'Aguarde...':register?'Criar minha conta':'Entrar'} <ArrowRight size={19}/></button>
  </form>{message&&<p className="auth-message" role="status">{message}</p>}
+ {!register&&params.get('erro')&&<p role="alert" className="auth-message">O link de acesso expirou ou não pôde ser confirmado. Solicite outro link ou entre novamente.</p>}
  {!register&&<Link href="/recuperar" className="auth-back">Esqueceu sua senha?</Link>}
- <div className="auth-toggle">{register?'Já tem uma conta?':'Ainda não tem conta?'} <Link href={register?'/entrar':'/registrar'}>{register?'Entrar':'Cadastre-se'}</Link></div>
+ <div className="auth-toggle">{register?'Já tem uma conta?':'Ainda não tem conta?'} <Link href={(register?'/entrar':'/registrar')+'?next='+encodeURIComponent(destination)}>{register?'Entrar':'Cadastre-se'}</Link></div>
  <Link className="auth-back" href="/">Voltar para o Coollects</Link><p className="auth-legal">Ao continuar, confira nossa <Link href="/privacidade">política de privacidade</Link> e nossos <Link href="/termos">termos</Link>.</p></div></main>
 }
