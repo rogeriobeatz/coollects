@@ -91,17 +91,18 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  }
  function reset(){requestId.current++;setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
  return <section className="scan-workspace">
-  <div className={'scanner-stage '+(image?'has-image':'')}>
+  <div className={'scanner-stage '+(image?'has-image ':'')+(recognizing?'is-scanning':'')}>
    {image?<div className="ocr-preview-frame"><img className="scanner-photo" src={image} alt="Prévia da fotografia do item"/></div>:<div className="scanner-placeholder"><div className="scanner-symbol"><ScanLine size={58}/></div><strong>Aponte. Fotografe.<br/>Colecione.</strong><p>Seu acervo, um item de cada vez.</p></div>}
+   {image&&recognizing&&<div className="photo-scan-overlay" role="status" aria-live="polite"><div className="photo-scan-grid" aria-hidden="true"/><div className="photo-scan-laser" aria-hidden="true"/><div className="photo-scan-status"><Sparkles size={18}/><strong>{scanStage===1?"Preparando imagem":scanStage===2?"Identificando sua miniatura":"Organizando detalhes"}</strong><span>Lendo a embalagem, o modelo e a série…</span></div></div>}
    <div className="scanner-corners" aria-hidden="true"><i/><i/><i/><i/></div><span className="scanner-pill"><span/> CÂMERA / GALERIA</span>
-   {file&&<button type="button" className="photo-clear" aria-label="Remover imagem" onClick={()=>setFile(null)}><X size={20}/></button>}
+   {file&&!recognizing&&<button type="button" className="photo-clear" aria-label="Remover imagem" onClick={()=>setFile(null)}><X size={20}/></button>}
   </div>
   {preparing&&<p role="status" className="scan-notice">Preparando fotografia para o cadastro…</p>}
   <div className="capture-button-row"><button className="capture-secondary" onClick={()=>fileRef.current?.click()} aria-label="Selecionar fotografia"><ImagePlus size={26}/></button><button className="shutter-button" onClick={()=>cameraRef.current?.click()} aria-label="Abrir a câmera"><Camera size={34}/></button><button className="capture-secondary" onClick={()=>document.getElementById('item-name')?.focus()} aria-label="Preencher manualmente"><Layers3 size={25}/></button></div>
   <div className="scan-methods"><button onClick={()=>cameraRef.current?.click()}><Camera size={16}/> Tirar foto</button><button onClick={()=>fileRef.current?.click()}><ImagePlus size={16}/> Galeria</button></div>
   <input className="visually-hidden" aria-label="Capturar foto" ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={e=>void pick(e)}/>
   <input className="visually-hidden" aria-label="Escolher foto" ref={fileRef} type="file" accept="image/*,.heic,.heif" onChange={e=>void pick(e)}/>
-  {recognizing&&<div className="ai-magic-panel" role="status" aria-live="polite"><div className="ai-magic-orbit"><Sparkles size={30}/><i/><i/><i/></div><p className="ai-magic-kicker">COOLLECTS LAB</p><h3>Nossos robôs estão de olho na sua descoberta!</h3><p>{scanStage===1?'Preparando a fotografia…':scanStage===2?'Decifrando a embalagem e procurando pistas…':'Organizando cada detalhe para sua coleção…'}</p><div className="ai-magic-track"><span/></div><small>Você já pode revisar ou editar os campos enquanto analisamos.</small></div>}
+
   {analysisError&&<div role="alert" className="ai-magic-error"><strong>A análise automática não terminou.</strong><p>{analysisError}</p><span>Você ainda pode cadastrar o item manualmente.</span></div>}
   {!aiEnabled&&<p className="scan-notice">O reconhecimento inteligente está temporariamente indisponível. Preencha os campos manualmente.</p>}
   <div className="item-form"><div className="section-title-inline"><div><p className="kicker">REVISE ANTES DE SALVAR</p><h2>Ficha do<br/><em>seu item.</em></h2></div><span className="form-sticker" aria-hidden="true">✦</span></div>
