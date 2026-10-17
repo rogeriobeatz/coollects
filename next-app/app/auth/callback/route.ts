@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { safeAuthNext } from '@/lib/auth-redirect'
 export async function GET(request:Request){
  const url=new URL(request.url)
  const code=url.searchParams.get('code')
- const requested=url.searchParams.get('next')||'/perfil'
- const next=requested.startsWith('/')&&!requested.startsWith('//')&&!requested.includes('\\')&&new URL(requested,url.origin).origin===url.origin?requested:'/perfil'
+ // Password-recovery emails intentionally lead to the reset screen.
+ const next=url.searchParams.get('next')==='/redefinir'?'/redefinir':safeAuthNext(url.searchParams.get('next'))
  if(!code)return NextResponse.redirect(new URL('/entrar?erro=link',url.origin))
  try{
   const supabase=await createSupabaseServerClient()
