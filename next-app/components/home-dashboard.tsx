@@ -1,7 +1,7 @@
 'use client'
 import { useEffect,useState,type CSSProperties } from 'react'
 import Link from 'next/link'
-import { ArrowRight,Camera,Layers3,Package,Sparkles,WandSparkles } from 'lucide-react'
+import { ArrowRight,Camera,Layers3,Package } from 'lucide-react'
 import { useAccount } from '@/hooks/use-account'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { CollectionRow,ItemRow,safeColor } from '@/lib/catalog'
@@ -22,9 +22,9 @@ export function HomeDashboard(){
  },[user])
  const recent=items.slice(0,4)
  return <>
- <section className="collector-dashboard-head"><div><p className="kicker">MEU UNIVERSO / COOLLECTS</p><h1>Meu <em>acervo.</em></h1><p>Suas descobertas, sempre à mão.</p></div><Link href={user?'/cadastrar':'/entrar'} className="collector-dashboard-add"><Camera size={21}/> {user?'Adicionar':'Entrar'} <ArrowRight size={17}/></Link></section>
+ <section className="collector-dashboard-head"><div><p className="kicker">MEU UNIVERSO / COOLLECTS</p><h1>Meu <em>acervo.</em></h1><p>Suas descobertas, sempre à mão.</p></div>{!user&&<Link href="/entrar" className="collector-dashboard-add"><Camera size={21}/> Entrar <ArrowRight size={17}/></Link>}</section>
  <section className="collector-dashboard" aria-label="Painel do colecionador">
- <div className="collector-metrics"><Link href="/itens" className="collector-metric collector-metric-main"><Package size={19}/><strong>{loading?'—':items.length}</strong><span>Itens no acervo <ArrowRight size={14}/></span></Link><Link href="/colecoes" className="collector-metric"><Layers3 size={19}/><strong>{loading?'—':collections.length}</strong><span>Coleções <ArrowRight size={14}/></span></Link><Link href="/explorar" className="collector-metric collector-metric-discover"><Sparkles size={20}/><strong>✳</strong><span>Explorar <ArrowRight size={14}/></span></Link></div>
+ <div className="collector-metrics"><Link href="/itens" className="collector-metric collector-metric-main"><Package size={19}/><strong>{loading?'—':items.length}</strong><span>Itens no acervo <ArrowRight size={14}/></span></Link><Link href="/colecoes" className="collector-metric"><Layers3 size={19}/><strong>{loading?'—':collections.length}</strong><span>Coleções <ArrowRight size={14}/></span></Link></div>
  <div className="collector-section-bar"><div><p className="kicker">SEUS UNIVERSOS</p><h2>Coleções</h2></div><Link href="/colecoes">Ver todas <ArrowRight size={15}/></Link></div>
  {collections.length?<div className="collector-collection-grid">{collections.slice(0,6).map(c=><Link className="collector-collection-card" href={'/colecao/'+c.id} key={c.id} style={{'--poster-accent':safeColor(c.color)} as CSSProperties}><div className="collector-collection-art"><CategoryArt category={c.category}/></div><span>{c.category}</span><strong>{c.name}</strong></Link>)}</div>:<div className="collector-empty"><strong>Comece sua primeira coleção</strong><Link href="/colecoes">Criar coleção <ArrowRight size={15}/></Link></div>}
  <div className="collector-section-bar"><div><p className="kicker">RECÉM-DESCOBERTOS</p><h2>Últimos itens</h2></div><Link href="/itens">Ver acervo <ArrowRight size={15}/></Link></div>
