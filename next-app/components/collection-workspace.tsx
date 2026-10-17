@@ -4,7 +4,7 @@ import Link from 'next/link'
 import {useRouter,useSearchParams} from 'next/navigation'
 import { ArrowRight,Check,ChevronLeft,Copy,Edit3,Eye,EyeOff,FolderPlus,Plus,Trash2,Layers3 } from 'lucide-react'
 import { AuthGate } from './auth-gate'
-import { CategoryArt } from './category-art'
+import { CategoryArt,CategoryGlyph } from './category-art'
 import { CollectionCover } from './collection-cover'
 import { CATEGORIES } from '@/lib/local-catalog'
 import { getBrowserClient } from '@/lib/supabase/client'
@@ -91,13 +91,13 @@ function Workspace({userId}:{userId:string}){
  const visible=collections.filter(c=>filter==='Todas'||c.category===filter)
  const filters=['Todas',...Array.from(new Set(collections.map(c=>c.category)))]
  return <section className="collection-workspace"><nav className="library-switch" aria-label="Navegar no acervo"><span aria-current="page">Coleções</span><Link href="/itens">Todos os itens <ArrowRight size={15}/></Link></nav>
-  <div className="workspace-toolbar"><div><p className="kicker">SUA BIBLIOTECA</p><strong>{busy?'—':collections.length} coleções <span aria-hidden="true">✳</span></strong></div><button className="round-add" onClick={()=>start()} aria-label="Criar coleção"><Plus size={24}/></button></div>
+  <div className="workspace-toolbar"><div><p className="kicker">SUA BIBLIOTECA</p><strong>{busy?'—':collections.length} coleções </strong></div><button className="round-add" onClick={()=>start()} aria-label="Criar coleção"><Plus size={24}/></button></div>
   <p className="local-banner"><span>●</span> Conta conectada: suas coleções ficam sincronizadas. Apenas coleções públicas aparecem na busca.</p>
   {message&&<p role="status" className="status-inline">{message}</p>}
   {editing?<div className="collection-wizard">
    <div className="wizard-top"><span>{editId?'EDITAR':'CRIAR'} COLEÇÃO</span><span>0{step+1} / 04</span></div><div className="wizard-meter"><span style={{width:(step+1)*25+'%'}}/></div>
    <h2>{['O que vamos colecionar?','Dê um nome a esse universo.','Uma cor para chamar de sua.','Qual é a história?'][step]}</h2>
-   {step===0&&<div className="wizard-categories">{CATEGORIES.map(c=><button type="button" className={'wizard-category '+(category===c.name?'picked':'')} onClick={()=>setCategory(c.name)} key={c.name}><span>{c.emoji}</span>{c.name}{category===c.name&&<Check size={14}/>}</button>)}</div>}
+   {step===0&&<div className="wizard-categories">{CATEGORIES.map(c=><button type="button" className={'wizard-category '+(category===c.name?'picked':'')} onClick={()=>setCategory(c.name)} key={c.name}><span><CategoryGlyph category={c.name}/></span>{c.name}{category===c.name&&<Check size={14}/>}</button>)}</div>}
    {step===1&&<label className="field-label">Nome da coleção<input autoFocus maxLength={70} value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Meus carrinhos favoritos"/></label>}
    {step===2&&<><div className="swatch-row">{colors.map(s=><button type="button" key={s} className={'swatch '+(color===s?'current':'')} style={{backgroundColor:s}} onClick={()=>setColor(s)} aria-label={'Escolher cor '+s}>{color===s&&<Check size={18}/>}</button>)}</div><label className="field-label custom-color">Ou escolha outra cor<input type="color" value={color} onChange={e=>setColor(e.target.value)}/></label></>}
    {step===3&&<><label className="field-label">Descrição (opcional)<textarea rows={4} maxLength={300} value={description} onChange={e=>setDescription(e.target.value)}/></label><label className="public-switch"><input type="checkbox" checked={isPublic} onChange={e=>setPublic(e.target.checked)}/> {isPublic?'Pública':'Privada'} <small>{isPublic?'Outras pessoas podem encontrar esta coleção e ver seus itens.':'Somente você pode ver esta coleção e seus itens.'}</small></label>{editId&&coverOptions.length>0&&<label className="field-label">Capa da coleção<select value={coverItemId||''} onChange={e=>setCoverItemId(e.target.value||null)}><option value="">Automática — primeiro item com foto</option>{coverOptions.map(item=><option value={item.id} key={item.id}>{item.name}</option>)}</select><small>Escolha um item da coleção para aparecer na capa.</small></label>}</>}
