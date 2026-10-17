@@ -245,3 +245,19 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 @keyframes photo-laser{from{top:9%}to{top:78%}}
 @keyframes photo-xray{from{filter:grayscale(.5) contrast(1.15) brightness(.84)}to{filter:grayscale(1) contrast(1.45) brightness(.65) sepia(.25) hue-rotate(158deg)}}
 @media(prefers-reduced-motion:reduce){.photo-scan-laser,.scanner-stage.is-scanning .scanner-photo{animation:none}.photo-scan-laser{top:45%}}
+
+/* Scanner v2: GPU-composited travel instead of animating `top` or image filters on mobile Safari. */
+.scanner-stage.is-scanning .scanner-photo{animation:none;filter:grayscale(.45) contrast(1.12) brightness(.83)}
+.scanner-stage.is-scanning .ocr-preview-frame{position:relative;overflow:hidden;border-radius:18px}
+.photo-scan-overlay{z-index:6;transform:translateZ(0)}
+.photo-scan-laser{top:0;left:0;right:0;width:100%;height:4px;transform:translate3d(0,0,0);will-change:transform;animation:coollects-laser-sweep 2.2s cubic-bezier(.45,0,.55,1) infinite alternate;box-shadow:0 0 12px 3px #8afae7,0 0 34px 9px #9affe755}
+.photo-scan-laser:after{content:"";position:absolute;inset:-24px 0 0;height:26px;background:linear-gradient(180deg,transparent,#8affdf2a);pointer-events:none}
+.photo-scan-status{backdrop-filter:none;background:rgba(18,17,42,.92)}
+@keyframes coollects-laser-sweep{0%{transform:translate3d(0,28px,0)}100%{transform:translate3d(0,calc(var(--scan-travel, 280px) - 30px),0)}}
+@media(prefers-reduced-motion:reduce){.photo-scan-laser{animation:none;transform:translate3d(0,48px,0)}}
+
+/* Size-independent laser track: background position moves across the whole image, regardless of photo aspect ratio. */
+.photo-scan-laser{top:0;bottom:0;height:100%;width:100%;box-shadow:none;background:linear-gradient(180deg,transparent 0%,#8affdfa0 38%,#fff 50%,#8affdfa0 62%,transparent 100%);background-size:100% 42px;background-repeat:no-repeat;background-position:center 0%;transform:none;will-change:background-position;animation:coollects-sweep-full 2s linear infinite alternate}
+.photo-scan-laser:after{display:none}
+@keyframes coollects-sweep-full{from{background-position:center 0%}to{background-position:center 100%}}
+@media(prefers-reduced-motion:reduce){.photo-scan-laser{animation:none;background-position:center 45%}}

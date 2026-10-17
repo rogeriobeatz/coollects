@@ -1,7 +1,7 @@
 'use client'
 import { useEffect,useRef,useState,type ChangeEvent } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter,useSearchParams } from 'next/navigation'
 import { ArrowRight,Camera,Check,ChevronDown,ImagePlus,Layers3,ScanLine,Sparkles,X } from 'lucide-react'
 import { AuthGate } from './auth-gate'
 import { getBrowserClient } from '@/lib/supabase/client'
@@ -13,6 +13,7 @@ import { CATEGORIES } from '@/lib/local-catalog'
 export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
 function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const params=useSearchParams()
+ const router=useRouter()
  const preferredCollection=params.get('colecao')
  const fileRef=useRef<HTMLInputElement>(null),cameraRef=useRef<HTMLInputElement>(null)
  const [file,setFile]=useState<File|null>(null),[image,setImage]=useState(''),[preparing,setPreparing]=useState(false)
@@ -82,7 +83,8 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    })
    if(error||!itemId)throw error||new Error('Não foi possível salvar o item.')
    setSaved(true)
-   setNotice('Seu item foi salvo com sucesso!')
+   setNotice('Item salvo! Abrindo sua ficha…')
+   router.replace('/item/'+encodeURIComponent(String(itemId)))
   }catch{
    // The RPC commits both metadata and relationships or neither.
    if(uploaded)await db.storage.from(BUCKET).remove([uploaded])
