@@ -54,12 +54,19 @@ function Workspace({userId}:{userId:string}){
   const db=getBrowserClient();if(!db||!name.trim())return
   setSaving(true);setMessage('')
   const values={name:name.trim(),category,color,description:description.trim(),is_public:isPublic,cover_item_id:editId?coverItemId:null}
-  const response=editId?await db.from('collections').update(values).eq('id',editId).eq('owner_id',userId):await db.from('collections').insert({...values,owner_id:userId})
-  setSaving(false)
-  if(response.error){setMessage('Não foi possível salvar a coleção. Verifique os dados e tente novamente.');return}
-  reset();setFilter('Todas');setMessage('Coleção salva e sincronizada!');void refresh()
   const back=params.get('voltar')
-  if(back&&/^item\/[0-9a-f-]{36}$/i.test(back))router.push('/'+back)
+  const itemId=!editId&&back&&/^item\/[0-9a-f-]{36}$/i.test(back)?back.slice(5):null
+  const response=editId
+   ?await db.from('collections').update(values).eq('id',editId).eq('owner_id',userId).select('id').single()
+   :await db.from('collections').insert({...values,owner_id:userId}).select('id').single()
+  if(response.error||!response.data){setSaving(false);setMessage('Não foi possível salvar a coleção. Verifique os dados e tente novamente.');return}
+  if(itemId){
+   const {error:linkError}=await db.from('collection_items').insert({collection_id:response.data.id,item_id:itemId})
+   if(linkError){setSaving(false);setMessage('Coleção criada, mas não foi possível adicionar o item. Abra a coleção e tente novamente.');void refresh();return}
+  }
+  setSaving(false)
+  reset();setFilter('Todas');setMessage('Coleção salva e sincronizada!');void refresh()
+  if(itemId)router.push('/item/'+encodeURIComponent(itemId))
  }
  async function remove(c:CollectionRow){
   if(removing)return
