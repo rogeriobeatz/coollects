@@ -7,6 +7,7 @@ import { LegacyImport } from './legacy-import'
 import { AccountDeletion } from './account-deletion'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { ProfileRow,publicUrlPath } from '@/lib/catalog'
+import {validateImageFile} from '@/lib/images'
 import { useRouter } from 'next/navigation'
 export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileEditor userId={userId}/>}</AuthGate>}
 function ProfileEditor({userId}:{userId:string}){
@@ -26,8 +27,29 @@ function ProfileEditor({userId}:{userId:string}){
   return ()=>{active=false}
  },[userId])
  useEffect(()=>{if(!profile||username===profile.username||username.length<3){setAvailability('');return}const timer=setTimeout(()=>{const db=getBrowserClient();if(!db)return;void Promise.all([db.from('profiles').select('id').eq('username',username).neq('id',userId).maybeSingle(),db.from('profile_username_aliases').select('profile_id').eq('username',username).neq('profile_id',userId).maybeSingle()]).then(([a,b])=>setAvailability(a.error||b.error?'Não foi possível verificar a disponibilidade.':a.data||b.data?'Nome de usuário indisponível.':'Nome de usuário disponível.'))},350);return()=>clearTimeout(timer)},[username,profile,userId])
- async function uploadAvatar(event:ChangeEvent<HTMLInputElement>){const file=event.target.files?.[0];event.target.value='';if(!file)return;const db=getBrowserClient();if(!db)return;if(file.size>2*1024*1024||!['image/jpeg','image/png','image/webp'].includes(file.type)){setMessage('Escolha uma imagem JPG, PNG ou WebP de até 2 MB.');return}setAvatarBusy(true);const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';const path=userId+'/'+crypto.randomUUID()+'.'+ext;const {error:uploaded}=await db.storage.from('coollects-avatars').upload(path,file,{contentType:file.type,upsert:false});if(uploaded){setMessage('Não foi possível enviar o avatar.');setAvatarBusy(false);return}const {error}=await db.from('profiles').update({avatar_path:path}).eq('id',userId);if(error){await db.storage.from('coollects-avatars').remove([path]);setMessage('Não foi possível salvar seu avatar.')}else{setProfile(p=>p?{...p,avatar_path:path}:p);setMessage('Avatar atualizado!')}setAvatarBusy(false)
+ async function uploadAvatar(event:ChangeEvent<HTMLInputElement>){
+  const file=event.target.files?.[0];event.target.value=''
+  if(!file||avatarBusy)return
+  const db=getBrowserClient();if(!db)return
+  if(file.size>2*1024*1024){setMessage('Escolha uma fotografia de até 2 MB.');return}
+  setAvatarBusy(true);setMessage('')
+  let path:string|null=null
+  try{
+   const mime=await validateImageFile(file)
+   const ext=mime==='image/png'?'png':mime==='image/webp'?'webp':'jpg'
+   path=userId+'/'+crypto.randomUUID()+'.'+ext
+   const {error:uploadError}=await db.storage.from('coollects-avatars').upload(path,file,{contentType:mime,upsert:false})
+   if(uploadError)throw new Error('Não foi possível enviar o avatar.')
+   const {error:profileError}=await db.from('profiles').update({avatar_path:path}).eq('id',userId)
+   if(profileError){await db.storage.from('coollects-avatars').remove([path]);throw new Error('Não foi possível salvar seu avatar.')}
+   const old=profile?.avatar_path
+   setProfile(p=>p?{...p,avatar_path:path}:p)
+   setMessage('Avatar atualizado!')
+   if(old&&old.startsWith(userId+'/'))void db.storage.from('coollects-avatars').remove([old])
+  }catch(error){setMessage(error instanceof Error?error.message:'Não foi possível atualizar o avatar.')}
+  finally{setAvatarBusy(false)}
  }
+
  async function save(){
   if(availability==='Nome de usuário indisponível.'){setMessage('Escolha outro nome de usuário.');return}
   if(displayName.trim().length<2||!/^[a-z0-9_-]{3,30}$/.test(username)){setMessage('Nome com pelo menos 2 caracteres; usuário de 3 a 30 letras minúsculas, números, _ ou hífen.');return}
