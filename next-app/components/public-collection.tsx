@@ -19,6 +19,7 @@ export function PublicCollection({id}:{id:string}){
  const [items,setItems]=useState<VisibleItem[]>([])
  const [loading,setLoading]=useState(true),[message,setMessage]=useState('')
  const owner=Boolean(user&&collection&&user.id===collection.owner_id)
+ const [changingVisibility,setChangingVisibility]=useState(false)
  const refresh=useCallback(()=>{
   const db=getBrowserClient();if(!db){setMessage('Não foi possível abrir esta coleção agora. Tente novamente mais tarde.');setLoading(false);return}
   let active=true
@@ -43,6 +44,16 @@ export function PublicCollection({id}:{id:string}){
  const existing=new Set(items.map(i=>i.id))
  const available=useMemo(()=>allItems.filter(i=>!existing.has(i.id)&&[i.name,i.brand,i.category].join(' ').toLowerCase().includes(search.toLowerCase())),[allItems,items,search])
  const visible=items.filter(i=>[i.name,i.brand,i.category].join(' ').toLowerCase().includes(search.toLowerCase()))
+ async function toggleVisibility(){
+  if(!collection||!owner||changingVisibility)return
+  const db=getBrowserClient();if(!db)return
+  setChangingVisibility(true);setMessage('')
+  const next=!collection.is_public
+  const {error}=await db.from('collections').update({is_public:next}).eq('id',collection.id).eq('owner_id',user!.id)
+  if(error)setMessage('Não foi possível atualizar a visibilidade. Tente novamente.')
+  else{setCollection({...collection,is_public:next});setMessage(next?'Coleção publicada! Agora ela pode ser encontrada pela comunidade.':'Coleção privada. Apenas você pode vê-la.')}
+  setChangingVisibility(false)
+ }
  async function addExisting(){if(!collection||!pending.length||working)return;const db=getBrowserClient();if(!db)return;setWorking(true);const {error}=await db.from('collection_items').insert(pending.map(item_id=>({item_id,collection_id:collection.id})));setWorking(false);if(error){setMessage('Não foi possível adicionar os itens. Tente novamente.');return}setPicker(false);setPending([]);setSearch('');setMessage('Itens adicionados à coleção.');refresh()}
  async function unlink(item:ItemRow){if(!collection||working)return;if(!confirm('Remover "'+item.name+'" desta coleção? O item continuará salvo em Meus itens.'))return;const db=getBrowserClient();if(!db)return;setWorking(true);const {error}=await db.from('collection_items').delete().eq('collection_id',collection.id).eq('item_id',item.id);setWorking(false);if(error){setMessage('Não foi possível remover o item desta coleção.');return}setMessage('Item removido da coleção, mas preservado no acervo.');refresh()}
  if(loading)return <div className="empty-collection-panel">Carregando coleção…</div>
@@ -50,6 +61,7 @@ export function PublicCollection({id}:{id:string}){
  return <section className="public-collection"><div className="public-cover" style={{'--poster-accent':safeColor(collection.color)} as CSSProperties}><CollectionCover id={collection.id} category={collection.category} selectedId={collection.cover_item_id}/><span>{collection.category}</span></div>
   <h2>{collection.name}</h2><p>{collection.description||'Uma coleção para compartilhar.'}</p>
   {profile&&<Link href={publicUrlPath(profile.username)} className="collector-byline">por <strong>{profile.display_name}</strong><ArrowRight size={15}/></Link>}
+  {owner&&<div className="collection-visibility-setting"><div><strong>{collection.is_public?'Coleção pública':'Coleção privada'}</strong><p>{collection.is_public?'Outras pessoas podem descobrir e ver esta coleção e seus itens.':'Só você vê esta coleção e seus itens.'}</p></div><button className="pill-btn secondary" type="button" disabled={changingVisibility} onClick={()=>void toggleVisibility()}>{changingVisibility?'Atualizando…':collection.is_public?'Tornar privada':'Publicar coleção'}</button></div>}
   {owner&&<div className="collection-actions"><Link className="pill-btn" href={'/cadastrar?colecao='+encodeURIComponent(id)}><Plus size={18}/> Cadastrar novo</Link><button className="pill-btn secondary" type="button" onClick={()=>{setPicker(true);setSearch('');setPending([])}}><Layers3 size={18}/> Adicionar existente</button></div>}
   <div className="section-title-inline"><div><p className="kicker">OLHE DE PERTO</p><h2>{items.length} {items.length===1?'item':'itens'}</h2></div><Layers3 size={24}/></div>
   {owner&&<label className="collection-search"><Search size={18}/><input aria-label="Buscar itens nesta coleção" placeholder="Buscar nesta coleção…" value={picker?'':search} onChange={e=>setSearch(e.target.value)} disabled={picker}/></label>}
