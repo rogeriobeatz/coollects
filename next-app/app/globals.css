@@ -288,3 +288,15 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .item-picker-option small{font-size:11px;color:#655473}
 .item-picker-option[aria-pressed="true"]{border-color:var(--purple);background:#f4eeff}
 @media(max-width:480px){.collection-visibility-setting{flex-direction:column;align-items:stretch}.collection-visibility-setting .pill-btn{justify-content:center}}
+
+/* Public identity — high-contrast and consistent pictograms */
+.category-symbol-svg{position:relative;display:block;width:80px;height:80px;max-width:70%;color:white;filter:drop-shadow(0 12px 12px #17083d40);transform:rotate(-8deg)}
+.art-large .category-symbol-svg{width:110px;height:110px}
+.category-art{display:grid;place-items:center}
+.public-avatar-image{width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit}
+.avatar-editor{position:relative;cursor:pointer;overflow:hidden}
+.avatar-editor input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.avatar-editor:focus-within{outline:3px solid var(--orange);outline-offset:3px}
+.username-availability{font-size:12px;color:#4c3177;padding:3px 0 7px;margin:0}
+.public-profile-stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:16px 0 5px}
+.public-profile-stats strong{border:1px solid #dcccec;background:#f4ecff;padding:9px 12px;border-radius:12px;color:#432176;font-size:12px}
