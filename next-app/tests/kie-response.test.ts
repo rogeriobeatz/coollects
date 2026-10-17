@@ -18,4 +18,12 @@ describe('Kie multimodal response validation',()=>{
   expect(output.notes).toBe('')
  })
 
+ it('accepts real Porsche result with nullable fields',()=>{
+  const payload=JSON.stringify({name:'PORSCHE 911 CARRERA RS 2.7',brand:'Hot Wheels',category:'Miniaturas',notes:'TH visível',visibleText:'HOT WHEELS, 208/250',confidence:'high',details:{manufacturer:'Porsche',series:'Then and Now',seriesNumber:'9/10',collectionNumber:'208/250',year:null,scale:null,color:null,condition:'Lacrado na cartela'}})
+  const result=parseKieSuggestion(payload)
+  expect(result.details.scale).toBe('')
+  expect(result.details.color).toBe('')
+  expect(result.details.seriesNumber).toBe('9/10')
+  expect(parseKieSuggestion(JSON.stringify(payload)).name).toBe(result.name)
+ })
 })
