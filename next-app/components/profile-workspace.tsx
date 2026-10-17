@@ -44,12 +44,12 @@ function ProfileEditor({userId}:{userId:string}){
   <button className="save-item-button" disabled={busy||!profile} onClick={()=>void save()}><Check size={18}/>{busy?'Salvando...':'Salvar perfil'}</button>
   {message&&<p role="status" className="scan-notice">{message}</p>}
   <LegacyImport userId={userId}/>
-  <AccountDeletion/>
   <div className="profile-links">
    {profile&&<><Link href={publicUrlPath(profile.username)}>Ver perfil público <ArrowRight size={16}/></Link><button onClick={()=>void share()}>Copiar link <Copy size={16}/></button></>}
    <Link href="/itens">Gerenciar meus itens <ArrowRight size={16}/></Link>
    <button disabled={busy} onClick={()=>void signOut()}>Sair da conta <LogOut size={16}/></button>
   </div>
+  <AccountDeletion/>
   <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seu e-mail nunca aparece no perfil.</p>
  </div>
 }
