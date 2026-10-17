@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { parseKieSuggestion, prompt } from '@/lib/kie-parser'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { BUCKET } from '@/lib/catalog'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
 function mimeHeader(data:Uint8Array):string|null {
@@ -20,7 +19,6 @@ export async function POST(request:Request){
  const db=await createSupabaseServerClient()
  const {data:{user},error:authError}=await db.auth.getUser()
  if(authError||!user)return failure('AUTH','Faça login novamente para analisar a foto.',401)
- let temporary:string|undefined
  try{
   stage='image'
   const form=await request.formData(),image=form.get('image')
@@ -30,18 +28,24 @@ export async function POST(request:Request){
   stage='quota'
   const {data:allowed,error:quotaError}=await db.rpc('consume_scan_quota')
   if(quotaError)return failure('QUOTA_SERVICE','Não foi possível consultar o limite diário.',503)
-  if(!allowed)return failure('QUOTA_LIMIT','Limite de 10 análises por dia atingido. O OCR local continua disponível.',429)
-  stage='storage_upload'
+  if(!allowed)return failure('QUOTA_LIMIT','Limite de 10 análises por dia atingido. Você pode preencher manualmente.',429)
+  stage='kie_upload'
   const ext=mime==='image/png'?'png':mime==='image/webp'?'webp':'jpg'
-  temporary=user.id+'/ai-temp-'+crypto.randomUUID()+'.'+ext
-  const {error:uploadError}=await db.storage.from(BUCKET).upload(temporary,bytes,{contentType:mime,upsert:false})
-  if(uploadError)throw new Error('temporary-upload-failed')
-  stage='storage_signed_url'
-  const {data:signed,error:signedError}=await db.storage.from(BUCKET).createSignedUrl(temporary,180)
-  if(signedError||!signed?.signedUrl)throw new Error('signed-url-failed')
+  const uploadForm=new FormData()
+  uploadForm.append('file',new Blob([bytes],{type:mime}),'collectible-'+crypto.randomUUID()+'.'+ext)
+  uploadForm.append('uploadPath','coollects/scans')
+  const uploadResponse=await fetch('https://kieai.redpandaai.co/api/file-stream-upload',{
+   method:'POST',headers:{Authorization:'Bearer '+key},body:uploadForm,
+   signal:AbortSignal.timeout(30000),cache:'no-store'
+  })
+  if(!uploadResponse.ok)return failure('KIE_UPLOAD_HTTP_'+uploadResponse.status,'Não foi possível enviar a imagem para análise.',502)
+  const upload=await uploadResponse.json() as {code?:number;success?:boolean;msg?:string;data?:{downloadUrl?:string}}
+  if(upload.code!==200||!upload.data?.downloadUrl)return failure('KIE_UPLOAD_CODE_'+String(upload.code??'UNKNOWN'),'O serviço de imagens recusou o arquivo.',502)
+  const imageUrl=upload.data.downloadUrl
+  if(!/^https:\/\/[a-z0-9.-]+\//i.test(imageUrl))return failure('KIE_UPLOAD_URL','O serviço de imagens retornou um endereço inválido.',502)
   stage='provider_request'
   console.info('[KIE_VISION]',JSON.stringify({trace,stage:'provider_request_start',model:'gemini-3-8-flash'}))
-  const response=await fetch('https://api.kie.ai/gemini-3-8-flash-openai/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({stream:false,messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:signed.signedUrl}}]}]}),signal:AbortSignal.timeout(45000),cache:'no-store'})
+  const response=await fetch('https://api.kie.ai/gemini-3-8-flash-openai/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({stream:false,messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:imageUrl}}]}]}),signal:AbortSignal.timeout(45000),cache:'no-store'})
   console.info('[KIE_VISION]',JSON.stringify({trace,stage:'provider_http',status:response.status}))
   if(!response.ok)return failure('KIE_HTTP_'+response.status,'O provedor recusou a análise da foto.',502)
   stage='provider_response'
@@ -53,6 +57,6 @@ export async function POST(request:Request){
   stage='parse_json'
   const suggestion=parseKieSuggestion(text)
   return NextResponse.json({suggestion,trace,disclaimer:'Confirme todos os dados antes de salvar.'},{headers:{'Cache-Control':'no-store'}})
- }catch(e){console.error('[KIE_VISION]',JSON.stringify({trace,stage,error:e instanceof Error?e.name:'unknown'}));return failure(stage.toUpperCase(),e instanceof Error&&(e.name==='TimeoutError'||e.name==='TimeoutError')?'Tempo de análise esgotado.':'A análise falhou. O OCR local continua disponível.',502)}
- finally{if(temporary){try{await db.storage.from(BUCKET).remove([temporary])}catch{}}}
+ }catch(e){console.error('[KIE_VISION]',JSON.stringify({trace,stage,error:e instanceof Error?e.name:'unknown'}));return failure(stage.toUpperCase(),e instanceof Error&&(e.name==='TimeoutError'||e.name==='TimeoutError')?'Tempo de análise esgotado.':'A análise falhou. Você pode preencher manualmente.',502)}
+
 }
