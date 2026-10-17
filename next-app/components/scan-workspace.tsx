@@ -93,9 +93,9 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  }
  function reset(){requestId.current++;setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
  return <section className="scan-workspace">
-  <div className={'scanner-stage '+(image?'has-image ':'')+(recognizing?'is-scanning':'')}>
+  <div className={'scanner-stage '+(image?'has-image ':'')+((recognizing||preparing)?'is-scanning':'')}>
    {image?<div className="ocr-preview-frame"><img className="scanner-photo" src={image} alt="Prévia da fotografia do item"/></div>:<div className="scanner-placeholder"><div className="scanner-symbol"><ScanLine size={58}/></div><strong>Aponte. Fotografe.<br/>Colecione.</strong><p>Seu acervo, um item de cada vez.</p></div>}
-   {image&&recognizing&&<div className="photo-scan-overlay" role="status" aria-live="polite"><div className="photo-scan-grid" aria-hidden="true"/><div className="photo-scan-laser" aria-hidden="true"/><div className="photo-scan-status"><Sparkles size={18}/><strong>{scanStage===1?"Preparando imagem":scanStage===2?"Identificando sua miniatura":"Organizando detalhes"}</strong><span>Lendo a embalagem, o modelo e a série…</span></div></div>}
+   {image&&(recognizing||preparing)&&<div className="photo-scan-overlay" role="status" aria-live="polite"><div className="photo-scan-grid" aria-hidden="true"/><div className="photo-scan-laser" aria-hidden="true"/><div className="photo-scan-status"><Sparkles size={18}/><strong>{preparing||scanStage===1?"Preparando imagem":scanStage===2?"Identificando sua miniatura":"Organizando detalhes"}</strong><span>Lendo a embalagem, o modelo e a série…</span></div></div>}
    <div className="scanner-corners" aria-hidden="true"><i/><i/><i/><i/></div><span className="scanner-pill"><span/> CÂMERA / GALERIA</span>
    {file&&!recognizing&&<button type="button" className="photo-clear" aria-label="Remover imagem" onClick={()=>setFile(null)}><X size={20}/></button>}
   </div>
