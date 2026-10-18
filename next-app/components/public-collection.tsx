@@ -2,12 +2,12 @@
 import { useCallback,useEffect,useMemo,useState,type CSSProperties } from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
-import { ArrowRight,ImageIcon,Layers3,Plus,Search,Check,X,Edit3 } from 'lucide-react'
+import { ArrowRight,ImageIcon,Layers3,Plus,Search,Check,X,Edit3,MoreHorizontal } from 'lucide-react'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { CollectionRow,ItemRow,ProfileRow,publicUrlPath,safeColor } from '@/lib/catalog'
 import { CategoryArt } from './category-art'
 import { signedImage } from '@/lib/images'
-import {itemCardStyle} from '@/lib/item-card-theme'
+import {CollectibleCard} from './collectible-card'
 import { useAccount } from '@/hooks/use-account'
 type VisibleItem=ItemRow&{url:string|null}
 export function PublicCollection({id}:{id:string}){
@@ -16,6 +16,7 @@ export function PublicCollection({id}:{id:string}){
  const itemHref=(itemId:string)=>'/item/'+encodeURIComponent(itemId)+'?voltar=colecao/'+encodeURIComponent(id)+(fromExplore?'&origem=explorar':'')
  const [search,setSearch]=useState(''),[picker,setPicker]=useState(false),[pending,setPending]=useState<string[]>([]),[allItems,setAllItems]=useState<ItemRow[]>([]),[working,setWorking]=useState(false)
  const [collection,setCollection]=useState<CollectionRow|null>(null)
+ const [menuItem,setMenuItem]=useState<string|null>(null)
  const [profile,setProfile]=useState<ProfileRow|null>(null)
  const [items,setItems]=useState<VisibleItem[]>([])
  const [loading,setLoading]=useState(true),[message,setMessage]=useState('')
@@ -67,7 +68,13 @@ export function PublicCollection({id}:{id:string}){
   <div className="section-title-inline"><div><p className="kicker">OLHE DE PERTO</p><h2>{items.length} {items.length===1?'item':'itens'}</h2></div><Layers3 size={24}/></div>
   {owner&&<label className="collection-search"><Search size={18}/><input aria-label="Buscar itens nesta coleção" placeholder="Buscar nesta coleção…" value={picker?'':search} onChange={e=>setSearch(e.target.value)} disabled={picker}/></label>}
   {message&&<p role="status" className="status-inline">{message}</p>}
-  {visible.length?<div className="public-item-list collectible-deck-stack">{visible.map(i=><div className="item-row collectible-deck-tile" style={itemCardStyle(i)} key={i.id}>{i.url?<img src={i.url} className="item-photo" alt={i.name}/>:<span className="item-no-photo"><ImageIcon size={28}/></span>}<div className="item-row-copy"><small>{i.category}</small><Link className="item-name-link" href={itemHref(i.id)}><strong>{i.name}</strong></Link><span>{i.brand}</span><Link className="edit-in-collection" href={itemHref(i.id)}>Ver ficha técnica <ArrowRight size={16}/></Link>{i.notes&&<p>{i.notes}</p>}{owner&&<Link className="edit-in-collection" href={"/itens?editar="+encodeURIComponent(i.id)+"&voltar="+encodeURIComponent(id)}><Edit3 size={16}/> Editar item</Link>}{owner&&<button type="button" className="remove-from-collection" disabled={working} onClick={()=>void unlink(i)}><X size={16}/> Remover desta coleção</button>}</div></div>)}</div>:<div className="empty-collection-panel">{items.length?'Nenhum item corresponde à busca.':'Esta coleção ainda não tem itens.'}</div>}
+  {visible.length?<div className="public-item-list collectible-deck-stack">{visible.map(i=><CollectibleCard key={i.id} item={i} photoUrl={i.url} href={itemHref(i.id)}
+ actions={owner?<div className="cc-card-actions"><button type="button" className="cc-more-trigger" aria-label={"Ações de "+i.name} aria-expanded={menuItem===i.id} onClick={()=>setMenuItem(menuItem===i.id?null:i.id)}><MoreHorizontal size={20}/></button>
+ {menuItem===i.id&&<div className="cc-more-menu">
+ <Link href={"/itens?editar="+encodeURIComponent(i.id)+"&voltar="+encodeURIComponent(id)}><Edit3 size={16}/> Editar item</Link>
+ <button type="button" disabled={working} onClick={()=>{setMenuItem(null);void unlink(i)}}><X size={16}/> Remover da coleção</button>
+ </div>}</div>:undefined}
+ />)}</div>:<div className="empty-collection-panel">{items.length?'Nenhum item corresponde à busca.':'Esta coleção ainda não tem itens.'}</div>}
   {owner&&picker&&<div className="edit-overlay" role="dialog" aria-modal="true" aria-label="Adicionar itens à coleção"><section className="edit-modal collection-picker"><button className="close-modal" aria-label="Fechar" onClick={()=>{setPicker(false);setSearch('');setPending([])}}><X size={21}/></button><h2>Adicionar itens</h2><p>Selecione itens que já existem no seu acervo.</p><label className="collection-search"><Search size={18}/><input autoFocus aria-label="Buscar no acervo" placeholder="Nome, marca ou categoria" value={search} onChange={e=>setSearch(e.target.value)}/></label><div className="picker-options">{available.map(i=><label key={i.id} className="picker-option"><input type="checkbox" checked={pending.includes(i.id)} onChange={e=>setPending(prev=>e.target.checked?[...prev,i.id]:prev.filter(x=>x!==i.id))}/><span><strong>{i.name}</strong><small>{i.brand||i.category}</small></span>{pending.includes(i.id)&&<Check size={17}/>}</label>)}{available.length===0&&<p>Nenhum item disponível para adicionar.</p>}</div><button className="save-item-button" disabled={working||!pending.length} onClick={()=>void addExisting()}>{working?'Adicionando…':'Adicionar '+pending.length+' '+(pending.length===1?'item':'itens')}</button></section></div>}
   <Link href="/explorar" className="pill-btn">Descobrir outras coleções <ArrowRight size={18}/></Link>
  </section>
