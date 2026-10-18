@@ -7,7 +7,7 @@ export function Screen({title,accent,subtitle,active,children,variant='light',ba
  const detail=compact||active==='cadastrar'||(backHref!=='/'&&backHref!=='/acervo')
  const heading=(title+' '+(accent||'')).replace(/\s+/g,' ').trim().replace(/[.]$/,'')
  const fallback:Record<Tab,string>={inicio:'Início',colecoes:'Acervo',cadastrar:'Novo item',explorar:'Explorar',perfil:'Perfil'}
- const label=compact?'Novo item':(active==='colecoes'&&(heading==='Minhas coleções'||heading==='Meus itens')?'Acervo':heading||fallback[active])
+ const label=active==='cadastrar'?'Novo item':!detail?fallback[active]:(heading||'Item')
  return <main className={'app-frame screen-'+variant}>
   <header className="topbar app-topbar">
    {detail?<Link href={backHref} className="back" aria-label="Voltar"><ArrowLeft size={22}/></Link>:null}
