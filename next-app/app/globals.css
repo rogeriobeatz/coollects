@@ -671,3 +671,11 @@ input:not([type=checkbox]):not([type=radio]):not([type=color]),textarea,select{f
 .ux-refine-panel .collection-search{margin:0 0 12px}
 .collection-view-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px;margin:0 0 10px}
 .ux-view-count{font-size:15px;font-weight:850;color:var(--ux-ink)}
+
+/* Public CollectionCard: status and author are distinct accessible links. */
+.unified-collection-info{padding-bottom:8px}
+.unified-collection-footer{display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap;padding:0 10px 11px;min-height:32px}
+.unified-collection-footer .unified-visibility{position:static;bottom:auto;left:auto;font-size:12px;white-space:nowrap}
+.unified-author{display:flex;align-items:center;gap:5px;min-width:0;font-size:12px;color:var(--ux-purple);font-weight:700;text-decoration:none}
+.unified-author>span:last-child{display:block;max-width:95px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unified-author img,.unified-author-fallback{display:grid;place-items:center;width:23px;height:23px;flex-shrink:0;border-radius:50%;object-fit:cover;background:#eee4ff;color:var(--ux-purple)}
