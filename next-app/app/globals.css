@@ -646,3 +646,7 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .ux-skeleton-line.short{width:50%;height:11px}
 @keyframes ux-loading-shimmer{to{background-position-x:-200%}}
 @media(prefers-reduced-motion:reduce){.ux-skeleton-image{animation:none}}
+
+/* Inputs must stay at least 16px to prevent automatic iOS Safari zoom. */
+input:not([type=checkbox]):not([type=radio]):not([type=color]),textarea,select{font-size:16px!important}
+.app-topbar-heading{margin:0;font-size:20px;color:inherit}
