@@ -10,6 +10,7 @@ import { CATEGORIES } from '@/lib/local-catalog'
 import {ItemCollectionPicker} from './item-collection-picker'
 import {CollectibleCard} from './collectible-card'
 import {CollectionView} from './collection-view'
+import {CardSkeleton} from './feedback-states'
 export function ItemLibrary(){return <AuthGate>{userId=><Library userId={userId}/>}</AuthGate>}
 type ViewItem=ItemRow&{url:string|null}
 function Library({userId}:{userId:string}){
@@ -107,7 +108,7 @@ function Library({userId}:{userId:string}){
  <label>Coleção <select value={collectionFilter} onChange={e=>setCollectionFilter(e.target.value)}><option value="todas">Todas</option>{collections.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label></div></div>
  <label className="collection-search"><Search size={18}/><input aria-label="Buscar itens no acervo" placeholder="Buscar item, marca ou categoria" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Limpar busca" onClick={()=>setSearch('')}>Limpar</button>}</label>
  {message&&<p role="status" className="scan-notice">{message} {message.includes("carregar")&&<button type="button" onClick={()=>{setLoading(true);setRetryKey(v=>v+1)}}>Tentar novamente</button>}</p>}
- {loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Adicione um item para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><p>Nenhum item corresponde à busca.</p><button type="button" className="pill-btn" onClick={()=>setSearch("")}>Limpar busca</button></div>}<CollectionView storageKey="coollects-items-view" items={visible} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
+ {loading?<CardSkeleton/>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Adicione um item para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><p>Nenhum item corresponde à busca.</p><button type="button" className="pill-btn" onClick={()=>setSearch("")}>Limpar busca</button></div>}<CollectionView storageKey="coollects-items-view" items={visible} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
   actions={<div className="cc-card-actions">
    <button type="button" className="cc-more-trigger" aria-label={"Ações de "+item.name} aria-expanded={menuItem===item.id} onClick={()=>setMenuItem(menuItem===item.id?null:item.id)}><MoreHorizontal size={20}/></button>
    {menuItem===item.id&&<div className="cc-more-menu">
