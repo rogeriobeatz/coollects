@@ -304,3 +304,104 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .collector-recent-photo{width:100%;height:128px;max-height:38vw;display:block;object-fit:contain;background:#f1ecf8;border-radius:12px;margin:1px 0 4px}
 .collector-recent-card:has(.collector-recent-photo){min-height:224px}
 @media(max-width:370px){.collector-recent-photo{height:108px}}
+
+/* Coollects Deck 2026 — photo-first collectible cards. Brand color is a UI
+   cue, not a claimed official manufacturer color or rarity marker. */
+.collectible-deck-tile{
+  --deck-frame:#6035ae;--deck-accent:#ffc174;--deck-ink:#fff;
+  display:flex;flex-direction:column;gap:0;padding:7px;
+  min-width:0;overflow:visible;isolation:isolate;
+  border:1px solid color-mix(in srgb,var(--deck-frame),black 15%);
+  border-radius:21px;
+  background:var(--deck-frame);
+  box-shadow:0 5px 0 color-mix(in srgb,var(--deck-frame),black 30%),0 17px 25px #1b14341b;
+  transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s ease;
+  will-change:transform;
+}
+.collectible-deck-tile:hover,.collectible-deck-tile:focus-within{
+  transform:translateY(-4px) rotate(-.35deg);
+  box-shadow:0 8px 0 color-mix(in srgb,var(--deck-frame),black 25%),0 22px 32px #1b143430;
+}
+.collectible-deck-tile>.item-photo,
+.collectible-deck-tile>.item-no-photo{
+  display:block;width:100%;height:clamp(160px,37vw,255px);
+  flex-shrink:0;object-fit:cover;object-position:center;
+  border-radius:15px 15px 8px 8px;background:#e9e4f2;
+}
+.collectible-deck-tile>.item-no-photo{display:grid;place-items:center;color:var(--deck-frame)}
+.collectible-deck-tile .item-row-copy{
+  position:relative;display:flex;flex-direction:column;align-items:stretch;
+  flex:1;min-width:0;gap:7px;padding:13px 10px 10px;color:var(--deck-ink);
+}
+.collectible-deck-tile .item-row-copy>small{
+  color:var(--deck-accent);font-size:10px;font-weight:900;letter-spacing:.12em;
+}
+.collectible-deck-tile .item-name-link{color:var(--deck-ink);text-decoration:none}
+.collectible-deck-tile .item-name-link strong{
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;text-wrap:balance;font-size:clamp(17px,5vw,24px);
+  line-height:1.05;letter-spacing:-.035em;color:inherit;
+}
+.collectible-deck-tile .item-row-copy>span,
+.collectible-deck-tile .item-row-copy>p,
+.collectible-deck-tile .item-collection-count{color:var(--deck-ink);opacity:.9}
+.collectible-deck-tile .item-collection-count{font-size:11px;min-height:40px}
+.collectible-deck-tile .edit-in-collection,
+.collectible-deck-tile .remove-from-collection{
+  position:relative;z-index:3;color:var(--deck-ink);min-height:40px;
+}
+.collectible-deck-tile .item-menu-trigger{background:var(--deck-ink);color:var(--deck-frame)}
+.collectible-deck-tile .item-more-menu{z-index:10}
+.item-list,.public-item-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;overflow:visible}
+.public-item-list.collectible-deck-stack .collectible-deck-tile:nth-child(4n+2){transform:rotate(1.2deg)}
+.public-item-list.collectible-deck-stack .collectible-deck-tile:nth-child(4n+3){transform:rotate(-.8deg)}
+.public-item-list.collectible-deck-stack .collectible-deck-tile:nth-child(4n+2):hover,
+.public-item-list.collectible-deck-stack .collectible-deck-tile:nth-child(4n+3):hover,
+.public-item-list.collectible-deck-stack .collectible-deck-tile:focus-within{transform:translateY(-5px) rotate(0)}
+.collectible-deck-hero{
+  --deck-frame:#6035ae;--deck-accent:#ffc174;--deck-ink:#fff;
+  position:relative;isolation:isolate;
+  border:5px solid var(--deck-frame);padding:10px;
+  background:linear-gradient(150deg,color-mix(in srgb,var(--deck-frame),black 21%),var(--deck-frame));
+  color:var(--deck-ink);border-radius:26px;
+  box-shadow:0 7px 0 color-mix(in srgb,var(--deck-frame),black 35%),0 24px 46px #23132e3b;
+  animation:deck-hero-arrive .6s cubic-bezier(.18,.85,.2,1) both;
+}
+.collectible-deck-hero:before{content:"";position:absolute;inset:4px;border:1px solid #ffffff35;border-radius:18px;pointer-events:none}
+.collectible-deck-hero .collectible-card-photo{height:clamp(280px,55vh,460px);border:2px solid #ffffff44;position:relative;background:#1b1329}
+.collectible-deck-hero .collectible-card-photo img{
+  width:100%;height:100%;object-fit:cover;object-position:center;
+  transition:transform .55s cubic-bezier(.2,.8,.2,1);
+}
+.collectible-deck-hero .collectible-card-photo:hover img{transform:scale(1.045)}
+.collectible-deck-hero .collectible-card-heading>span,
+.collectible-deck-hero .collectible-card-top,
+.collectible-deck-hero .collectible-card-bottom,
+.collectible-deck-hero .collectible-card-specs small{color:var(--deck-accent)}
+.collectible-deck-hero .collectible-card-heading h1{
+  color:var(--deck-ink);font-size:clamp(24px,6.7vw,42px);
+  line-height:1.05;max-width:100%;text-wrap:balance;overflow-wrap:anywhere;
+}
+.collectible-deck-hero .collectible-card-specs>div{background:#130e2433;border:1px solid #ffffff3e}
+@keyframes deck-hero-arrive{
+ from{opacity:0;transform:translateY(18px) rotate(-1.6deg) scale(.97)}
+ to{opacity:1;transform:translateY(0) rotate(0) scale(1)}
+}
+@media(min-width:680px){
+ .item-list,.public-item-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .collectible-deck-tile>.item-photo,.collectible-deck-tile>.item-no-photo{height:220px}
+ .collectible-deck-hero{max-width:660px;margin-inline:auto}
+}
+@media(max-width:370px){
+ .item-list,.public-item-list{gap:9px}
+ .collectible-deck-tile{padding:5px;border-radius:16px}
+ .collectible-deck-tile>.item-photo,.collectible-deck-tile>.item-no-photo{height:155px}
+ .collectible-deck-tile .item-row-copy{padding:10px 7px 8px}
+ .collectible-deck-tile .item-name-link strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+ .collectible-deck-hero{animation:none}
+ .collectible-deck-tile,.collectible-deck-hero .collectible-card-photo img{transition:none;will-change:auto}
+ .collectible-deck-tile:hover,.collectible-deck-tile:focus-within,
+ .public-item-list.collectible-deck-stack .collectible-deck-tile:nth-child(n){transform:none}
+}
