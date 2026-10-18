@@ -102,7 +102,7 @@ function Library({userId}:{userId:string}){
   void refresh()
  }
  const visible=items.filter(i=>(collectionFilter==='todas'||links.some(l=>l.item_id===i.id&&l.collection_id===collectionFilter))&&[i.name,i.brand,i.category,i.notes,...Object.values(i.details||{}).map(String)].join(" ").toLocaleLowerCase("pt-BR").includes(deferredSearch)).sort((a,b)=>sortBy==='nome'?a.name.localeCompare(b.name,'pt-BR'):sortBy==='marca'?a.brand.localeCompare(b.brand,'pt-BR'):new Date(b.created_at).getTime()-new Date(a.created_at).getTime())
- return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>← Coleção</Link>}
+ return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>Voltar à coleção</Link>}
  <div className="ux-item-toolbar"><strong>{items.length} {items.length===1?'item':'itens'}</strong><div className="ux-sort-controls"><label>Ordenar <select value={sortBy} onChange={e=>setSortBy(e.target.value as typeof sortBy)}><option value="recentes">Recentes</option><option value="nome">Nome</option><option value="marca">Marca</option></select></label>
  <label>Coleção <select value={collectionFilter} onChange={e=>setCollectionFilter(e.target.value)}><option value="todas">Todas</option>{collections.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label></div></div>
  <label className="collection-search"><Search size={18}/><input aria-label="Buscar itens no acervo" placeholder="Buscar item, marca ou categoria" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Limpar busca" onClick={()=>setSearch('')}>Limpar</button>}</label>
