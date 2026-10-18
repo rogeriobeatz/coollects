@@ -40,7 +40,7 @@ export function PublicCollection({id}:{id:string}){
     const rows=(result.data||[]) as ItemRow[]
     itemRows=await Promise.all(rows.map(async i=>({...i,url:await signedImage(db,i.photo_path)})))
    }
-   if(active){setCollection(c);setProfile((p.data||null) as ProfileRow|null);setItems(itemRows);setLoading(false)}
+   if(active){setCollection(c);setProfile((p.data||null) as ProfileRow|null);setItems(itemRows);setLoading(false);window.dispatchEvent(new CustomEvent('coollects:page-title',{detail:c.name}))}
   })().catch(()=>{if(active){setLoading(false);setMessage('Não foi possível carregar a coleção.')}})
   return ()=>{active=false}
  },[id])
