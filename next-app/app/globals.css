@@ -431,3 +431,41 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 @media(max-width:350px){.item-list,.public-item-list{gap:8px}.cc-item-card{padding:4px;border-radius:14px}.cc-item-info{padding:8px 5px 4px}.cc-item-title{font-size:13px}}
 @media(min-width:700px){.item-list,.public-item-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.cc-item-title{font-size:20px}}
 @media(prefers-reduced-motion:reduce){.cc-item-card,.cc-item-cover img{transition:none!important}.cc-item-card:hover,.cc-item-card:focus-within{transform:none}.cc-item-card:hover .cc-item-cover img{transform:none}}
+
+/* Collector navigation v3 */
+.collection-view{width:100%;min-width:0}
+.collection-view-toolbar{display:flex;justify-content:flex-end;margin:12px 0 18px}
+.collection-view-switch{display:flex;align-items:center;gap:4px;padding:5px;background:#eee7f9;border:1px solid #d8c9ef;border-radius:16px;width:100%;max-width:380px}
+.collection-view-switch button{display:flex;flex:1;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:44px;padding:8px 7px;border:0;border-radius:11px;background:transparent;color:#4b3773;font-size:11px;font-weight:800;cursor:pointer}
+.collection-view-switch button[aria-pressed="true"]{background:#6027bd;color:white;box-shadow:0 3px 9px #3c1e6829}
+.cc-view-items.cc-mode-galeria{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.cc-view-items .cc-view-cell{min-width:0;display:flex}
+.cc-view-items .cc-item-card{flex:1;min-width:0}
+.cc-item-brands{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;min-height:34px;align-items:center}
+.cc-brand-slot{min-width:0;min-height:31px;max-height:36px;display:flex;align-items:center;justify-content:center;padding:4px;border-radius:7px;background:#ffffffec;color:#301d4a;border:1px solid #ffffff91}
+.cc-brand-slot img{display:block;max-width:100%;max-height:25px;width:auto;height:auto;object-fit:contain}
+.cc-brand-slot .cc-brand-fallback{display:block;max-width:100%;font-size:9px;font-weight:900;line-height:1.1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-brand-placeholder{font-size:8px;letter-spacing:.03em;font-weight:700;opacity:.66}
+.cc-mode-lista{display:grid;grid-template-columns:1fr;gap:11px}
+.cc-mode-lista .cc-item-card{display:grid;grid-template-columns:minmax(100px,34%) minmax(0,1fr);align-items:stretch;min-height:162px}
+.cc-mode-lista .cc-item-cover{height:100%;aspect-ratio:auto;min-height:155px}
+.cc-mode-lista .cc-item-info{padding:11px;min-width:0}
+.cc-mode-lista .cc-item-title{font-size:clamp(17px,4vw,23px)}
+.cc-deck-area{width:100%;overflow:hidden}
+.cc-deck-hint{text-align:center;color:#65537e;font-size:12px;font-weight:700;margin:4px 0 20px}
+.cc-deck-stage{position:relative;width:min(100% - 32px,385px);margin:0 auto;padding:0 0 12px;touch-action:pan-y;isolation:isolate}
+.cc-deck-shadow{position:absolute;inset:0 5px 13px;z-index:-1;pointer-events:none;border-radius:23px;background:#c9b7ea;box-shadow:0 12px 22px #22123822}
+.cc-deck-shadow-second{transform:translate(10px,9px) rotate(3deg)}
+.cc-deck-shadow-third{transform:translate(-8px,15px) rotate(-3deg);background:#e2d9ed}
+.cc-deck-active{animation:cc-deck-deal .28s ease-out both}
+.cc-deck-active .cc-item-card{width:100%;max-width:385px}
+.cc-deck-active .cc-item-cover{aspect-ratio:4/4.4}
+.cc-deck-active .cc-item-title{font-size:clamp(22px,5vw,30px)}
+.cc-deck-controls{display:flex;align-items:center;justify-content:center;gap:26px;margin:21px auto 10px}
+.cc-deck-controls button{display:grid;place-items:center;width:48px;height:48px;background:#6027bd;color:white;border:0;border-radius:50%;cursor:pointer}
+.cc-deck-controls button:disabled{opacity:.3;cursor:not-allowed}
+.cc-deck-controls span{font-size:13px;font-weight:900;color:#392155;min-width:62px;text-align:center}
+@keyframes cc-deck-deal{from{opacity:.2;transform:translateX(18px) rotate(2deg) scale(.97)}to{opacity:1;transform:none}}
+@media(min-width:700px){.cc-view-items.cc-mode-galeria{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.collection-view-toolbar{justify-content:flex-end}}
+@media(max-width:350px){.collection-view-switch button{font-size:10px;gap:3px;padding:5px 2px}.cc-item-brands{gap:3px}.cc-brand-slot{padding:2px}}
+@media(prefers-reduced-motion:reduce){.cc-deck-active{animation:none}}

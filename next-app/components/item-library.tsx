@@ -9,6 +9,7 @@ import { signedImage,uploadImage } from '@/lib/images'
 import { CATEGORIES } from '@/lib/local-catalog'
 import {ItemCollectionPicker} from './item-collection-picker'
 import {CollectibleCard} from './collectible-card'
+import {CollectionView} from './collection-view'
 export function ItemLibrary(){return <AuthGate>{userId=><Library userId={userId}/>}</AuthGate>}
 type ViewItem=ItemRow&{url:string|null}
 function Library({userId}:{userId:string}){
@@ -100,7 +101,7 @@ function Library({userId}:{userId:string}){
  }
  const visible=items.filter(i=>[i.name,i.brand,i.category,i.notes,...Object.values(i.details||{}).map(String)].join(" ").toLocaleLowerCase("pt-BR").includes(deferredSearch))
  return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>← Voltar à coleção</Link>}<label className="collection-search"><Search size={18}/><input aria-label="Buscar no meu acervo" placeholder="Buscar item, marca ou categoria…" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Limpar busca" onClick={()=>setSearch("")}>Limpar</button>}</label><Link href="/cadastrar" className="pill-btn"><Plus size={18}/> Cadastrar outro item</Link>{message&&<p role="status" className="scan-notice">{message} {message.includes("carregar")&&<button type="button" onClick={()=>{setLoading(true);setRetryKey(v=>v+1)}}>Tentar novamente</button>}</p>}
- {loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list">{visible.length===0&&<div role="status" className="empty-collection-panel"><p>Nenhum item corresponde à busca.</p><button type="button" className="pill-btn" onClick={()=>setSearch("")}>Limpar busca</button></div>}{visible.map(item=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
+ {loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><p>Nenhum item corresponde à busca.</p><button type="button" className="pill-btn" onClick={()=>setSearch("")}>Limpar busca</button></div>}<CollectionView storageKey="coollects-items-view" items={visible} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
   actions={<div className="cc-card-actions">
    <button type="button" className="cc-more-trigger" aria-label={"Ações de "+item.name} aria-expanded={menuItem===item.id} onClick={()=>setMenuItem(menuItem===item.id?null:item.id)}><MoreHorizontal size={20}/></button>
    {menuItem===item.id&&<div className="cc-more-menu">
@@ -109,7 +110,7 @@ function Library({userId}:{userId:string}){
     <button type="button" onClick={()=>{setDeleteItem(item);setMenuItem(null)}}><Trash2 size={16}/> Excluir</button>
    </div>}
   </div>}
- />)}</div>}
+ />}/></div>}
  {pickerItem&&<ItemCollectionPicker itemId={pickerItem} onClose={()=>setPickerItem(null)} onChanged={()=>void refresh()}/>}
  {deleteItem&&<div className="edit-overlay" role="presentation"><section className="edit-modal" role="dialog" aria-modal="true" aria-label="Confirmar exclusão de item"><h2>Excluir item?</h2><p>Excluir “{deleteItem.name}”? Essa ação não pode ser desfeita.</p><div className="item-delete-actions"><button type="button" className="pill-btn secondary" disabled={removing} onClick={()=>setDeleteItem(null)}>Cancelar</button><button type="button" className="account-delete-button" disabled={removing} onClick={()=>void remove(deleteItem)}>{removing?"Excluindo…":"Excluir item"}</button></div></section></div>}
  {editing&&<div role="dialog" aria-modal="true" aria-label="Editar item" className="edit-overlay"><section className="edit-modal"><button className="close-modal" onClick={()=>setEditing(null)} aria-label="Fechar"><X size={22}/></button><h2>Editar item</h2><label className="field-label">Nome<input value={form.name} maxLength={90} onChange={e=>setForm(v=>({...v,name:e.target.value}))}/></label><label className="field-label">Marca<input value={form.brand} maxLength={70} onChange={e=>setForm(v=>({...v,brand:e.target.value}))}/></label><label className="field-label">Categoria<select value={form.category} onChange={e=>setForm(v=>({...v,category:e.target.value}))}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select></label>{form.category==='Miniaturas'&&<section className="diecast-fields"><h3>Detalhes da miniatura</h3><div className="diecast-field-grid">{([
