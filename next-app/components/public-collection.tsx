@@ -6,6 +6,7 @@ import { ArrowRight,ImageIcon,Layers3,Plus,Search,Check,X,Edit3,MoreHorizontal }
 import { getBrowserClient } from '@/lib/supabase/client'
 import { CollectionRow,ItemRow,ProfileRow,publicUrlPath,safeColor } from '@/lib/catalog'
 import {CollectionMosaic} from './collection-mosaic'
+import {CardSkeleton} from './feedback-states'
 import { signedImage } from '@/lib/images'
 import {CollectibleCard} from './collectible-card'
 import {CollectionView} from './collection-view'
@@ -60,7 +61,7 @@ export function PublicCollection({id}:{id:string}){
  }
  async function addExisting(){if(!collection||!pending.length||working)return;const db=getBrowserClient();if(!db)return;setWorking(true);const {error}=await db.from('collection_items').insert(pending.map(item_id=>({item_id,collection_id:collection.id})));setWorking(false);if(error){setMessage('Não foi possível adicionar os itens. Tente novamente.');return}setPicker(false);setPending([]);setSearch('');setMessage('Itens adicionados à coleção.');refresh()}
  async function unlink(item:ItemRow){if(!collection||working)return;if(!confirm('Remover "'+item.name+'" desta coleção? O item continuará salvo em Meus itens.'))return;const db=getBrowserClient();if(!db)return;setWorking(true);const {error}=await db.from('collection_items').delete().eq('collection_id',collection.id).eq('item_id',item.id);setWorking(false);if(error){setMessage('Não foi possível remover o item desta coleção.');return}setMessage('Item removido da coleção, mas preservado no acervo.');refresh()}
- if(loading)return <div className="empty-collection-panel">Carregando coleção…</div>
+ if(loading)return <CardSkeleton count={2}/>
  if(!collection)return <div className="empty-collection-panel"><h2>Essa coleção não está disponível.</h2><p>{message}</p><Link className="pill-btn" href="/explorar">Explorar coleções</Link></div>
  return <section className="public-collection compact-collection">
  <div className="compact-collection-head">
