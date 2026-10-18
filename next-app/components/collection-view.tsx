@@ -7,7 +7,7 @@ export function CollectionView<T extends {id:string}>({items,renderCard,storageK
  useEffect(()=>{try{setMode(window.localStorage.getItem(storageKey)==='lista'?'lista':'galeria')}catch{}},[storageKey])
  function change(next:ViewMode){setMode(next);try{window.localStorage.setItem(storageKey,next)}catch{}}
  return <div className="collection-view">
-  <div className="collection-view-toolbar"><div className="collection-view-switch" role="group" aria-label="Visualizar itens">
+  <div className="collection-view-toolbar"><strong className="ux-view-count">{items.length} {items.length===1?"item":"itens"}</strong><div className="collection-view-switch" role="group" aria-label="Visualizar itens">
    <button type="button" aria-label="Visualizar em grade" title="Grade" aria-pressed={mode==='galeria'} onClick={()=>change('galeria')}><Grid2X2 size={21}/></button>
    <button type="button" aria-label="Visualizar em lista" title="Lista" aria-pressed={mode==='lista'} onClick={()=>change('lista')}><List size={21}/></button>
   </div></div>
