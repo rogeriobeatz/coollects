@@ -17,6 +17,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const preferredCollection=params.get('colecao')
  const fileRef=useRef<HTMLInputElement>(null),cameraRef=useRef<HTMLInputElement>(null)
  const [stage,setStage]=useState<'captura'|'revisao'>('captura')
+ const [suggested,setSuggested]=useState(false)
  const [file,setFile]=useState<File|null>(null),[image,setImage]=useState(''),[preparing,setPreparing]=useState(false)
  const [name,setName]=useState(''),[brand,setBrand]=useState(''),[category,setCategory]=useState<string>('Miniaturas')
  const [collectionIds,setCollectionIds]=useState<string[]>([]),[notes,setNotes]=useState('')
@@ -37,7 +38,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   setPreparing(true);setNotice('Preparando a fotografia…')
   try{
    const prepared=await preparePhoto(chosen)
-   setFile(prepared.file);setSaved(false);setName('');setBrand('');setNotes('');setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
+   setSuggested(false);setFile(prepared.file);setSaved(false);setName('');setBrand('');setNotes('');setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
    setNotice('Fotografia pronta. Identificando os dados…')
    if(!aiEnabled)setStage('revisao')
   }catch(error){setNotice(error instanceof Error?error.message:'Não foi possível abrir a fotografia. Tente novamente.')}
@@ -56,6 +57,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
     if(!response.ok||!data.suggestion)throw new Error(data.error||'A análise não foi concluída.')
     if(id!==requestId.current)return
     setScanStage(3)
+    setSuggested(true)
     const item=data.suggestion
     if(item.name)setName(item.name)
     if(item.brand)setBrand(item.brand)
@@ -93,7 +95,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
   }finally{savingRef.current=false;setSaving(false)}
  }
- function reset(){setStage('captura');requestId.current++;setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
+ function reset(){setSuggested(false);setStage('captura');requestId.current++;setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
  return <section className={'scan-workspace scan-stage-'+stage}>
   <div className="scan-progress" aria-label="Etapa do cadastro"><span className={stage==='captura'?'active':''}>1. Foto</span><span className={stage==='revisao'?'active':''}>2. Revisar</span></div>
   {stage==='captura'&&<>
@@ -111,6 +113,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
 
   </>}
   {stage==='revisao'&&<><div className="review-step-heading"><h2>Dados do item</h2>{file&&<button type="button" className="ux-tertiary" onClick={()=>setStage('captura')}>Trocar foto</button>}</div>
+  {suggested&&<p role="status" className="ux-ai-suggested"><Sparkles size={17}/> Dados sugeridos pela IA — revise antes de salvar</p>}
   {analysisError&&<div role="alert" className="ai-magic-error"><strong>A análise automática não terminou.</strong><p>{analysisError}</p><span>Você ainda pode cadastrar o item manualmente.</span></div>}
   {!aiEnabled&&<p className="scan-notice">O reconhecimento inteligente está temporariamente indisponível. Preencha os campos manualmente.</p>}
   <div className="item-form">
@@ -121,14 +124,14 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
     ['series','Série','Ex.: Compact Kings'],
     ['seriesNumber','Número na série','Ex.: 4/10'],
     ['collectionNumber','Numeração geral','Ex.: 105/250'],
-    ['year','Ano da cartela','Somente se visível'],
+    ['year','Ano da cartela','Ex.: 2024'],
     ['scale','Escala','Ex.: 1:64'],
     ['color','Cor','Ex.: Vermelho'],
     ['condition','Condição','Ex.: Lacrado']
    ] as const).map(([key,label,placeholder])=><label key={key} className="field-label">{label}<input value={details[key]} onChange={e=>setDetails(v=>({...v,[key]:e.target.value}))} placeholder={placeholder} maxLength={key==='year'?4:90} inputMode={key==='year'?'numeric':'text'}/></label>)}</div></section>}
 </details>
    <fieldset className="collection-selector"><legend>Coleção</legend>{collections.length?collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}/>{c.name}</label>):<p>Você ainda não possui coleções. <Link href="/colecoes">Criar coleção</Link></p>}</fieldset>
-   <label className="field-label" htmlFor="item-notes">Observações<textarea id="item-notes" rows={3} maxLength={300} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="História, origem, conservação ou notas pessoais..."/></label>
+   <label className="field-label" htmlFor="item-notes">Observações<textarea id="item-notes" rows={3} maxLength={300} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Ex.: embalado e conservado"/></label><p className="ux-form-help">As observações podem aparecer quando o item for compartilhado em uma coleção pública.</p>
    <button type="button" disabled={saving||preparing||recognizing||saved} className="save-item-button ux-sticky-save" onClick={()=>void save()}>{saving?'Salvando…':saved?'Salvo!':'Salvar'}</button>
    {notice&&<p role="status" className="scan-notice">{notice}</p>}
    {saved&&<div className="saved-actions">{preferredCollection&&<Link href={'/colecao/'+encodeURIComponent(preferredCollection)}>Voltar à coleção <ArrowRight size={16}/></Link>}<Link href="/itens">Ver meus itens <ArrowRight size={16}/></Link><button onClick={reset}>Cadastrar outro</button></div>}
