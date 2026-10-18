@@ -110,7 +110,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   <input className="visually-hidden" aria-label="Escolher foto" ref={fileRef} type="file" accept="image/*,.heic,.heif" onChange={e=>void pick(e)}/>
 
   </>}
-  {stage==='revisao'&&<><div className="review-step-heading"><h2>Dados do item</h2>{file&&<button type="button" className="ux-tertiary" onClick={()=>setStage('captura')}>Trocar foto</button>}</div>}
+  {stage==='revisao'&&<><div className="review-step-heading"><h2>Dados do item</h2>{file&&<button type="button" className="ux-tertiary" onClick={()=>setStage('captura')}>Trocar foto</button>}</div>
   {analysisError&&<div role="alert" className="ai-magic-error"><strong>A análise automática não terminou.</strong><p>{analysisError}</p><span>Você ainda pode cadastrar o item manualmente.</span></div>}
   {!aiEnabled&&<p className="scan-notice">O reconhecimento inteligente está temporariamente indisponível. Preencha os campos manualmente.</p>}
   <div className="item-form">
