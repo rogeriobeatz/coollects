@@ -5,7 +5,7 @@ import {useSearchParams} from 'next/navigation'
 import { ArrowRight,ImageIcon,Layers3,Plus,Search,Check,X,Edit3,MoreHorizontal } from 'lucide-react'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { CollectionRow,ItemRow,ProfileRow,publicUrlPath,safeColor } from '@/lib/catalog'
-import { CategoryArt } from './category-art'
+import {CollectionMosaic} from './collection-mosaic'
 import { signedImage } from '@/lib/images'
 import {CollectibleCard} from './collectible-card'
 import {CollectionView} from './collection-view'
@@ -23,6 +23,7 @@ export function PublicCollection({id}:{id:string}){
  const [loading,setLoading]=useState(true),[message,setMessage]=useState('')
  const owner=Boolean(user&&collection&&user.id===collection.owner_id)
  const [changingVisibility,setChangingVisibility]=useState(false)
+ const [showAddActions,setShowAddActions]=useState(false)
  const refresh=useCallback(()=>{
   const db=getBrowserClient();if(!db){setMessage('Não foi possível abrir esta coleção agora. Tente novamente mais tarde.');setLoading(false);return}
   let active=true
@@ -61,13 +62,19 @@ export function PublicCollection({id}:{id:string}){
  async function unlink(item:ItemRow){if(!collection||working)return;if(!confirm('Remover "'+item.name+'" desta coleção? O item continuará salvo em Meus itens.'))return;const db=getBrowserClient();if(!db)return;setWorking(true);const {error}=await db.from('collection_items').delete().eq('collection_id',collection.id).eq('item_id',item.id);setWorking(false);if(error){setMessage('Não foi possível remover o item desta coleção.');return}setMessage('Item removido da coleção, mas preservado no acervo.');refresh()}
  if(loading)return <div className="empty-collection-panel">Carregando coleção…</div>
  if(!collection)return <div className="empty-collection-panel"><h2>Essa coleção não está disponível.</h2><p>{message}</p><Link className="pill-btn" href="/explorar">Explorar coleções</Link></div>
- return <section className="public-collection"><div className="public-cover" style={{'--poster-accent':safeColor(collection.color)} as CSSProperties}><CategoryArt category={collection.category}/><span>{collection.category}</span></div>
-  <h2>{collection.name}</h2><p>{collection.description||'Uma coleção para compartilhar.'}</p>
-  {profile&&<Link href={publicUrlPath(profile.username)} className="collector-byline">por <strong>{profile.display_name}</strong><ArrowRight size={15}/></Link>}
-  {owner&&<div className="collection-visibility-setting"><div><strong>{collection.is_public?'Coleção pública':'Coleção privada'}</strong><p>{collection.is_public?'Outras pessoas podem descobrir e ver esta coleção e seus itens.':'Só você vê esta coleção e seus itens.'}</p></div><button className="pill-btn secondary" type="button" disabled={changingVisibility} onClick={()=>void toggleVisibility()}>{changingVisibility?'Atualizando…':collection.is_public?'Tornar privada':'Publicar coleção'}</button></div>}
-  {owner&&<div className="collection-actions"><Link className="pill-btn" href={'/cadastrar?colecao='+encodeURIComponent(id)}><Plus size={18}/> Cadastrar novo</Link><button className="pill-btn secondary" type="button" onClick={()=>{setPicker(true);setSearch('');setPending([])}}><Layers3 size={18}/> Adicionar existente</button></div>}
-  <div className="section-title-inline"><div><p className="kicker">OLHE DE PERTO</p><h2>{items.length} {items.length===1?'item':'itens'}</h2></div><Layers3 size={24}/></div>
-  {owner&&<label className="collection-search"><Search size={18}/><input aria-label="Buscar itens nesta coleção" placeholder="Buscar nesta coleção…" value={picker?'':search} onChange={e=>setSearch(e.target.value)} disabled={picker}/></label>}
+ return <section className="public-collection compact-collection">
+ <div className="compact-collection-head">
+  <div className="compact-cover"><CollectionMosaic id={collection.id} coverId={collection.cover_item_id}/></div>
+  <div className="compact-collection-copy"><h2>{collection.name}</h2>{collection.description&&<p>{collection.description}</p>}{profile&&!owner&&<Link href={publicUrlPath(profile.username)} className="collector-byline">por {profile.display_name}</Link>}</div>
+ </div>
+ <div className="compact-collection-summary"><span>{items.length} {items.length===1?'item':'itens'} · {collection.category}</span>{owner&&<button type="button" className="compact-visibility-toggle" disabled={changingVisibility} aria-pressed={collection.is_public} onClick={()=>void toggleVisibility()}>{collection.is_public?'Pública · Tornar privada':'Privada · Tornar pública'}</button>}{!owner&&<span>{collection.is_public?'Pública':'Privada'}</span>}</div>
+ {owner&&<button type="button" className="ux-primary compact-add-button" onClick={()=>setShowAddActions(true)}><Plus size={19}/> Adicionar item</button>}
+ {owner&&showAddActions&&<div className="creation-sheet-scrim" onMouseDown={e=>{if(e.target===e.currentTarget)setShowAddActions(false)}}><section className="creation-sheet" role="dialog" aria-modal="true" aria-label="Adicionar à coleção">
+  <div className="creation-sheet-head"><h2>Adicionar à coleção</h2><button type="button" aria-label="Fechar" onClick={()=>setShowAddActions(false)}><X size={22}/></button></div>
+  <Link href={'/cadastrar?colecao='+encodeURIComponent(id)}><Plus size={22}/> Novo item</Link>
+  <button type="button" onClick={()=>{setShowAddActions(false);setPicker(true);setSearch('');setPending([])}}><Layers3 size={22}/> Item existente</button>
+ </section></div>}
+ {owner&&items.length>=12&&<label className="collection-search"><Search size={18}/><input aria-label="Buscar itens nesta coleção" placeholder="Buscar itens…" value={picker?'':search} onChange={e=>setSearch(e.target.value)} disabled={picker}/></label>}
   {message&&<p role="status" className="status-inline">{message}</p>}
   {visible.length?<CollectionView storageKey="coollects-collection-view" items={visible} renderCard={(i:VisibleItem)=><CollectibleCard key={i.id} item={i} photoUrl={i.url} href={itemHref(i.id)}
  actions={owner?<div className="cc-card-actions"><button type="button" className="cc-more-trigger" aria-label={"Ações de "+i.name} aria-expanded={menuItem===i.id} onClick={()=>setMenuItem(menuItem===i.id?null:i.id)}><MoreHorizontal size={20}/></button>
@@ -77,6 +84,6 @@ export function PublicCollection({id}:{id:string}){
  </div>}</div>:undefined}
  />}/>:<div className="empty-collection-panel">{items.length?'Nenhum item corresponde à busca.':'Esta coleção ainda não tem itens.'}</div>}
   {owner&&picker&&<div className="edit-overlay" role="dialog" aria-modal="true" aria-label="Adicionar itens à coleção"><section className="edit-modal collection-picker"><button className="close-modal" aria-label="Fechar" onClick={()=>{setPicker(false);setSearch('');setPending([])}}><X size={21}/></button><h2>Adicionar itens</h2><p>Selecione itens que já existem no seu acervo.</p><label className="collection-search"><Search size={18}/><input autoFocus aria-label="Buscar no acervo" placeholder="Nome, marca ou categoria" value={search} onChange={e=>setSearch(e.target.value)}/></label><div className="picker-options">{available.map(i=><label key={i.id} className="picker-option"><input type="checkbox" checked={pending.includes(i.id)} onChange={e=>setPending(prev=>e.target.checked?[...prev,i.id]:prev.filter(x=>x!==i.id))}/><span><strong>{i.name}</strong><small>{i.brand||i.category}</small></span>{pending.includes(i.id)&&<Check size={17}/>}</label>)}{available.length===0&&<p>Nenhum item disponível para adicionar.</p>}</div><button className="save-item-button" disabled={working||!pending.length} onClick={()=>void addExisting()}>{working?'Adicionando…':'Adicionar '+pending.length+' '+(pending.length===1?'item':'itens')}</button></section></div>}
-  <Link href="/explorar" className="pill-btn">Descobrir outras coleções <ArrowRight size={18}/></Link>
+
  </section>
 }
