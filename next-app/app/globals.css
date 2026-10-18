@@ -633,3 +633,16 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 @media(min-width:700px){.collection-grid,.explore-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cc-view-items.cc-mode-galeria{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:350px){.compact-cover{flex-basis:84px;width:84px;height:84px}.compact-cover .collection-mosaic{height:84px}.compact-collection-copy h2{font-size:21px}}
 @media(prefers-reduced-motion:reduce){.cc-item-card:hover{transform:none}}
+
+/* Shared loading + empty states */
+.ux-empty-state{display:grid;justify-items:center;gap:10px;text-align:center;padding:28px 18px;border:1px solid var(--ux-line);border-radius:var(--ux-radius-card);background:#fff}
+.ux-empty-state h2{margin:0;font-size:20px}
+.ux-empty-state p{font-size:14px;color:var(--ux-secondary);line-height:1.45;margin:0}
+.ux-empty-icon{display:grid;place-items:center;width:64px;height:64px;background:#f4eeff;color:var(--ux-purple);border-radius:18px}
+.ux-skeleton-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ux-skeleton-card{padding:0 0 12px;background:#fff;border:1px solid var(--ux-line);border-radius:16px;overflow:hidden}
+.ux-skeleton-image{aspect-ratio:4/5;background:linear-gradient(90deg,#ede9f2 0%,#f7f4fa 50%,#ede9f2 100%);background-size:200% 100%;animation:ux-loading-shimmer 1.6s ease infinite}
+.ux-skeleton-line{height:13px;margin:12px 10px 0;border-radius:6px;background:#ece6f4;width:75%}
+.ux-skeleton-line.short{width:50%;height:11px}
+@keyframes ux-loading-shimmer{to{background-position-x:-200%}}
+@media(prefers-reduced-motion:reduce){.ux-skeleton-image{animation:none}}
