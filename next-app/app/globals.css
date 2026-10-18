@@ -405,3 +405,6 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
  .collectible-deck-tile:hover,.collectible-deck-tile:focus-within,
  .public-item-list.collectible-deck-stack .collectible-deck-tile:nth-child(n){transform:none}
 }
+
+/* Consistent photo treatment in recent-item cards; category artwork is unaffected. */
+.collector-recent-photo{object-fit:cover;object-position:center}
