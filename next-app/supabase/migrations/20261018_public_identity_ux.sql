@@ -80,3 +80,21 @@ with check(bucket_id='coollects-avatars' and split_part(name,'/',1)=auth.uid()::
 drop policy if exists "avatar_delete_owner" on storage.objects;
 create policy "avatar_delete_owner" on storage.objects for delete to authenticated
 using(bucket_id='coollects-avatars' and split_part(name,'/',1)=auth.uid()::text);
+
+-- Respect the readable username chosen in registration. Existing automatic handles
+-- still go through guard_profile_handle(), which generates a friendly fallback.
+create or replace function public.on_new_user()
+returns trigger language plpgsql security definer set search_path='' as $$
+declare submitted_name text; submitted_username text;
+begin
+ submitted_name:=trim(coalesce(new.raw_user_meta_data->>'display_name',''));
+ submitted_username:=lower(trim(coalesce(new.raw_user_meta_data->>'username','')));
+ if submitted_username !~ '^[a-z0-9_-]{3,30}$' then
+  submitted_username:='col_'||substring(encode(extensions.digest(new.id::text,'sha256'),'hex'),1,26);
+ end if;
+ insert into public.profiles(id,username,display_name)
+ values(new.id,submitted_username,
+  case when char_length(submitted_name) between 2 and 60 then submitted_name else 'Colecionador' end)
+ on conflict(id) do nothing;
+ return new;
+end $$;
