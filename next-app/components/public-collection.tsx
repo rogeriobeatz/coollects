@@ -8,6 +8,7 @@ import { CollectionRow,ItemRow,ProfileRow,publicUrlPath,safeColor } from '@/lib/
 import { CategoryArt } from './category-art'
 import { signedImage } from '@/lib/images'
 import {CollectibleCard} from './collectible-card'
+import {CollectionView} from './collection-view'
 import { useAccount } from '@/hooks/use-account'
 type VisibleItem=ItemRow&{url:string|null}
 export function PublicCollection({id}:{id:string}){
@@ -68,13 +69,13 @@ export function PublicCollection({id}:{id:string}){
   <div className="section-title-inline"><div><p className="kicker">OLHE DE PERTO</p><h2>{items.length} {items.length===1?'item':'itens'}</h2></div><Layers3 size={24}/></div>
   {owner&&<label className="collection-search"><Search size={18}/><input aria-label="Buscar itens nesta coleção" placeholder="Buscar nesta coleção…" value={picker?'':search} onChange={e=>setSearch(e.target.value)} disabled={picker}/></label>}
   {message&&<p role="status" className="status-inline">{message}</p>}
-  {visible.length?<div className="public-item-list collectible-deck-stack">{visible.map(i=><CollectibleCard key={i.id} item={i} photoUrl={i.url} href={itemHref(i.id)}
+  {visible.length?<CollectionView storageKey="coollects-collection-view" items={visible} renderCard={(i:VisibleItem)=><CollectibleCard key={i.id} item={i} photoUrl={i.url} href={itemHref(i.id)}
  actions={owner?<div className="cc-card-actions"><button type="button" className="cc-more-trigger" aria-label={"Ações de "+i.name} aria-expanded={menuItem===i.id} onClick={()=>setMenuItem(menuItem===i.id?null:i.id)}><MoreHorizontal size={20}/></button>
  {menuItem===i.id&&<div className="cc-more-menu">
  <Link href={"/itens?editar="+encodeURIComponent(i.id)+"&voltar="+encodeURIComponent(id)}><Edit3 size={16}/> Editar item</Link>
  <button type="button" disabled={working} onClick={()=>{setMenuItem(null);void unlink(i)}}><X size={16}/> Remover da coleção</button>
  </div>}</div>:undefined}
- />)}</div>:<div className="empty-collection-panel">{items.length?'Nenhum item corresponde à busca.':'Esta coleção ainda não tem itens.'}</div>}
+ />}/>:<div className="empty-collection-panel">{items.length?'Nenhum item corresponde à busca.':'Esta coleção ainda não tem itens.'}</div>}
   {owner&&picker&&<div className="edit-overlay" role="dialog" aria-modal="true" aria-label="Adicionar itens à coleção"><section className="edit-modal collection-picker"><button className="close-modal" aria-label="Fechar" onClick={()=>{setPicker(false);setSearch('');setPending([])}}><X size={21}/></button><h2>Adicionar itens</h2><p>Selecione itens que já existem no seu acervo.</p><label className="collection-search"><Search size={18}/><input autoFocus aria-label="Buscar no acervo" placeholder="Nome, marca ou categoria" value={search} onChange={e=>setSearch(e.target.value)}/></label><div className="picker-options">{available.map(i=><label key={i.id} className="picker-option"><input type="checkbox" checked={pending.includes(i.id)} onChange={e=>setPending(prev=>e.target.checked?[...prev,i.id]:prev.filter(x=>x!==i.id))}/><span><strong>{i.name}</strong><small>{i.brand||i.category}</small></span>{pending.includes(i.id)&&<Check size={17}/>}</label>)}{available.length===0&&<p>Nenhum item disponível para adicionar.</p>}</div><button className="save-item-button" disabled={working||!pending.length} onClick={()=>void addExisting()}>{working?'Adicionando…':'Adicionar '+pending.length+' '+(pending.length===1?'item':'itens')}</button></section></div>}
   <Link href="/explorar" className="pill-btn">Descobrir outras coleções <ArrowRight size={18}/></Link>
  </section>
