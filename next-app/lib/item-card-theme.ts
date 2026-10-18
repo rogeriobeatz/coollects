@@ -37,7 +37,7 @@ function luminance(hex:string){
 function resolveColor(value:unknown):string|null{
  if(typeof value!=='string')return null
  const normalized=normalize(value)
- if(!normalized)return null
+ if(!normalized||normalized.length>80||/[();{}:]/.test(normalized))return null
  if(/^#[0-9a-f]{6}$/.test(normalized))return normalized
  if(/^#[0-9a-f]{3}$/.test(normalized))return '#'+normalized.slice(1).split('').map(x=>x+x).join('')
  // Accept color descriptions such as "azul metálico", "vermelho brilhante" and "preto fosco".
