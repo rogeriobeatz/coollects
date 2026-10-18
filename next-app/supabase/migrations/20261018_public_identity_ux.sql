@@ -8,6 +8,8 @@ create table if not exists public.profile_username_aliases(
  created_at timestamptz not null default now()
 );
 alter table public.profile_username_aliases enable row level security;
+-- Explicit API read grants in addition to RLS for preview and production.
+grant select on public.profile_username_aliases to anon, authenticated;
 drop policy if exists "username_alias_read" on public.profile_username_aliases;
 create policy "username_alias_read" on public.profile_username_aliases
 for select to anon,authenticated using(true);
