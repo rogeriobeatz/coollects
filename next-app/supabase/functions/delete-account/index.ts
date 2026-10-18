@@ -25,23 +25,25 @@ Deno.serve(async req=>{
   const signedInAt=Date.parse(user.last_sign_in_at||'')
   if(!Number.isFinite(signedInAt)||Date.now()-signedInAt>5*60*1000||Date.now()<signedInAt-30000)return json({error:'Entre novamente na sua conta antes de excluí-la.'},403)
   const admin=createClient(url,secret,{auth:{persistSession:false,autoRefreshToken:false}})
-  const files:string[]=[]
-  for(let offset=0;offset<=10000;offset+=100){
-   const {data,error}=await admin.storage.from('coollects-items').list(user.id,{limit:100,offset})
-   if(error)throw error
-   if(!data?.length)break
-   for(const file of data){
-    if(!file.name||!file.id)throw new Error('Unexpected storage entry')
-    files.push(user.id+'/'+file.name)
+  // Clean up both private item photographs and public avatars before auth deletion.
+  // This Edge Function must deploy only after the avatar-bucket migration.
+  for(const bucket of ['coollects-items','coollects-avatars']){
+   const files:string[]=[]
+   for(let offset=0;offset<=10000;offset+=100){
+    const {data,error}=await admin.storage.from(bucket).list(user.id,{limit:100,offset})
+    if(error)throw error
+    if(!data?.length)break
+    for(const file of data){
+     if(!file.name||!file.id)throw new Error('Unexpected storage entry')
+     files.push(user.id+'/'+file.name)
+    }
+    if(data.length<100)break
+    if(offset>=10000)throw new Error('Too many objects for single deletion')
    }
-   if(data.length<100)break
-   if(offset>=10000)throw new Error('Too many objects for single deletion')
-  }
-  // Auth deletion is forbidden while the user owns Storage objects, so remove
-  // their objects first. If a removal fails, do NOT delete the Auth user.
-  for(let i=0;i<files.length;i+=100){
-   const {error}=await admin.storage.from('coollects-items').remove(files.slice(i,i+100))
-   if(error)throw error
+   for(let i=0;i<files.length;i+=100){
+    const {error}=await admin.storage.from(bucket).remove(files.slice(i,i+100))
+    if(error)throw error
+   }
   }
   const {error:deleteError}=await admin.auth.admin.deleteUser(user.id)
   if(deleteError)throw deleteError
