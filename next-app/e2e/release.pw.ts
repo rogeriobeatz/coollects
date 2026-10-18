@@ -23,6 +23,15 @@ for(const viewport of [{width:320,height:780},{width:390,height:844}]){
    await expect(page.getByRole('heading',{name:/Explorar/i})).toBeVisible()
    await expect(page.locator('body')).not.toContainText(leaked)
   })
+  test('Telas funcionais iniciam com topbar compacta, sem cabeçalho editorial',async({page})=>{
+   await page.goto('/explorar')
+   const bar=page.locator('.app-topbar')
+   await expect(bar).toBeVisible()
+   const height=await bar.evaluate(el=>el.getBoundingClientRect().height)
+   expect(height).toBeLessThanOrEqual(55)
+   await expect(page.locator('.screen-intro')).toHaveCount(0)
+   await expect(page.getByRole('heading',{name:'Explorar',exact:true})).toBeVisible()
+  })
   test('Login tem formulário e não mostra detalhes de infraestrutura',async({page})=>{
    await page.goto('/entrar')
    await expect(page.getByRole('heading',{name:/Bem-vindo de volta/i})).toBeVisible()
