@@ -650,3 +650,14 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 /* Inputs must stay at least 16px to prevent automatic iOS Safari zoom. */
 input:not([type=checkbox]):not([type=radio]):not([type=color]),textarea,select{font-size:16px!important}
 .app-topbar-heading{margin:0;font-size:20px;color:inherit}
+
+/* Legibility pass — no meaningful card/capture/profile microcopy below 12px. */
+.collectible-card-top,.collectible-card-bottom,.collectible-card-heading>span,
+.collectible-card-specs small,.collectible-belongs>span,.collectible-belongs small,
+.collector-metric span,.photo-scan-status span,.scanner-pill,.wizard-top,
+.preview-kicker,.picker-option small,.item-picker-option small,
+.auth-legal,.local-note,.selected-file,.profile-badge,.auth-brand>p,
+.stat-strip small,.item-showcase-owner span,.item-showcase-specs span{
+ font-size:12px!important;line-height:1.4
+}
+:where(.screen-body,.collector-dashboard,.scan-workspace,.profile-preview) p{line-height:1.5}
