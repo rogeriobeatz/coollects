@@ -1,5 +1,5 @@
 'use client'
-import { useState,type FormEvent } from 'react'
+import {useEffect,useState,type FormEvent} from 'react'
 import Link from 'next/link'
 import { useRouter,useSearchParams } from 'next/navigation'
 import { safeAuthNext } from '@/lib/auth-redirect'
@@ -13,19 +13,23 @@ export function AccountForm({mode}:{mode:'login'|'register'}){
  const [email,setEmail]=useState('')
  const [password,setPassword]=useState('')
  const [name,setName]=useState('')
+ const [username,setUsername]=useState('')
+ const [availability,setAvailability]=useState('')
  const [busy,setBusy]=useState(false)
  const [message,setMessage]=useState('')
  const register=mode==='register'
+ useEffect(()=>{if(!register||username.length<3){setAvailability('');return}const db=getBrowserClient();if(!db)return;let active=true;const t=setTimeout(()=>{void Promise.all([db.from('profiles').select('id').eq('username',username).maybeSingle(),db.from('profile_username_aliases').select('profile_id').eq('username',username).maybeSingle()]).then(([p,a])=>{if(active)setAvailability(p.error||a.error?'Disponibilidade não verificada':p.data||a.data?'Nome de usuário indisponível':'Nome de usuário disponível')})},350);return()=>{active=false;clearTimeout(t)}},[username,register])
  async function submit(event:FormEvent<HTMLFormElement>){
   event.preventDefault()
   const client=getBrowserClient()
   if(!client){setMessage('O acesso está temporariamente indisponível. Tente novamente em alguns minutos.');return}
   if(password.length<8){setMessage('A senha deve ter pelo menos 8 caracteres.');return}
   if(register&&name.trim().length<2){setMessage('Informe um nome com pelo menos 2 caracteres.');return}
+  if(register&&(!/^[a-z0-9_-]{3,30}$/.test(username)||availability==='Nome de usuário indisponível')){setMessage('Escolha um nome de usuário disponível de 3 a 30 caracteres.');return}
   setBusy(true);setMessage('')
   try{
    if(register){
-    const {data,error}=await client.auth.signUp({email,password,options:{data:{display_name:name.trim()},emailRedirectTo:window.location.origin+'/auth/callback?next='+encodeURIComponent(destination)}})
+    const {data,error}=await client.auth.signUp({email,password,options:{data:{display_name:name.trim(),username},emailRedirectTo:window.location.origin+'/auth/callback?next='+encodeURIComponent(destination)}})
     if(error)throw error
     if(data.session){router.replace(destination);router.refresh()}else setMessage('Cadastro realizado! Verifique seu e-mail para confirmar a conta.')
    }else{
@@ -38,6 +42,8 @@ export function AccountForm({mode}:{mode:'login'|'register'}){
  }
  return <main className="auth-page"><div className="auth-brand"><Link href="/" aria-label="Coollects início"><BrandLogo/></Link><p>SUAS COLEÇÕES. SUAS HISTÓRIAS.</p><span aria-hidden="true">✳</span></div><div className="auth-sheet"><span className="auth-emblem">{register?<UserRound size={26}/>:<LockKeyhole size={26}/>}</span><h1>{register?'Comece seu':'Bem-vindo de'}<br/><em>{register?'universo.':'volta!'}</em></h1><p>{register?'Crie sua conta e guarde suas paixões em um só lugar.':'Seu acervo está esperando por você.'}</p><form onSubmit={submit}>
  {register&&<label className="field-label">Como podemos te chamar?<input required minLength={2} maxLength={60} autoComplete="name" value={name} onChange={e=>setName(e.target.value)} placeholder="Seu nome"/></label>}
+ {register&&<label className="field-label">Nome de usuário (@)<input required minLength={3} maxLength={30} autoComplete="username" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g,''))} placeholder="ex.: rogerio"/></label>}
+ {register&&username&&<p role="status" className="ux-form-help">{availability||'Letras minúsculas, números, hífen e underline.'}</p>}
  <label className="field-label">E-mail<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com"/></label>
  <label className="field-label">Senha<input required minLength={8} type="password" autoComplete={register?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Pelo menos 8 caracteres"/></label>
  <button disabled={busy} className="save-item-button">{busy?'Aguarde...':register?'Criar minha conta':'Entrar'} <ArrowRight size={19}/></button>
