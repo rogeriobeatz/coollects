@@ -17,7 +17,7 @@ for(const viewport of [{width:320,height:780},{width:390,height:844}]){
    await page.goto('/')
    await page.getByRole('navigation',{name:'Navegação principal'}).getByRole('link',{name:'Acervo'}).click()
    await expect(page).toHaveURL(/\/acervo$/)
-   await expect(page.getByRole('heading',{name:/Acervo/i})).toBeVisible()
+   await expect(page.getByRole('heading',{name:'Acervo',exact:true})).toBeVisible()
    await page.getByRole('link',{name:'Explorar'}).last().click()
    await expect(page).toHaveURL(/\/explorar$/)
    await expect(page.getByRole('heading',{name:/Explorar/i})).toBeVisible()
