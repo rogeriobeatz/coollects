@@ -16,8 +16,6 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const router=useRouter()
  const preferredCollection=params.get('colecao')
  const fileRef=useRef<HTMLInputElement>(null),cameraRef=useRef<HTMLInputElement>(null)
- const [stage,setStage]=useState<'captura'|'revisao'>('captura')
- const [suggested,setSuggested]=useState(false)
  const [file,setFile]=useState<File|null>(null),[image,setImage]=useState(''),[preparing,setPreparing]=useState(false)
  const [name,setName]=useState(''),[brand,setBrand]=useState(''),[category,setCategory]=useState<string>('Miniaturas')
  const [collectionIds,setCollectionIds]=useState<string[]>([]),[notes,setNotes]=useState('')
@@ -38,9 +36,8 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   setPreparing(true);setNotice('Preparando a fotografia…')
   try{
    const prepared=await preparePhoto(chosen)
-   setSuggested(false);setFile(prepared.file);setSaved(false);setName('');setBrand('');setNotes('');setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
-   setNotice('Fotografia pronta. Identificando os dados…')
-   if(!aiEnabled)setStage('revisao')
+   setFile(prepared.file);setSaved(false);setName('');setBrand('');setNotes('');setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
+   setNotice('Fotografia preparada. Nossa equipe digital está identificando o item…')
   }catch(error){setNotice(error instanceof Error?error.message:'Não foi possível abrir a fotografia. Tente novamente.')}
   finally{setPreparing(false)}
  }
@@ -57,7 +54,6 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
     if(!response.ok||!data.suggestion)throw new Error(data.error||'A análise não foi concluída.')
     if(id!==requestId.current)return
     setScanStage(3)
-    setSuggested(true)
     const item=data.suggestion
     if(item.name)setName(item.name)
     if(item.brand)setBrand(item.brand)
@@ -67,7 +63,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
     if(parsed.success){const d=parsed.data;setDetails({manufacturer:d.manufacturer,series:d.series,seriesNumber:d.seriesNumber,collectionNumber:d.collectionNumber,year:d.year===null?'':String(d.year),scale:d.scale,color:d.color,condition:d.condition})}
     setNotice('Ficha identificada! Confira os detalhes antes de salvar.')
    }catch(error){if(controller.signal.aborted||id!==requestId.current)return;setAnalysisError(error instanceof Error?error.message:'A análise falhou. Você pode preencher manualmente.');setNotice('Não foi possível identificar automaticamente. Você pode preencher manualmente.')}
-   finally{if(id===requestId.current){setRecognizing(false);setStage('revisao')}}
+   finally{if(id===requestId.current)setRecognizing(false)}
   }
   void run()
   return ()=>{controller.abort();requestId.current++}
@@ -95,46 +91,40 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
   }finally{savingRef.current=false;setSaving(false)}
  }
- function reset(){setSuggested(false);setStage('captura');requestId.current++;setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
- return <section className={'scan-workspace scan-stage-'+stage}>
-  <div className="scan-progress" aria-label="Etapa do cadastro"><span className={stage==='captura'?'active':''}>1. Foto</span><span className={stage==='revisao'?'active':''}>2. Revisar</span></div>
-  {stage==='captura'&&<>
+ function reset(){requestId.current++;setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
+ return <section className="scan-workspace">
   <div className={'scanner-stage '+(image?'has-image ':'')+((recognizing||preparing)?'is-scanning':'')}>
-   {image?<div className="ocr-preview-frame"><img className="scanner-photo" src={image} alt="Prévia da fotografia do item"/></div>:<div className="scanner-placeholder"><ScanLine size={58}/><p>Fotografe ou escolha um item</p></div>}
+   {image?<div className="ocr-preview-frame"><img className="scanner-photo" src={image} alt="Prévia da fotografia do item"/></div>:<div className="scanner-placeholder"><div className="scanner-symbol"><ScanLine size={58}/></div><strong>Aponte. Fotografe.<br/>Colecione.</strong><p>Seu acervo, um item de cada vez.</p></div>}
    {image&&(recognizing||preparing)&&<div className="photo-scan-overlay" role="status" aria-live="polite"><div className="photo-scan-grid" aria-hidden="true"/><div className="photo-scan-laser" aria-hidden="true"/><div className="photo-scan-status"><Sparkles size={18}/><strong>{preparing||scanStage===1?"Preparando imagem":scanStage===2?"Identificando sua miniatura":"Organizando detalhes"}</strong><span>Lendo a embalagem, o modelo e a série…</span></div></div>}
    <div className="scanner-corners" aria-hidden="true"><i/><i/><i/><i/></div><span className="scanner-pill"><span/> CÂMERA / GALERIA</span>
    {file&&!recognizing&&<button type="button" className="photo-clear" aria-label="Remover imagem" onClick={()=>setFile(null)}><X size={20}/></button>}
   </div>
   {preparing&&<p role="status" className="scan-notice">Preparando fotografia para o cadastro…</p>}
-  <div className="capture-button-row"><button type="button" onClick={()=>cameraRef.current?.click()}><Camera size={22}/> Câmera</button><button type="button" onClick={()=>fileRef.current?.click()}><ImagePlus size={22}/> Galeria</button><button type="button" onClick={()=>setStage('revisao')}><Layers3 size={22}/> Manual</button></div>
-  {(preparing||recognizing)&&<p className="scan-progress-status" role="status">Preparando dados do item…</p>}
+  <div className="capture-button-row"><button className="capture-secondary" onClick={()=>fileRef.current?.click()} aria-label="Selecionar fotografia"><ImagePlus size={26}/></button><button className="shutter-button" onClick={()=>cameraRef.current?.click()} aria-label="Abrir a câmera"><Camera size={34}/></button><button className="capture-secondary" onClick={()=>document.getElementById('item-name')?.focus()} aria-label="Preencher manualmente"><Layers3 size={25}/></button></div>
+  <div className="scan-methods"><button onClick={()=>cameraRef.current?.click()}><Camera size={16}/> Tirar foto</button><button onClick={()=>fileRef.current?.click()}><ImagePlus size={16}/> Galeria</button></div>
   <input className="visually-hidden" aria-label="Capturar foto" ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={e=>void pick(e)}/>
   <input className="visually-hidden" aria-label="Escolher foto" ref={fileRef} type="file" accept="image/*,.heic,.heif" onChange={e=>void pick(e)}/>
 
-  </>}
-  {stage==='revisao'&&<><div className="review-step-heading"><h2>Dados do item</h2>{file&&<button type="button" className="ux-tertiary" onClick={()=>setStage('captura')}>Trocar foto</button>}</div>
-  {suggested&&<p role="status" className="ux-ai-suggested"><Sparkles size={17}/> Dados sugeridos pela IA — revise antes de salvar</p>}
   {analysisError&&<div role="alert" className="ai-magic-error"><strong>A análise automática não terminou.</strong><p>{analysisError}</p><span>Você ainda pode cadastrar o item manualmente.</span></div>}
   {!aiEnabled&&<p className="scan-notice">O reconhecimento inteligente está temporariamente indisponível. Preencha os campos manualmente.</p>}
-  <div className="item-form">
+  <div className="item-form"><div className="section-title-inline"><div><p className="kicker">REVISE ANTES DE SALVAR</p><h2>Ficha do<br/><em>seu item.</em></h2></div><span className="form-sticker" aria-hidden="true">✦</span></div>
    <label className="field-label" htmlFor="item-name">Nome do item *<input id="item-name" maxLength={90} value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Porsche 911 GT3 RS"/></label>
-   <details className="item-details-disclosure"><summary>Detalhes do modelo (opcional)</summary>   <div className="form-double"><label className="field-label" htmlFor="item-brand">Marca (fabricante da miniatura)<input id="item-brand" maxLength={70} value={brand} onChange={e=>setBrand(e.target.value)} placeholder="Ex.: Hot Wheels"/></label><label className="field-label" htmlFor="item-category">Categoria<span className="select-wrap"><select id="item-category" value={category} onChange={e=>setCategory(e.target.value)}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select><ChevronDown size={17}/></span></label></div>
-   {category==='Miniaturas'&&<section className="diecast-fields"><h3>Identificação do modelo</h3><div className="diecast-field-grid">{([
-    ['manufacturer','Carro real (montadora)','Ex.: Honda'],
+   <div className="form-double"><label className="field-label" htmlFor="item-brand">Marca<input id="item-brand" maxLength={70} value={brand} onChange={e=>setBrand(e.target.value)} placeholder="Fabricante"/></label><label className="field-label" htmlFor="item-category">Categoria<span className="select-wrap"><select id="item-category" value={category} onChange={e=>setCategory(e.target.value)}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select><ChevronDown size={17}/></span></label></div>
+   {category==='Miniaturas'&&<section className="diecast-fields"><div className="section-title-inline"><div><p className="kicker">IDENTIDADE DA MINIATURA</p><h3>Detalhes do modelo</h3></div><Sparkles size={21}/></div><div className="diecast-field-grid">{([
+    ['manufacturer','Montadora','Ex.: Honda'],
     ['series','Série','Ex.: Compact Kings'],
     ['seriesNumber','Número na série','Ex.: 4/10'],
     ['collectionNumber','Numeração geral','Ex.: 105/250'],
-    ['year','Ano da cartela','Ex.: 2024'],
+    ['year','Ano da cartela','Somente se visível'],
     ['scale','Escala','Ex.: 1:64'],
     ['color','Cor','Ex.: Vermelho'],
     ['condition','Condição','Ex.: Lacrado']
    ] as const).map(([key,label,placeholder])=><label key={key} className="field-label">{label}<input value={details[key]} onChange={e=>setDetails(v=>({...v,[key]:e.target.value}))} placeholder={placeholder} maxLength={key==='year'?4:90} inputMode={key==='year'?'numeric':'text'}/></label>)}</div></section>}
-</details>
-   <fieldset className="collection-selector"><legend>Coleção</legend>{collections.length?collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}/>{c.name}</label>):<p>Você ainda não possui coleções. <Link href="/colecoes">Criar coleção</Link></p>}</fieldset>
-   <label className="field-label" htmlFor="item-notes">Observações<textarea id="item-notes" rows={3} maxLength={300} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Ex.: embalado e conservado"/></label><p className="ux-form-help">As observações podem aparecer quando o item for compartilhado em uma coleção pública.</p>
-   <button type="button" disabled={saving||preparing||recognizing||saved} className="save-item-button ux-sticky-save" onClick={()=>void save()}>{saving?'Salvando…':saved?'Salvo!':'Salvar'}</button>
+   <fieldset className="collection-selector"><legend>Adicionar a coleções (opcional)</legend>{collections.length?collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}/>{c.name}</label>):<p>Você ainda não possui coleções. <Link href="/colecoes">Criar coleção</Link></p>}</fieldset>
+   <label className="field-label" htmlFor="item-notes">Observações pessoais (podem ser visíveis em coleções públicas)<textarea id="item-notes" rows={3} maxLength={300} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="História, origem, conservação ou notas pessoais..."/></label>
+   <button type="button" disabled={saving||preparing||recognizing||saved} className="save-item-button" onClick={()=>void save()}>{saved?<Check size={23}/>:<ArrowRight size={22}/>} {saving?'Salvando…':saved?'Item salvo!':'Salvar no meu acervo'}</button>
    {notice&&<p role="status" className="scan-notice">{notice}</p>}
    {saved&&<div className="saved-actions">{preferredCollection&&<Link href={'/colecao/'+encodeURIComponent(preferredCollection)}>Voltar à coleção <ArrowRight size={16}/></Link>}<Link href="/itens">Ver meus itens <ArrowRight size={16}/></Link><button onClick={reset}>Cadastrar outro</button></div>}
-  </div></>}
+  </div>
  </section>
 }

@@ -36,7 +36,7 @@ export function ItemShowcase({id}:{id:string}){
    const {data:rows}=await db.from('collections').select('*').in('id',ids)
    visibleCollections=(rows||[]) as CollectionRow[]
   }
-  setItem({...result,photoUrl:url});setOwner((profile||null) as ProfileRow|null);setCollections(visibleCollections);setError('');setLoading(false);window.dispatchEvent(new CustomEvent('coollects:page-title',{detail:result.name}))
+  setItem({...result,photoUrl:url});setOwner((profile||null) as ProfileRow|null);setCollections(visibleCollections);setError('');setLoading(false)
  },[id])
  useEffect(()=>{void refresh()},[refresh])
  async function share(){

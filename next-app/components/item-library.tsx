@@ -10,13 +10,10 @@ import { CATEGORIES } from '@/lib/local-catalog'
 import {ItemCollectionPicker} from './item-collection-picker'
 import {CollectibleCard} from './collectible-card'
 import {CollectionView} from './collection-view'
-import {CardSkeleton} from './feedback-states'
 export function ItemLibrary(){return <AuthGate>{userId=><Library userId={userId}/>}</AuthGate>}
 type ViewItem=ItemRow&{url:string|null}
 function Library({userId}:{userId:string}){
  const [search,setSearch]=useState('')
- const [sortBy,setSortBy]=useState<'recentes'|'nome'|'marca'>('recentes')
- const [collectionFilter,setCollectionFilter]=useState('todas')
  const [deferredSearch,setDeferredSearch]=useState('')
  const [retryKey,setRetryKey]=useState(0)
  useEffect(()=>{const timer=setTimeout(()=>setDeferredSearch(search.trim().toLocaleLowerCase('pt-BR')),250);return()=>clearTimeout(timer)},[search])
@@ -102,14 +99,9 @@ function Library({userId}:{userId:string}){
   setDeleteItem(null);setMenuItem(null);setRemoving(false)
   void refresh()
  }
- const visible=items.filter(i=>(collectionFilter==='todas'||links.some(l=>l.item_id===i.id&&l.collection_id===collectionFilter))&&[i.name,i.brand,i.category,i.notes,...Object.values(i.details||{}).map(String)].join(" ").toLocaleLowerCase("pt-BR").includes(deferredSearch)).sort((a,b)=>sortBy==='nome'?a.name.localeCompare(b.name,'pt-BR'):sortBy==='marca'?a.brand.localeCompare(b.brand,'pt-BR'):new Date(b.created_at).getTime()-new Date(a.created_at).getTime())
- return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>Voltar à coleção</Link>}
- <details className="ux-refine-panel"><summary><Search size={19}/> Buscar, filtrar e ordenar</summary>
-  <div className="ux-item-toolbar"><div className="ux-sort-controls"><label>Ordenar <select value={sortBy} onChange={e=>setSortBy(e.target.value as typeof sortBy)}><option value="recentes">Recentes</option><option value="nome">Nome</option><option value="marca">Marca</option></select></label><label>Coleção <select value={collectionFilter} onChange={e=>setCollectionFilter(e.target.value)}><option value="todas">Todas</option>{collections.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label></div></div>
-  <label className="collection-search"><Search size={18}/><input aria-label="Buscar itens no acervo" placeholder="Buscar item, marca ou categoria" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Limpar busca" onClick={()=>setSearch('')}>Limpar</button>}</label>
- </details>
- {message&&<p role="status" className="scan-notice">{message} {message.includes("carregar")&&<button type="button" onClick={()=>{setLoading(true);setRetryKey(v=>v+1)}}>Tentar novamente</button>}</p>}
- {loading?<CardSkeleton/>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Adicione um item para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><p>Nenhum item corresponde à busca.</p><button type="button" className="pill-btn" onClick={()=>setSearch("")}>Limpar busca</button></div>}<CollectionView storageKey="coollects-items-view" items={visible} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
+ const visible=items.filter(i=>[i.name,i.brand,i.category,i.notes,...Object.values(i.details||{}).map(String)].join(" ").toLocaleLowerCase("pt-BR").includes(deferredSearch))
+ return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>← Voltar à coleção</Link>}<label className="collection-search"><Search size={18}/><input aria-label="Buscar no meu acervo" placeholder="Buscar item, marca ou categoria…" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Limpar busca" onClick={()=>setSearch("")}>Limpar</button>}</label><Link href="/cadastrar" className="pill-btn"><Plus size={18}/> Cadastrar outro item</Link>{message&&<p role="status" className="scan-notice">{message} {message.includes("carregar")&&<button type="button" onClick={()=>{setLoading(true);setRetryKey(v=>v+1)}}>Tentar novamente</button>}</p>}
+ {loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><p>Nenhum item corresponde à busca.</p><button type="button" className="pill-btn" onClick={()=>setSearch("")}>Limpar busca</button></div>}<CollectionView storageKey="coollects-items-view" items={visible} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
   actions={<div className="cc-card-actions">
    <button type="button" className="cc-more-trigger" aria-label={"Ações de "+item.name} aria-expanded={menuItem===item.id} onClick={()=>setMenuItem(menuItem===item.id?null:item.id)}><MoreHorizontal size={20}/></button>
    {menuItem===item.id&&<div className="cc-more-menu">

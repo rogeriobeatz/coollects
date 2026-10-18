@@ -10,9 +10,8 @@ export function AccountDeletion(){
  const [confirmation,setConfirmation]=useState('')
  const [busy,setBusy]=useState(false)
  const [message,setMessage]=useState('')
- const [totals,setTotals]=useState<{items:number;collections:number}|null>(null)
  const router=useRouter()
- useEffect(()=>{const db=getBrowserClient();if(!db)return;void db.auth.getUser().then(async({data})=>{setEmail(data.user?.email||'');if(!data.user)return;const [items,collections]=await Promise.all([db.from('items').select('id',{head:true,count:'exact'}).eq('owner_id',data.user.id),db.from('collections').select('id',{head:true,count:'exact'}).eq('owner_id',data.user.id)]);if(!items.error&&!collections.error)setTotals({items:items.count??0,collections:collections.count??0})})},[])
+ useEffect(()=>{const db=getBrowserClient();if(db)void db.auth.getUser().then(({data})=>setEmail(data.user?.email||''))},[])
  async function submit(event:FormEvent){
   event.preventDefault()
   if(busy||confirmation!=='EXCLUIR'||!password)return
@@ -38,7 +37,7 @@ export function AccountDeletion(){
     <button type="button" className="close-modal" onClick={()=>{if(!busy){setOpen(false);setPassword('');setConfirmation('')}}} aria-label="Cancelar exclusão"><X size={20}/></button>
     <span className="account-warn-icon"><AlertTriangle size={28}/></span>
     <h2>Excluir sua conta?</h2>
-    <p>{totals?('Isso apagará '+totals.items+' '+(totals.items===1?'item':'itens')+', '+totals.collections+' '+(totals.collections===1?'coleção':'coleções')+' e todas as fotos.'): 'Suas coleções, itens e fotografias serão removidos permanentemente.'} Não dá para desfazer. Para confirmar, digite EXCLUIR e informe sua senha.</p>
+    <p>Suas coleções, itens e fotografias serão removidos permanentemente. Se tiver certeza, informe sua senha e digite EXCLUIR.</p>
     <form onSubmit={e=>void submit(e)}>
      <label className="field-label">Confirme sua senha<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
      <label className="field-label">Digite EXCLUIR<input type="text" autoComplete="off" required value={confirmation} onChange={e=>setConfirmation(e.target.value)} placeholder="EXCLUIR"/></label>

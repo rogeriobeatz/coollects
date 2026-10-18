@@ -6,5 +6,5 @@ export default function CollectionDetailPage(){
  const {id}=useParams<{id:string}>()
  const origin=useSearchParams().get('origem')
  const fromExplore=origin==='explorar'
- return <Screen backHref={fromExplore?"/explorar":"/colecoes"} active={fromExplore?"explorar":"colecoes"} title="Coleção"><PublicCollection id={id}/></Screen>
+ return <Screen backHref={fromExplore?"/explorar":"/colecoes"} active={fromExplore?"explorar":"colecoes"} title="Sua coleção," accent="seus itens." subtitle="Organize, adicione e compartilhe."><PublicCollection id={id}/></Screen>
 }

@@ -1,39 +1,55 @@
 'use client'
-import {useEffect,useState} from 'react'
+import { useEffect,useState } from 'react'
 import Link from 'next/link'
-import {ArrowRight,Settings,Share2,UserRound,Camera} from 'lucide-react'
-import {AuthGate} from './auth-gate'
-import {getBrowserClient} from '@/lib/supabase/client'
-import {publicUrlPath,type ProfileRow} from '@/lib/catalog'
-export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileOverview userId={userId}/>}</AuthGate>}
-function ProfileOverview({userId}:{userId:string}){
- const [profile,setProfile]=useState<ProfileRow|null>(null)
- const [collections,setCollections]=useState(0)
- const [items,setItems]=useState(0)
- const [message,setMessage]=useState('')
- useEffect(()=>{let mounted=true;const db=getBrowserClient();if(!db)return
-  void (async()=>{
-   const [{data:p,error},total]=await Promise.all([db.from('profiles').select('*').eq('id',userId).single(),db.from('collections').select('id',{count:'exact',head:true}).eq('owner_id',userId).eq('is_public',true)])
-   if(error){if(mounted)setMessage('Não foi possível carregar o perfil.');return}
-   const {data:cols}=await db.from('collections').select('id').eq('owner_id',userId).eq('is_public',true)
-   const ids=(cols||[]).map(c=>c.id)
-   const {data:links}=ids.length?await db.from('collection_items').select('item_id').in('collection_id',ids):{data:[] as {item_id:string}[]}
-   if(mounted){setProfile(p as ProfileRow);setCollections(total.count??0);setItems(new Set((links||[]).map(x=>x.item_id)).size)}
-  })()
-  return ()=>{mounted=false}
+import { ArrowRight,Check,Copy,LogOut,UserRound } from 'lucide-react'
+import { AuthGate } from './auth-gate'
+import { LegacyImport } from './legacy-import'
+import { AccountDeletion } from './account-deletion'
+import { getBrowserClient } from '@/lib/supabase/client'
+import { ProfileRow,publicUrlPath } from '@/lib/catalog'
+import { useRouter } from 'next/navigation'
+export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileEditor userId={userId}/>}</AuthGate>}
+function ProfileEditor({userId}:{userId:string}){
+ const [profile,setProfile]=useState<ProfileRow|null>(null),[displayName,setDisplayName]=useState(''),[username,setUsername]=useState(''),[bio,setBio]=useState('')
+ const [message,setMessage]=useState(''),[busy,setBusy]=useState(false)
+ const router=useRouter()
+ useEffect(()=>{
+  const db=getBrowserClient();if(!db)return
+  let active=true
+  void db.from('profiles').select('*').eq('id',userId).single().then(({data,error})=>{
+   if(!active)return
+   if(error){setMessage('Não conseguimos carregar o perfil agora. Tente novamente.');return}
+   if(data){const p=data as ProfileRow;setProfile(p);setDisplayName(p.display_name);setUsername(p.username);setBio(p.bio)}
+  })
+  return ()=>{active=false}
  },[userId])
- async function share(){if(!profile)return;try{await navigator.clipboard.writeText(location.origin+publicUrlPath(profile.username));setMessage('Link copiado!')}catch{setMessage('Não foi possível copiar. Tente novamente.')}}
- if(!profile)return <p className="ux-loading" role="status">{message||'Carregando perfil…'}</p>
- const avatar=profile.avatar_path?getBrowserClient()?.storage.from('coollects-avatars').getPublicUrl(profile.avatar_path).data.publicUrl:null
- return <section className="ux-profile">
-  <div className="ux-profile-head"><Link href="/perfil/editar" className="ux-profile-avatar" aria-label="Alterar foto do perfil">{avatar?<img alt="" src={avatar}/>:<UserRound size={38}/>}<Camera size={17} className="ux-avatar-camera"/></Link>
-   <div><h1>{profile.display_name}</h1><p>@{profile.username}</p></div></div>
-  {profile.bio&&<p className="ux-profile-bio">{profile.bio}</p>}
-  <div className="ux-profile-stats"><span><strong>{collections}</strong> {collections===1?'coleção pública':'coleções públicas'}</span><span><strong>{items}</strong> {items===1?'item público':'itens públicos'}</span></div>
-  <div className="ux-profile-actions"><Link href="/perfil/editar" className="ux-secondary">Editar perfil</Link><button type="button" className="ux-secondary" onClick={()=>void share()} aria-label="Copiar link do perfil"><Share2 size={18}/> Compartilhar</button></div>
+ async function save(){
+  if(displayName.trim().length<2||!/^[a-z0-9_]{3,30}$/.test(username)){setMessage('Nome com pelo menos 2 caracteres; usuário de 3 a 30 letras minúsculas, números ou _.');return}
+  setBusy(true);const db=getBrowserClient();if(!db)return
+  const {error}=await db.from('profiles').update({display_name:displayName.trim(),username,bio:bio.trim()}).eq('id',userId)
+  setMessage(error?'Não foi possível atualizar o perfil. O nome de usuário pode já estar em uso.':'Perfil atualizado!')
+  if(!error)setProfile(p=>p?{...p,display_name:displayName.trim(),username,bio:bio.trim()}:p)
+  setBusy(false)
+ }
+ async function signOut(){const db=getBrowserClient();if(!db){setMessage('Serviço indisponível. Tente novamente.');return}setBusy(true);const {error}=await db.auth.signOut();setBusy(false);if(error){setMessage('Não foi possível encerrar sua sessão. Tente novamente.');return}router.replace('/');router.refresh()}
+ async function share(){
+  if(!profile)return
+  const url=location.origin+publicUrlPath(profile.username)
+  try{await navigator.clipboard.writeText(url);setMessage('Link do perfil copiado!')}catch{setMessage(url)}
+ }
+ return <div className="profile-preview"><span className="profile-avatar"><UserRound size={42}/></span><h2>{profile?.display_name||'Seu universo'}</h2><p>Personalize seu perfil público e compartilhe suas coleções.</p>
+  <label className="field-label">Nome de exibição<input maxLength={60} value={displayName} onChange={e=>setDisplayName(e.target.value)}/></label>
+  <label className="field-label">Usuário (URL pública)<input maxLength={30} value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))}/></label>
+  <label className="field-label">Biografia<textarea rows={3} maxLength={300} value={bio} onChange={e=>setBio(e.target.value)}/></label>
+  <button className="save-item-button" disabled={busy||!profile} onClick={()=>void save()}><Check size={18}/>{busy?'Salvando...':'Salvar perfil'}</button>
   {message&&<p role="status" className="scan-notice">{message}</p>}
-  <Link className="ux-profile-row" href={publicUrlPath(profile.username)}>Ver perfil público <ArrowRight size={19}/></Link>
-  <Link className="ux-profile-row" href="/configuracoes"><Settings size={19}/> Configurações <ArrowRight size={19}/></Link>
-  <p className="ux-privacy-hint">Somente suas coleções públicas aparecem para outros colecionadores.</p>
- </section>
+  <div className="profile-links">
+   {profile&&<><Link href={publicUrlPath(profile.username)}>Ver perfil público <ArrowRight size={16}/></Link><button onClick={()=>void share()}>Copiar link <Copy size={16}/></button></>}
+   <Link href="/itens">Gerenciar meus itens <ArrowRight size={16}/></Link>
+   <button disabled={busy} onClick={()=>void signOut()}>Sair da conta <LogOut size={16}/></button>
+  </div>
+  <LegacyImport userId={userId}/>
+  <AccountDeletion/>
+  <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seu e-mail nunca aparece no perfil.</p>
+ </div>
 }
