@@ -1,11 +1,14 @@
 'use client'
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {ImageIcon} from 'lucide-react'
 import {getBrowserClient} from '@/lib/supabase/client'
 import {signedImage} from '@/lib/images'
 export function CollectionMosaic({id,coverId,onCount}:{id:string;coverId?:string|null;onCount?:(value:number)=>void}){
  const [photos,setPhotos]=useState<string[]>([])
- useEffect(()=>{let active=true;const db=getBrowserClient();if(!db)return
+ const element=useRef<HTMLDivElement>(null)
+ const [visible,setVisible]=useState(false)
+ useEffect(()=>{const el=element.current;if(!el)return;if(!('IntersectionObserver' in window)){setVisible(true);return}const observer=new IntersectionObserver(([entry])=>{if(entry.isIntersecting){setVisible(true);observer.disconnect()}},{rootMargin:'240px'});observer.observe(el);return()=>observer.disconnect()},[])
+ useEffect(()=>{if(!visible)return;let active=true;const db=getBrowserClient();if(!db)return
   void (async()=>{
    const {data:links,count}=await db.from('collection_items').select('item_id',{count:'exact'}).eq('collection_id',id).limit(32)
    if(active)onCount?.(count??(links||[]).length)
@@ -19,8 +22,8 @@ export function CollectionMosaic({id,coverId,onCount}:{id:string;coverId?:string
    if(active)setPhotos(urls.filter((url):url is string=>Boolean(url)))
   })()
   return ()=>{active=false}
- },[id,coverId,onCount])
- return <div className={'collection-mosaic count-'+photos.length} aria-hidden="true">
+ },[id,coverId,onCount,visible])
+ return <div ref={element} className={'collection-mosaic count-'+photos.length} aria-hidden="true">
   {photos.length?photos.map((url,index)=><img key={index} src={url} alt="" loading="lazy"/>):<div className="collection-mosaic-empty"><ImageIcon size={36}/></div>}
  </div>
 }
