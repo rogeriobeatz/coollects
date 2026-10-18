@@ -12,7 +12,7 @@ export function Screen({title,accent,subtitle,active,children,variant='light',ba
  return <main className={'app-frame screen-'+variant}>
   <header className="topbar app-topbar">
    {detail?<Link href={backHref} className="back" aria-label="Voltar"><ArrowLeft size={22}/></Link>:null}
-   <div className="app-topbar-heading">{active==='inicio'?<BrandLogo/>:<TopBarTitle fallback={label}/>}</div>
+   <h1 className="app-topbar-heading">{active==='inicio'?<BrandLogo/>:<TopBarTitle fallback={label}/>}</h1>
   </header>
   <div className={'screen-body'+(compact?' screen-body-compact':'')}>{children}</div>
   {active!=='cadastrar'&&<MobileNav active={active}/>}
