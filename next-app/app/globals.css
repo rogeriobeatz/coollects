@@ -519,3 +519,28 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .native-modal.edit-overlay{margin:0;width:100%;max-width:none;height:100dvh;max-height:none;border:0;background:transparent;color:var(--ink)}
 .native-modal.edit-overlay:not([open]){display:none}
 .native-modal::backdrop{background:#100b23ba}
+
+/* Shared public collection pages are a guest experience, not a logged-in app screen. */
+.guest-shared-shell{min-height:100dvh;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));background:#fffefa}
+.guest-shared-header{position:relative;min-height:64px;padding:0 14px;background:#361667;display:flex;align-items:center;justify-content:center}
+.guest-shared-header .screen-logo{display:grid;place-items:center;width:min(148px,calc(100% - 145px))}
+.guest-shared-login{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;min-width:67px;min-height:44px;padding:9px 11px;border:1px solid #ffffff75;border-radius:12px;color:#fff;font-size:13px;font-weight:800;text-decoration:none}
+.guest-shared-login:hover,.guest-shared-login:focus-visible{background:#ffffff25}
+.guest-shared-content{width:100%;max-width:880px;margin:0 auto;padding:17px clamp(14px,4vw,28px) 28px}
+.guest-share-intro{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 15px;margin:10px 0 15px;padding:11px 13px;border:1px solid #e0d2f2;border-radius:14px;background:#f7f2ff}
+.guest-share-intro>span{font-size:10px;letter-spacing:.09em;font-weight:900;color:#54299a}
+.guest-share-intro>p{flex:1 1 100%;font-size:13px;line-height:1.4;color:#4e4165;margin:0}
+.guest-share-intro>a{display:inline-flex;align-items:center;gap:5px;font-size:13px;min-height:35px;font-weight:850;color:#54249a;text-decoration:none}
+.guest-join-panel{display:flex;flex-direction:column;align-items:center;gap:11px;max-width:750px;margin:28px auto 15px;padding:clamp(22px,5vw,38px) clamp(17px,5vw,35px);border:1px solid #e0d2ef;border-radius:23px;background:linear-gradient(155deg,#fcfaff,#f0e7ff);text-align:center}
+.guest-join-icon{width:55px;height:55px;display:grid;place-items:center;border-radius:16px;background:#6125bf;color:white}
+.guest-join-panel .guest-join-eyebrow{margin:0;color:#5b2ba5;font-size:10px;font-weight:900;letter-spacing:.12em}
+.guest-join-panel h2{max-width:500px;margin:0;color:#241433;font-size:clamp(23px,5vw,33px);line-height:1.13;letter-spacing:-.04em;font-weight:900}
+.guest-join-panel>p:not(.guest-join-eyebrow){max-width:470px;margin:0;color:#564767;font-size:14px;line-height:1.55}
+.guest-join-primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:min(100%,330px);min-height:50px;margin-top:7px;padding:12px 15px;border-radius:50px;background:#f15700;color:#20102f;font-size:15px;font-weight:900;text-decoration:none;box-shadow:0 4px 0 #ac420d}
+.guest-join-primary:hover{filter:brightness(1.05)}
+.guest-join-panel .guest-join-existing{font-size:13px!important}
+.guest-join-existing a{font-weight:850;color:#552098}
+.guest-shared-loading{min-height:100dvh;display:grid;place-items:center;background:#fffefa;color:#57416e;font-size:14px}
+.guest-shared-shell :is(a,button,summary,input):focus-visible{outline:3px solid #7d44d2;outline-offset:3px}
+@media(max-width:350px){.guest-shared-header .screen-logo{width:135px}.guest-shared-login{right:8px;font-size:12px;padding-inline:8px}.guest-share-intro{padding:10px}}
+@media(prefers-reduced-motion:reduce){.guest-join-primary{transition:none}}

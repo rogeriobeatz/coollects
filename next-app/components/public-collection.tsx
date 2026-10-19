@@ -29,6 +29,7 @@ export function PublicCollection({id}:{id:string}){
  const [messageKind,setMessageKind]=useState<NoticeKind>('error')
  function setMessage(value:string,kind:NoticeKind='error'){setMessageValue(value);setMessageKind(kind)}
  const owner=Boolean(user&&collection&&user.id===collection.owner_id)
+ const guestSignup='/registrar?next='+encodeURIComponent('/colecao/'+encodeURIComponent(id)+(fromExplore?'?origem=explorar':''))
  const [changingVisibility,setChangingVisibility]=useState(false)
  const refresh=useCallback(()=>{
   const db=getBrowserClient();if(!db){setMessage('Não foi possível abrir esta coleção agora. Tente novamente mais tarde.');setLoading(false);return}
@@ -120,6 +121,7 @@ export function PublicCollection({id}:{id:string}){
     </>}
    </div>
   </>}/>
+  {!user&&<div className="guest-share-intro"><span>UMA COLEÇÃO COMPARTILHADA</span><p>Explore os itens sem precisar criar uma conta.</p><Link href={guestSignup}>Crie a sua coleção <ArrowRight size={15}/></Link></div>}
   {collection.description.trim()&&<details className="collection-description"><summary>Sobre a coleção <ChevronDown size={15}/></summary><p>{collection.description}</p></details>}
   <div className="collection-items-heading">
    <h2>{items.length} {items.length===1?'item':'itens'}</h2>
@@ -146,6 +148,6 @@ export function PublicCollection({id}:{id:string}){
    {acervoError?<div role="alert"><p>Não foi possível carregar seu acervo.</p><button type="button" className="pill-btn" onClick={closePicker}>Fechar e tentar novamente</button></div>:acervoLoading?<p role="status">Carregando seu acervo…</p>:<div className="picker-options">{available.map(i=><label key={i.id} className="picker-option"><input type="checkbox" disabled={working} checked={pending.includes(i.id)} onChange={e=>setPending(prev=>e.target.checked?[...prev,i.id]:prev.filter(x=>x!==i.id))}/><span><strong>{i.name}</strong><small>{i.brand||i.category}</small></span>{pending.includes(i.id)&&<Check size={17}/>}</label>)}{available.length===0&&<p>{pickerSearch?'Nenhum item corresponde à busca.':'Nenhum item disponível. Você pode cadastrar um novo item.'}</p>}{!pickerSearch&&available.length===0&&<Link className="pill-btn" href={'/cadastrar?colecao='+encodeURIComponent(id)}>Novo item <Plus size={16}/></Link>}</div>}
    {message&&messageKind==='error'&&<p role="alert">{message}</p>}
    <button className="save-item-button" disabled={working||acervoLoading||acervoError||!pending.length} onClick={()=>void addExisting()}>{working?'Adicionando…':'Adicionar '+pending.length+' '+(pending.length===1?'item':'itens')}</button></section></dialog>}
-  <Link href="/explorar" className="collection-discover-link">Descobrir outras coleções <ArrowRight size={16}/></Link>
+  {user&&<Link href="/explorar" className="collection-discover-link">Descobrir outras coleções <ArrowRight size={16}/></Link>}
  </section>
 }

@@ -63,12 +63,18 @@ export function ItemDeck<T extends {id:string}>({items,getItem}:{items:T[];getIt
   const viewport=scroller.current
   if(!viewport||!stride)return
   viewport.scrollLeft=activeRef.current*stride
+  let settleFrame=0
   const frame=requestAnimationFrame(()=>{
    viewport.scrollLeft=activeRef.current*stride
    viewport.style.scrollSnapType='x mandatory'
-   resizing.current=false
+   // Native scroll snap can dispatch another scroll event after being restored.
+   // Keep the active card locked until the new card positions have settled.
+   settleFrame=requestAnimationFrame(()=>{
+    viewport.scrollLeft=activeRef.current*stride
+    resizing.current=false
+   })
   })
-  return()=>cancelAnimationFrame(frame)
+  return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(settleFrame)}
  },[stride,items.length])
  useLayoutEffect(()=>{
   const cards=region.current?.querySelectorAll<HTMLElement>('.item-deck-art')
