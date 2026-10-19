@@ -3,6 +3,7 @@ import { useState,type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter,useSearchParams } from 'next/navigation'
 import { safeAuthNext } from '@/lib/auth-redirect'
+import { authFailureMessage } from '@/lib/auth-failure'
 import { ArrowRight, LockKeyhole, UserRound } from 'lucide-react'
 import { BrandLogo } from './brand-logo'
 import { getBrowserClient } from '@/lib/supabase/client'
@@ -33,7 +34,7 @@ export function AccountForm({mode}:{mode:'login'|'register'}){
     if(error)throw error
     router.replace(destination);router.refresh()
    }
-  }catch{setMessage(register?'Não foi possível concluir o cadastro. Confira os dados e tente novamente.':'Não foi possível entrar. Confira seu e-mail e senha.')}
+  }catch(error){setMessage(authFailureMessage(error,register?'register':'login'))}
   finally{setBusy(false)}
  }
  return <main className="auth-page"><div className="auth-brand"><Link href="/" aria-label="Coollects início"><BrandLogo/></Link><p>SUAS COLEÇÕES. SUAS HISTÓRIAS.</p><span aria-hidden="true">✳</span></div><div className="auth-sheet"><span className="auth-emblem">{register?<UserRound size={26}/>:<LockKeyhole size={26}/>}</span><h1>{register?'Comece seu':'Bem-vindo de'}<br/><em>{register?'universo.':'volta!'}</em></h1><p>{register?'Crie sua conta e guarde suas paixões em um só lugar.':'Seu acervo está esperando por você.'}</p><form onSubmit={submit}>
