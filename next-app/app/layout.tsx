@@ -15,5 +15,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#6125BF' }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
- return <html lang="pt-BR" data-scroll-behavior="smooth"><body><ItemPresentationProvider>{children}</ItemPresentationProvider><PwaRegister/></body></html>
+ return <html lang="pt-BR" data-scroll-behavior="smooth"><head><meta name="apple-mobile-web-app-capable" content="yes" /></head><body><ItemPresentationProvider>{children}</ItemPresentationProvider><PwaRegister/></body></html>
 }
