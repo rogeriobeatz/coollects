@@ -519,3 +519,26 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
 .native-modal.edit-overlay{margin:0;width:100%;max-width:none;height:100dvh;max-height:none;border:0;background:transparent;color:var(--ink)}
 .native-modal.edit-overlay:not([open]){display:none}
 .native-modal::backdrop{background:#100b23ba}
+
+
+/*
+ * iOS Home Screen / installed PWA: extend the purple header beneath the
+ * transparent system status bar. Keep the logo, back button and account button
+ * centred in the safe content strip (not behind the camera or Dynamic Island).
+ * Ordinary Safari / browser tabs keep their original header height.
+ */
+@media (display-mode: standalone) {
+  .app-frame > .topbar {
+    min-height: calc(76px + env(safe-area-inset-top, 0px));
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  }
+  .app-frame > .topbar > .screen-logo,
+  .app-frame > .topbar > .back,
+  .app-frame > .topbar > .header-profile-link {
+    top: calc(38px + env(safe-area-inset-top, 0px));
+  }
+  /* These standalone screens have a purple top instead of an app header. */
+  .welcome-page { padding-top: calc(28px + env(safe-area-inset-top, 0px)); }
+  .auth-brand { padding-top: calc(42px + env(safe-area-inset-top, 0px)); }
+  .status-page { padding-top: calc(25px + env(safe-area-inset-top, 0px)); }
+}
