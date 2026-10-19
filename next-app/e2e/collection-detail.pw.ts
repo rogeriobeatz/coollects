@@ -48,7 +48,7 @@ test('Opções secundárias fecham com Escape e clique externo; visualizações 
  await expect(page.getByRole('link', { name: 'Excluir coleção', exact: true })).not.toBeVisible()
  await expect(page.getByRole('button', { name: 'Lista', exact: true })).toHaveCount(0)
  await page.getByRole('button', { name: 'Baralho', exact: true }).click()
- await expect(page.getByRole('button',{name:'Abrir card de Carrinho favorito',exact:true})).toBeVisible()
+ await expect(page.getByRole('link',{name:'Ver item Carrinho favorito',exact:true})).toBeVisible()
  await page.getByRole('button', { name: 'Galeria', exact: true }).click()
  await expect(page.locator('.cc-mode-galeria .cc-item-card')).toBeVisible()
 })
