@@ -53,3 +53,22 @@ test('PWA oferece ação contextual e campos sem zoom automático',async({page})
  const font=await page.getByLabel('E-mail').evaluate(e=>parseFloat(getComputedStyle(e).fontSize))
  expect(font).toBeGreaterThanOrEqual(16)
 })
+
+
+test('PWA do iPhone prepara status bar translúcida e viewport edge-to-edge',async({page})=>{
+ await page.setViewportSize({width:390,height:844})
+ await page.goto('/explorar')
+ await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute('content','yes')
+ await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content','black-translucent')
+ await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content',/viewport-fit=cover/)
+ await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#6125BF')
+ const header=page.locator('.app-frame > .topbar')
+ await expect(header).toHaveCSS('background-color','rgb(97, 37, 191)')
+ // Ordinary tabs retain the existing header; the safe-area inset is PWA-only.
+ expect(await page.evaluate(()=>matchMedia('(display-mode: standalone)').matches)).toBe(false)
+ await expect(header).toHaveCSS('min-height','76px')
+ const top=await header.boundingBox()
+ expect(top).not.toBeNull()
+ expect(top!.y).toBe(0)
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+})
