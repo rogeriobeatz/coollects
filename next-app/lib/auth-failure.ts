@@ -1,7 +1,8 @@
 type AuthFailure = {code?:string; status?:number; message?:string} | null | undefined
 
 /** Friendly, actionable and non-sensitive messages for Supabase Auth errors. */
-export function authFailureMessage(error:AuthFailure,mode:'login'|'register'):string{
+export function authFailureMessage(failure:unknown,mode:'login'|'register'):string{
+ const error:AuthFailure=failure&&typeof failure==='object'?failure as AuthFailure:null
  const code=String(error?.code||'').toLowerCase()
  const status=error?.status
  const details=String(error?.message||'').toLowerCase()
