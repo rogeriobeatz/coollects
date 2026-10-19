@@ -39,7 +39,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   try{
    const prepared=await preparePhoto(chosen)
    setVehicleDetails({});setFile(prepared.file);setSaved(false);setName('');setBrand('');setNotes('');setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
-   setNotice('Fotografia preparada. Nossa equipe digital está identificando o item…')
+   setNotice('Fotografia otimizada para até 600 KB. Estamos identificando seu item…')
   }catch(error){setNotice(error instanceof Error?error.message:'Não foi possível abrir a fotografia. Tente novamente.')}
   finally{setPreparing(false)}
  }
