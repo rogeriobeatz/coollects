@@ -528,6 +528,16 @@ input,textarea,select{font-size:max(16px,1em)}button,a,input,select,textarea{tou
  * Ordinary Safari / browser tabs keep their original header height.
  */
 @media (display-mode: standalone) {
+  /* Keep the notch strip purple even as the content scrolls beneath it. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--purple);
+    z-index: 80;
+    pointer-events: none;
+  }
   .app-frame > .topbar {
     min-height: calc(76px + env(safe-area-inset-top, 0px));
     padding-top: calc(12px + env(safe-area-inset-top, 0px));
