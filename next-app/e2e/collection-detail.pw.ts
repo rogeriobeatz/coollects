@@ -147,7 +147,7 @@ test('Visitante acompanha item e perfil público sem navegação de gestão', as
  await expect(page.getByRole('link',{name:'Criar minha conta grátis'})).toBeVisible()
  await page.goBack()
  await page.getByRole('link',{name:'Ver perfil de Rogério Silva'}).click()
- await expect(page).toHaveURL(/\\/u\\/colecionador_test/)
+ await expect(page).toHaveURL(new RegExp('/u/colecionador_test'))
  await expect(page.getByRole('navigation',{name:'Navegação principal'})).toHaveCount(0)
  await expect(page.getByRole('link',{name:'Criar minha conta grátis'})).toHaveAttribute('href','/registrar?next='+encodeURIComponent('/u/colecionador_test'))
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
