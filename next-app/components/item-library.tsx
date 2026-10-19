@@ -106,7 +106,7 @@ function Library({userId}:{userId:string}){
    setEditing(null);setEditPhoto(null);setRemovePhoto(false)
    setMessage(cleanupWarning?'Item salvo. A fotografia anterior ainda precisa ser removida.':'Item atualizado!',cleanupWarning?'error':'success')
    void refresh()
-  }catch{
+  }catch(error){
    // A failed RPC leaves the original item and links unchanged.
    if(uploaded)await db.storage.from(BUCKET).remove([uploaded])
    setMessage(photoPreparationFailed&&error instanceof Error?error.message:'Não foi possível concluir a edição. Nenhuma alteração parcial foi salva.')
