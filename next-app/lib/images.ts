@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { BUCKET } from './catalog'
-const MAX_SIZE=5*1024*1024
+import { MAX_PHOTO_BYTES } from './photo-limits'
 const MIME_EXTENSIONS:Record<string,string>={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}
 
 export async function validateImageFile(file:File):Promise<string>{
- if(!file.size||file.size>MAX_SIZE)throw new Error('Escolha uma fotografia de até 5 MB.')
+ if(!file.size||file.size>MAX_PHOTO_BYTES)throw new Error('A fotografia precisa ter no máximo 600 KB após a preparação.')
  const declared=file.type.toLowerCase()
  if(!MIME_EXTENSIONS[declared])throw new Error('Aceitamos imagens JPG, PNG ou WebP.')
  const bytes=new Uint8Array(await file.slice(0,16).arrayBuffer())
