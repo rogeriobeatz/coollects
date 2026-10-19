@@ -14,7 +14,7 @@
 ## 2. Vercel
 - Repositório: \`rogeriobeatz/coollects\`
 - Production branch: \`main\`
-- **Root Directory: \`next-app\`** (não a raiz PHP)
+- **Root Directory: \`next-app\`** (a raiz contém apenas documentação)
 - Framework Preset: Next.js
 - Node.js: 22.x
 - Install Command: \`npm install\`
@@ -22,8 +22,7 @@
 - Adicione em Settings → Environment Variables (Production, Preview conforme necessidade):
   - \`NEXT_PUBLIC_SUPABASE_URL\` = https://PROJECT_ID.supabase.co
   - \`NEXT_PUBLIC_SUPABASE_ANON_KEY\` = chave publicável/anon
-  - \`GOOGLE_GENERATIVE_AI_API_KEY\` = opcional para reconhecimento real
-  - \`GEMINI_MODEL\` = opcional (\`gemini-2.5-flash\`)
+  - `KIE_API_KEY` = opcional para reconhecimento por IA (somente servidor)
 - Depois de alterar variáveis, faça novo deploy.
 - Não defina \`SUPABASE_SERVICE_ROLE_KEY\`; o MVP não precisa dela.
 - Atenção: usuários sem cadastro não terão dados de acervos pessoais na Home.
@@ -51,7 +50,7 @@
 - [ ] Testar instalação PWA Android/desktop e abertura sem internet; iOS poderá exigir ícone PNG dedicado.
 - [ ] Testar em Chrome Android, Safari iOS, 320px, acessibilidade e controle por teclado.
 - [ ] Configurar canal de suporte e revisar textos legais LGPD e moderação antes do beta.
-- [ ] Monitorar limites do Supabase Storage e API Gemini, adicionar CAPTCHA/rate limit de criação de conta antes de tráfego público.
+- [ ] Monitorar limites do Supabase Storage e API KIE, adicionar CAPTCHA/rate limit de criação de conta antes de tráfego público.
 
 ## 5. Privacidade e segurança
 - Coleções são privadas por padrão.
@@ -65,7 +64,7 @@
 ## 6. Limitações para o beta
 - Ainda **não foram realizados testes integrados com um Supabase real**. O CI só valida unidade, tipos e build.
 - OCR é obtido pela leitura multimodal do Gemini, não por um mecanismo OCR determinístico offline.
-- Reconhecimento depende de uma chave Google; pode ter custo e erros.
+- Reconhecimento depende de uma chave KIE; pode ter custo e erros.
 - Falta revisão jurídica e um canal de contato real antes de um lançamento aberto.
 - A migração automática do banco PHP não está incluída (SQL dump original não foi localizado); importador apenas migra o antigo armazenamento local.
 

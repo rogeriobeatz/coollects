@@ -1,6 +1,6 @@
 # Coollects — Aplicação mobile-first
 
-O aplicativo Next.js 16 fica em `next-app/`. O código PHP original permanece na raiz.
+O aplicativo Next.js 16 fica em `next-app/`. O sistema PHP original foi removido em 2026-10-19 e pode ser recuperado pelo histórico do git.
 
 ## Desenvolvimento local
 

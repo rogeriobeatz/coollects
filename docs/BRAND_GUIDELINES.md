@@ -1,8 +1,8 @@
 # Identidade oficial Coollects — preservação obrigatória
 Data: 2026-10-13.
 
-Fonte de verdade: repositório PHP original.
-- Logotipo oficial: `images/coollects.png` → reutilizado **sem redesenhar** em `next-app/public/brand/coollects.png`.
+Fonte de verdade: identidade do repositório PHP original (removido em 2026-10-19; recuperável pelo histórico do git).
+- Logotipo oficial: `next-app/public/brand/coollects.png` (cópia fiel do original, **sem redesenhar**).
 - Fonte: Work Sans Light e Bold do legado, copiadas para `next-app/public/brand/`.
 - Roxo principal: `#6125BF`.
 - Laranja secundário: `#F15700`.

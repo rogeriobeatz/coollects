@@ -126,3 +126,11 @@
 @media(max-height:740px){.item-deck-instruction{margin-bottom:18px}}
 @media(max-width:350px){.cc-item-no-photo{gap:6px;padding:38px 8px 42px}.cc-item-no-photo>svg{width:20px;height:20px}.cc-item-card{padding:4px;border-radius:18px}.cc-item-cover{border-radius:13px 13px 10px 10px}.cc-item-info{padding:10px 7px 6px}.cc-item-title{font-size:16px}.cc-card-eyebrow>span{font-size:12px}.cc-card-subline{font-size:12px}.cc-mini-chips>span{font-size:12px}.cc-photo-category{font-size:12px}.cc-card-signature{font-size:12px}.item-focus-switch small{display:none}.cc-technical-identity{padding:13px 6px 10px}.cc-technical-specs{padding:0 6px}.cc-technical-specs dd{font-size:12px}.item-flip-face .cc-item-title{font-size:23px}.item-face-controls button{font-size:12px}}
 @media(prefers-reduced-motion:reduce){.item-flip-inner{transition:none}.item-deck-layer{transition:none;transform:translateY(18px) scale(.88)}.item-deck-entry.is-current .item-deck-layer{transform:none}}
+
+/* While a photo downloads, the frame shimmers instead of staying blank; the
+   image then fades in. Cached copies appear instantly. */
+.cc-item-cover:has(>img){background:linear-gradient(100deg,#ececf1 30%,#f8f7fb 50%,#ececf1 70%);background-size:300% 100%;animation:cc-photo-wait 1.3s linear infinite}
+.cc-item-cover>img{animation:cc-photo-in .35s ease-out both}
+@keyframes cc-photo-wait{to{background-position:-150% 0}}
+@keyframes cc-photo-in{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.cc-item-cover:has(>img),.cc-item-cover>img{animation:none}}

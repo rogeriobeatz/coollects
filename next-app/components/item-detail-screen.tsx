@@ -2,7 +2,7 @@
 import {useParams,useSearchParams} from 'next/navigation'
 import {Screen} from '@/components/screen'
 import {ItemShowcase} from '@/components/item-showcase'
-export default function ItemDetailPage(){
+export function ItemDetailScreen(){
  const {id}=useParams<{id:string}>()
  const params=useSearchParams()
  const context=params.get('voltar')

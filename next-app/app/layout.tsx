@@ -4,7 +4,11 @@ import { ItemPresentationProvider } from '@/components/item-presentation-provide
 import './globals.css'
 import './item-cards.css'
 
+// Absolute base for link previews; on Vercel the production URL is used automatically.
+const siteUrl=process.env.NEXT_PUBLIC_SITE_URL
+
 export const metadata: Metadata = {
+ metadataBase: siteUrl ? new URL(siteUrl) : undefined,
  title: { default: 'Coollects — Suas coleções em um só lugar', template: '%s | Coollects' },
  description: 'Digitalize, organize, descubra e compartilhe suas coleções.',
  applicationName: 'Coollects',

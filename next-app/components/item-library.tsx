@@ -2,11 +2,12 @@
 import {Modal} from './modal'
 import { useCallback,useEffect,useRef,useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight,ImageIcon,Plus,Trash2,Edit3,Check,X,Search,MoreHorizontal,Layers3 } from 'lucide-react'
+import { ArrowRight,ImageIcon,ImagePlus,Plus,Trash2,Edit3,Check,X,Search,MoreHorizontal,Layers3 } from 'lucide-react'
+import { MAX_ITEM_PHOTOS } from '@/lib/photo-limits'
 import { AuthGate } from './auth-gate'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { BUCKET,ItemRow,CollectionRow } from '@/lib/catalog'
-import { signedImage,uploadImage } from '@/lib/images'
+import { signedImages,uploadImage } from '@/lib/images'
 import { preparePhoto } from '@/lib/photo-preparation'
 import { CATEGORIES } from '@/lib/local-catalog'
 import {ItemCollectionPicker} from './item-collection-picker'
@@ -14,6 +15,9 @@ import {CollectibleCard} from './collectible-card'
 import {CollectionView} from './collection-view'
 import {VehicleFields} from './vehicle-fields'
 import {FeedbackNotice,type NoticeKind} from './feedback-notice'
+import {EmptyIllustration} from './empty-illustration'
+const EDIT_PRIMARY=[['manufacturer','Montadora'],['series','Série'],['seriesNumber','Número na série'],['collectionNumber','Numeração geral']] as const
+const EDIT_EXTRA=[['year','Ano da cartela'],['scale','Escala'],['color','Cor'],['condition','Condição']] as const
 export function ItemLibrary(){return <AuthGate>{userId=><Library userId={userId}/>}</AuthGate>}
 type ViewItem=ItemRow&{url:string|null}
 function Library({userId}:{userId:string}){
@@ -42,6 +46,8 @@ function Library({userId}:{userId:string}){
  const [editPhoto,setEditPhoto]=useState<File|null>(null)
  const [removePhoto,setRemovePhoto]=useState(false)
  const [savingEdit,setSavingEdit]=useState(false)
+ const [galleryKept,setGalleryKept]=useState<{path:string;url:string|null}[]>([])
+ const [galleryNew,setGalleryNew]=useState<{file:File;url:string}[]>([])
  const [form,setForm]=useState({name:'',brand:'',category:'Miniaturas',notes:'',collectionIds:[] as string[],details:{} as Record<string,string|number|null>})
  const refresh=useCallback(async()=>{
   const db=getBrowserClient();if(!db)return
@@ -54,7 +60,8 @@ function Library({userId}:{userId:string}){
    ])
    if(rows.error||cols.error||joined.error)throw new Error('Acervo indisponível')
    const source=(rows.data||[]) as ItemRow[]
-   const urls=await Promise.all(source.map(async row=>({...row,url:await signedImage(db,row.photo_path)})))
+   const signed=await signedImages(db,source.map(row=>row.photo_path))
+   const urls=source.map(row=>({...row,url:row.photo_path?signed.get(row.photo_path)??null:null}))
    setItems(urls);setCollections((cols.data||[]) as CollectionRow[]);setLinks((joined.data||[]) as typeof links)
   }catch{setLoadError('Não conseguimos carregar seus itens. Tente novamente.')}
   finally{setLoading(false)}
@@ -77,6 +84,29 @@ function Library({userId}:{userId:string}){
  },[loading,items])
  function edit(item:ItemRow){
   setEditPhoto(null);setRemovePhoto(false);setEditing(item.id);setForm({name:item.name,brand:item.brand,category:item.category,notes:item.notes,details:item.details||{},collectionIds:links.filter(x=>x.item_id===item.id).map(x=>x.collection_id)});setMessage('')
+  galleryNew.forEach(p=>URL.revokeObjectURL(p.url));setGalleryNew([])
+  const paths=item.gallery_paths||[]
+  setGalleryKept(paths.map(path=>({path,url:null})))
+  const db=getBrowserClient()
+  if(db&&paths.length)void signedImages(db,paths).then(urls=>setGalleryKept(v=>v.map(p=>({...p,url:urls.get(p.path)??p.url}))))
+ }
+ /** Extra photos: upload new ones, then store the final list. Old files go only after success. */
+ async function saveGallery(db:NonNullable<ReturnType<typeof getBrowserClient>>,original:ItemRow|undefined){
+  const before=original?.gallery_paths||[]
+  const kept=galleryKept.map(p=>p.path)
+  if(!galleryNew.length&&kept.length===before.length)return true
+  const uploaded:string[]=[]
+  try{
+   for(const photo of galleryNew){const prepared=await preparePhoto(photo.file);uploaded.push(await uploadImage(db,userId,prepared.file))}
+   const {error}=await db.from('items').update({gallery_paths:[...kept,...uploaded]}).eq('id',editing!).eq('owner_id',userId)
+   if(error)throw error
+   const removed=before.filter(path=>!kept.includes(path))
+   if(removed.length)await db.storage.from(BUCKET).remove(removed)
+   return true
+  }catch{
+   if(uploaded.length)await db.storage.from(BUCKET).remove(uploaded)
+   return false
+  }
  }
  async function save(){
   const db=getBrowserClient();if(!db||!editing||!form.name.trim())return
@@ -103,8 +133,10 @@ function Library({userId}:{userId:string}){
     const {error:photoError}=await db.storage.from(BUCKET).remove([original.photo_path])
     cleanupWarning=Boolean(photoError)
    }
-   setEditing(null);setEditPhoto(null);setRemovePhoto(false)
-   setMessage(cleanupWarning?'Item salvo. A fotografia anterior ainda precisa ser removida.':'Item atualizado!',cleanupWarning?'error':'success')
+   const galleryOk=await saveGallery(db,original)
+   galleryNew.forEach(p=>URL.revokeObjectURL(p.url))
+   setEditing(null);setEditPhoto(null);setRemovePhoto(false);setGalleryNew([])
+   setMessage(!galleryOk?'Item salvo, mas as fotos extras não foram atualizadas. Tente novamente.':cleanupWarning?'Item salvo. A fotografia anterior ainda precisa ser removida.':'Item atualizado!',cleanupWarning||!galleryOk?'error':'success')
    void refresh()
   }catch(error){
    // A failed RPC leaves the original item and links unchanged.
@@ -121,7 +153,8 @@ function Library({userId}:{userId:string}){
    const {data,error}=await db.from('items').delete().eq('id',item.id).eq('owner_id',userId).select('id')
    if(error||data?.length!==1)throw new Error('Item não excluído')
    let cleanupWarning=false
-   if(item.photo_path){const {error:photoError}=await db.storage.from(BUCKET).remove([item.photo_path]);cleanupWarning=Boolean(photoError)}
+   const files=[item.photo_path,...(item.gallery_paths||[])].filter((path):path is string=>Boolean(path))
+   if(files.length){const {error:photoError}=await db.storage.from(BUCKET).remove(files);cleanupWarning=Boolean(photoError)}
    setMessage(cleanupWarning?'Item excluído, mas a fotografia não pôde ser removida do armazenamento.':'Item excluído do acervo.',cleanupWarning?'error':'success')
    setDeleteItem(null);setMenuItem(null);void refresh()
   }catch{setDeleteError('Não foi possível excluir o item. Tente novamente.')}
@@ -145,7 +178,7 @@ function Library({userId}:{userId:string}){
  </div>}
  {message&&<FeedbackNotice key={message} message={message} kind={messageKind}/>}
  {loadError&&<div role="alert" className="scan-notice">{loadError} <button type="button" onClick={()=>{setLoading(true);setRetryKey(value=>value+1)}}>Tentar novamente</button></div>}
- {loadError?null:loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><ImageIcon size={47}/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><p>Nenhum item corresponde aos filtros.</p><button type="button" className="pill-btn" onClick={clearFilters}>Limpar filtros</button></div>}<CollectionView storageKey="coollects-items-view" items={visible} getItem={item=>({item,photoUrl:item.url,href:"/item/"+encodeURIComponent(item.id)})} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
+ {loadError?null:loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><EmptyIllustration kind="first-item"/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><EmptyIllustration kind="search"/><p>Nenhum item corresponde aos filtros.</p><button type="button" className="pill-btn" onClick={clearFilters}>Limpar filtros</button></div>}<CollectionView storageKey="coollects-items-view" items={visible} getItem={item=>({item,photoUrl:item.url,href:"/item/"+encodeURIComponent(item.id)})} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
   actions={<div className="cc-card-actions">
    <button type="button" className="cc-more-trigger" aria-label={"Ações de "+item.name} aria-expanded={menuItem===item.id} onClick={()=>setMenuItem(menuItem===item.id?null:item.id)}><MoreHorizontal size={20}/></button>
    {menuItem===item.id&&<div className="cc-more-menu">
@@ -157,8 +190,32 @@ function Library({userId}:{userId:string}){
  />}/></div>}
  {pickerItem&&<ItemCollectionPicker itemId={pickerItem} onClose={()=>setPickerItem(null)} onChanged={()=>void refresh()}/>}
  {deleteItem&&<Modal label="Confirmar exclusão de item" onClose={()=>setDeleteItem(null)} busy={removing} returnFocus={'[data-item-id="'+deleteItem.id+'"] .cc-more-trigger'}><section className="edit-modal"><h2>Excluir item?</h2><p>Excluir “{deleteItem.name}”? Essa ação não pode ser desfeita.</p>{deleteError&&<p role="alert" className="scan-notice">{deleteError}</p>}<div className="item-delete-actions"><button type="button" className="pill-btn secondary" disabled={removing} onClick={()=>setDeleteItem(null)}>Cancelar</button><button type="button" className="account-delete-button" disabled={removing} onClick={()=>void remove(deleteItem)}>{removing?"Excluindo…":"Excluir item"}</button></div></section></Modal>}
- {editing&&<Modal label="Editar item" onClose={()=>setEditing(null)} busy={savingEdit} initialFocus="input" returnFocus={'[data-item-id="'+editing+'"] .cc-more-trigger'}><section className="edit-modal"><button type="button" className="close-modal" disabled={savingEdit} onClick={()=>setEditing(null)} aria-label="Fechar"><X size={22}/></button><h2>Editar item</h2><label className="field-label">Nome<input value={form.name} maxLength={90} onChange={e=>setForm(v=>({...v,name:e.target.value}))}/></label><label className="field-label">Marca<input value={form.brand} maxLength={70} onChange={e=>setForm(v=>({...v,brand:e.target.value}))}/></label><label className="field-label">Categoria<select value={form.category} onChange={e=>setForm(v=>({...v,category:e.target.value}))}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select></label>{form.category==='Miniaturas'&&<section className="diecast-fields"><h3>Detalhes da miniatura</h3><div className="diecast-field-grid">{([
- ['manufacturer','Montadora'],['series','Série'],['seriesNumber','Número na série'],['collectionNumber','Numeração geral'],['year','Ano da cartela'],['scale','Escala'],['color','Cor'],['condition','Condição']
-] as const).map(([key,label])=><label className="field-label" key={key}>{label}<input value={String(form.details[key]??'')} onChange={e=>setForm(v=>({...v,details:{...v.details,[key]:e.target.value}}))}/></label>)}</div><VehicleFields values={form.details} onChange={(key,value)=>setForm(v=>({...v,details:{...v.details,[key]:value}}))}/></section>}<label className="field-label">Observações<textarea rows={3} maxLength={300} value={form.notes} onChange={e=>setForm(v=>({...v,notes:e.target.value}))}/></label><label className="field-label">Substituir fotografia<input type="file" accept="image/jpeg,image/png,image/webp,.heic,.heif" onChange={e=>{setEditPhoto(e.target.files?.[0]||null);setRemovePhoto(false)}}/></label><label className="remove-photo-choice"><input type="checkbox" checked={removePhoto} onChange={e=>{setRemovePhoto(e.target.checked);if(e.target.checked)setEditPhoto(null)}}/> Remover foto atual</label><fieldset className="collection-selector"><legend>Coleções</legend>{collections.map(c=><label key={c.id}><input type="checkbox" checked={form.collectionIds.includes(c.id)} onChange={e=>setForm(v=>({...v,collectionIds:e.target.checked?[...v.collectionIds,c.id]:v.collectionIds.filter(id=>id!==c.id)}))}/>{c.name}</label>)}</fieldset><button className="save-item-button" disabled={savingEdit||!form.name.trim()} onClick={()=>void save()}><Check size={18}/> {savingEdit?"Salvando…":"Salvar alterações"}</button></section></Modal>}
+ {editing&&<Modal label="Editar item" onClose={()=>setEditing(null)} busy={savingEdit} initialFocus="input" returnFocus={'[data-item-id="'+editing+'"] .cc-more-trigger'}><section className="edit-modal item-edit-modal">
+  <button type="button" className="close-modal" disabled={savingEdit} onClick={()=>setEditing(null)} aria-label="Fechar"><X size={22}/></button>
+  <h2>Editar item</h2>
+  <label className="field-label">Nome<input value={form.name} maxLength={90} onChange={e=>setForm(v=>({...v,name:e.target.value}))}/></label>
+  <div className="form-double">
+   <label className="field-label">Marca<input value={form.brand} maxLength={70} onChange={e=>setForm(v=>({...v,brand:e.target.value}))}/></label>
+   <label className="field-label">Categoria<select value={form.category} onChange={e=>setForm(v=>({...v,category:e.target.value}))}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select></label>
+  </div>
+  {form.category==='Miniaturas'&&<section className="diecast-fields" aria-label="Detalhes da miniatura">
+   <div className="diecast-field-grid">{EDIT_PRIMARY.map(([key,label])=><label className="field-label" key={key}>{label}<input value={String(form.details[key]??'')} onChange={e=>setForm(v=>({...v,details:{...v.details,[key]:e.target.value}}))}/></label>)}</div>
+   <details className="diecast-more"><summary>Mais detalhes da cartela</summary><div className="diecast-field-grid">{EDIT_EXTRA.map(([key,label])=><label className="field-label" key={key}>{label}<input value={String(form.details[key]??'')} onChange={e=>setForm(v=>({...v,details:{...v.details,[key]:e.target.value}}))}/></label>)}</div></details>
+   <VehicleFields values={form.details} onChange={(key,value)=>setForm(v=>({...v,details:{...v.details,[key]:value}}))}/>
+  </section>}
+  <fieldset className="edit-photos"><legend>Fotos</legend>
+   <label className="field-label">Trocar foto principal<input type="file" accept="image/jpeg,image/png,image/webp,.heic,.heif" onChange={e=>{setEditPhoto(e.target.files?.[0]||null);setRemovePhoto(false)}}/></label>
+   <label className="remove-photo-choice"><input type="checkbox" checked={removePhoto} onChange={e=>{setRemovePhoto(e.target.checked);if(e.target.checked)setEditPhoto(null)}}/> Remover foto principal</label>
+   <p className="edit-photos-label">Fotos extras ({galleryKept.length+galleryNew.length}/{MAX_ITEM_PHOTOS-1})</p>
+   <div className="photo-strip">
+    {galleryKept.map(photo=><div key={photo.path} className="photo-thumb">{photo.url?<img src={photo.url} alt=""/>:null}<button type="button" className="photo-thumb-remove" aria-label="Remover foto extra" onClick={()=>setGalleryKept(v=>v.filter(p=>p.path!==photo.path))}><X size={14}/></button></div>)}
+    {galleryNew.map((photo,i)=><div key={photo.url} className="photo-thumb"><img src={photo.url} alt=""/><button type="button" className="photo-thumb-remove" aria-label={'Remover nova foto '+(i+1)} onClick={()=>{URL.revokeObjectURL(photo.url);setGalleryNew(v=>v.filter(p=>p.url!==photo.url))}}><X size={14}/></button></div>)}
+    {galleryKept.length+galleryNew.length<MAX_ITEM_PHOTOS-1&&<label className="photo-thumb photo-thumb-add"><ImagePlus size={20}/><span>Foto</span><input className="visually-hidden" type="file" multiple accept="image/jpeg,image/png,image/webp,.heic,.heif" aria-label="Adicionar fotos extras" onChange={e=>{const files=Array.from(e.target.files||[]).slice(0,MAX_ITEM_PHOTOS-1-galleryKept.length-galleryNew.length);e.target.value='';setGalleryNew(v=>[...v,...files.map(file=>({file,url:URL.createObjectURL(file)}))])}}/></label>}
+   </div>
+  </fieldset>
+  <fieldset className="collection-selector"><legend>Coleções</legend><div className="collection-chips">{collections.map(c=><label key={c.id}><input type="checkbox" checked={form.collectionIds.includes(c.id)} onChange={e=>setForm(v=>({...v,collectionIds:e.target.checked?[...v.collectionIds,c.id]:v.collectionIds.filter(id=>id!==c.id)}))}/>{c.name}</label>)}</div></fieldset>
+  <label className="field-label">Observações<textarea rows={3} maxLength={300} value={form.notes} onChange={e=>setForm(v=>({...v,notes:e.target.value}))}/></label>
+  <button className="save-item-button" disabled={savingEdit||!form.name.trim()} onClick={()=>void save()}><Check size={18}/> {savingEdit?"Salvando…":"Salvar alterações"}</button>
+ </section></Modal>}
  </section>
 }

@@ -32,7 +32,8 @@ for(const width of [320,390]){
   await expect(page.getByRole('link',{name:'Excluir coleção',exact:true})).not.toBeVisible()
   await page.getByRole('button',{name:'Mais opções da coleção'}).click()
   await expect(page.getByRole('link',{name:'Excluir coleção',exact:true})).toBeVisible()
-  await expect(page.getByRole('button',{name:'Copiar link',exact:true})).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button',{name:'Compartilhar coleção',exact:true})).toBeVisible()
  })
 }
 
@@ -40,9 +41,7 @@ test('Avisos informativos e de sucesso desaparecem depois de cinco segundos',asy
  await page.clock.install()
  await mockAcervo(page)
  await page.goto('/colecoes')
- await expect(page.getByText(/Conta conectada: suas coleções/)).toBeVisible()
- await page.clock.fastForward(5100)
- await expect(page.getByText(/Conta conectada: suas coleções/)).toHaveCount(0)
+ await expect(page.getByText(/Conta conectada/)).toHaveCount(0)
  await page.getByRole('link',{name:'Minha garagem',exact:true}).click()
  await page.getByRole('link',{name:'Editar coleção',exact:true}).click()
  for(let step=0;step<3;step++)await page.getByRole('button',{name:'Continuar',exact:true}).click()

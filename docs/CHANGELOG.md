@@ -1,3 +1,17 @@
+## 2026-10-19 — Compartilhamento, fluidez e ilustrações
+- Compartilhar abre a folha nativa do celular (coleção, item e perfil); sem ela, janela própria com copiar link, WhatsApp, Telegram e e-mail.
+- Seletor público/privado na coleção. Coleção privada guia a publicação antes de compartilhar; item privado leva ao seletor de coleções.
+- Prévias de link com imagem gerada (foto, nome, dono, quantidade de itens).
+- Cópias reduzidas das fotos no aparelho e carregamento em lote: cards aparecem na hora; animação de espera em vez de quadro vazio; URLs assinadas de 2 min para 1 h.
+- "Salvar e cadastrar outro" no cadastro; edição com detalhes agrupados e gestão de fotos extras; remover item da coleção usa modal do app.
+- Ilustrações SVG animadas nos estados vazios.
+
+## 2026-10-19 — Cadastro de item e limpeza do legado
+- Cadastro de item: carregamento guiado de ~20 s durante a análise da IA, tarefas paralelas (fotos extras, coleções, observações), campos preenchidos pela IA destacados e formulário enxuto.
+- Até 5 fotos por item; somente a principal passa pela IA. Nova coluna `items.gallery_paths` e RPC `create_item_with_gallery` (migration `20261019150000_item_gallery.sql`).
+- Prompt de reconhecimento mais curto, com modelo JSON fixo. Imagem enviada inline com `reasoning_effort` baixo e fallback automático para o upload na KIE.
+- Sistema PHP/MySQL legado removido do repositório (recuperável pelo histórico do git). A senha do banco antigo continua no histórico e deve ser trocada/desativada na Hostinger.
+
 ## 2026-10-15 — OCR local no cadastro de itens
 - Motor Tesseract.js 6 com idiomas inglês + português, executado no navegador após o usuário selecionar uma fotografia e acionar **Ler textos da foto (OCR)**.
 - Reconhecimento sem chave Gemini e sem enviar o conteúdo da fotografia a uma API de IA generativa; o navegador baixa o motor/idiomas na primeira utilização. A foto continua sendo enviada ao Supabase Storage apenas quando o usuário decide salvar o item.

@@ -5,13 +5,15 @@ import {useRouter,useSearchParams} from 'next/navigation'
 import { ArrowRight,Check,ChevronLeft,FolderPlus,Plus,Layers3 } from 'lucide-react'
 import { AuthGate } from './auth-gate'
 import { CollectionCard } from './collection-card'
+import { EmptyIllustration } from './empty-illustration'
 import { CollectionEmojiPicker } from './collection-emoji-picker'
 import { FeedbackNotice,type NoticeKind } from './feedback-notice'
 import { collectionPreviewItems,type CollectionPhoto,type PreviewLink } from '@/lib/collection-previews'
 import { isCollectionEmoji } from '@/lib/collection-emoji'
 import { CATEGORIES } from '@/lib/local-catalog'
 import { getBrowserClient } from '@/lib/supabase/client'
-import { BUCKET,CollectionRow,ItemRow,collectionUrlPath } from '@/lib/catalog'
+import { CollectionRow,ItemRow,collectionUrlPath } from '@/lib/catalog'
+import { signedImages } from '@/lib/images'
 const colors=['#6125BF','#F15700','#FFD94C','#86DAD8','#E998FB','#A4BCFF']
 export function CollectionWorkspace(){return <AuthGate>{userId=><Workspace userId={userId}/>}</AuthGate>}
 function Workspace({userId}:{userId:string}){
@@ -37,13 +39,11 @@ function Workspace({userId}:{userId:string}){
  const [filter,setFilter]=useState('Todas')
  const [message,setMessageValue]=useState('')
  const [messageKind,setMessageKind]=useState<NoticeKind>('info')
- const [connectionNotice,setConnectionNotice]=useState(true)
  const [deleting,setDeleting]=useState<CollectionRow|null>(null)
  const [removing,setRemoving]=useState(false)
  const [deleteError,setDeleteError]=useState('')
  const handledAction=useRef('')
  function setMessage(value:string,kind:NoticeKind='error'){setMessageValue(value);setMessageKind(kind)}
- useEffect(()=>{const timer=window.setTimeout(()=>setConnectionNotice(false),5000);return()=>window.clearTimeout(timer)},[])
  const refresh=useCallback(async()=>{
   const db=getBrowserClient();if(!db){setLoadError('Não foi possível carregar suas coleções.');setBusy(false);return}
   setLoadError('')
@@ -56,14 +56,8 @@ function Workspace({userId}:{userId:string}){
    const picked=collectionPreviewItems(list,(joined.data||[]) as unknown as PreviewLink[])
    setCollections(list);setCounts(picked.counts)
    const paths=[...new Set(Object.values(picked.previews).flat().map(item=>item.photo_path).filter((path):path is string=>Boolean(path)))]
-   const urls=new Map<string,string>()
-   if(paths.length){
-    // One batch of short-lived URLs; a missing photo must never block the collection.
-    try{
-     const signed=await db.storage.from(BUCKET).createSignedUrls(paths,120)
-     for(const photo of signed.data||[])if(photo.path&&photo.signedUrl&&!photo.error)urls.set(photo.path,photo.signedUrl)
-    }catch{ /* Keep the chosen emoji when photographs cannot be loaded. */ }
-   }
+   // Cached copies first, then one batch for the rest; never blocks the list.
+   const urls=await signedImages(db,paths)
    const gallery:Record<string,CollectionPhoto[]>={}
    for(const [id,items] of Object.entries(picked.previews))gallery[id]=items.flatMap(item=>{
     const src=item.photo_path?urls.get(item.photo_path):null
@@ -132,7 +126,7 @@ function Workspace({userId}:{userId:string}){
  const filters=['Todas',...Array.from(new Set(collections.map(c=>c.category)))]
  return <section className="collection-workspace">
   <div className="collection-shelf-toolbar"><div><p className="kicker">SUA ESTANTE</p><strong>{busy?'—':collections.length} {collections.length===1?'coleção':'coleções'}</strong></div><button type="button" className="pill-btn" onClick={()=>start()} aria-label="Criar coleção"><Plus size={18}/> Nova coleção</button></div>
-  {message?<FeedbackNotice key={message} message={message} kind={messageKind}/>:connectionNotice&&<FeedbackNotice message="Conta conectada: suas coleções ficam sincronizadas. Apenas coleções públicas aparecem na busca."/>}
+  {message&&<FeedbackNotice key={message} message={message} kind={messageKind}/>}
   {editing?<div className="collection-wizard">
    <div className="wizard-top"><span>{editId?'EDITAR':'CRIAR'} COLEÇÃO</span><span>0{step+1} / 04</span></div><div className="wizard-meter"><span style={{width:(step+1)*25+'%'}}/></div>
    <h2>{['O que vamos colecionar?','Dê um nome a esse universo.','Deixe com a sua cara.','Qual é a história?'][step]}</h2>
@@ -147,7 +141,7 @@ function Workspace({userId}:{userId:string}){
    {loadError?<div className="scan-notice" role="alert">{loadError} <button type="button" onClick={()=>{setBusy(true);void refresh()}}>Tentar novamente</button></div>
     :busy?<div className="collection-shelf-loading" role="status">Preparando suas coleções…</div>
     :visible.length?<div className="collection-shelf">{visible.map(c=><CollectionCard key={c.id} showcase collection={c} href={collectionUrlPath(c.id)} photos={previews[c.id]||[]} meta={(counts[c.id]||0)+' '+(counts[c.id]===1?'item':'itens')+' · '+(c.is_public?'Pública':'Privada')}/>)}</div>
-    :<div className="empty-collection-panel collection-shelf-empty"><div className="empty-graphic"><Layers3 size={43}/><span>✦</span></div><h2>{collections.length?'Outro universo espera por você.':'Dê um lugar às suas paixões.'}</h2><p>{collections.length?'Experimente outra categoria para encontrar suas coleções.':'Crie sua primeira coleção. Suas peças e histórias ganham uma estante só sua.'}</p>{collections.length?<button type="button" className="pill-btn" onClick={()=>setFilter('Todas')}>Ver todas</button>:<button type="button" className="pill-btn" onClick={()=>start()}><FolderPlus size={18}/> Criar coleção</button>}</div>}
+    :<div className="empty-collection-panel collection-shelf-empty"><EmptyIllustration kind={collections.length?'search':'shelf'}/><h2>{collections.length?'Outro universo espera por você.':'Dê um lugar às suas paixões.'}</h2><p>{collections.length?'Experimente outra categoria para encontrar suas coleções.':'Crie sua primeira coleção. Suas peças e histórias ganham uma estante só sua.'}</p>{collections.length?<button type="button" className="pill-btn" onClick={()=>setFilter('Todas')}>Ver todas</button>:<button type="button" className="pill-btn" onClick={()=>start()}><FolderPlus size={18}/> Criar coleção</button>}</div>}
 
   </>}
   {deleting&&<Modal label="Confirmar exclusão da coleção" onClose={()=>setDeleting(null)} busy={removing} returnFocus=".collection-shelf-toolbar button"><section className="edit-modal"><h2>Excluir coleção?</h2><p>Excluir “{deleting.name}”? Essa ação não pode ser desfeita. Os itens continuarão no seu acervo.</p>{deleteError&&<p role="alert" className="scan-notice">{deleteError}</p>}<div className="item-delete-actions"><button type="button" className="pill-btn secondary" disabled={removing} onClick={()=>setDeleting(null)}>Cancelar</button><button type="button" className="account-delete-button" disabled={removing} onClick={()=>void remove(deleting)}>{removing?"Excluindo…":"Excluir coleção"}</button></div></section></Modal>}

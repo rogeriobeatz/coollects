@@ -31,7 +31,7 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
  await page.route(backendUrl+'/auth/v1/user',route=>route.fulfill({json:user}))
  await page.route(backendUrl+'/storage/v1/**',route=>{
   const request=route.request(),url=new URL(request.url())
-  if(request.method()==='GET')return route.fulfill({path:resolve(process.cwd(),'../images/image2.jpg'),contentType:'image/jpeg'})
+  if(request.method()==='GET')return route.fulfill({path:resolve(process.cwd(),'e2e/fixtures/image2.jpg'),contentType:'image/jpeg'})
   const body=request.postDataJSON()
   if(Array.isArray(body.paths))return route.fulfill({json:body.paths.map((path:string)=>({path,signedURL:'/object/sign/coollects-items/'+path+'?token=test',error:null}))})
   return route.fulfill({json:{signedURL:url.pathname.replace('/storage/v1','')+'?token=test'}})
@@ -45,9 +45,10 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
   })
   if(url.pathname.includes('/rpc/')){
    const body=request.postDataJSON()
-   const id=table==='create_item_with_details'?itemId:body.p_item_id
+   const creating=table==='create_item_with_details'||table==='create_item_with_gallery'
+   const id=creating?itemId:body.p_item_id
    const values={name:body.p_name,brand:body.p_brand,category:body.p_category,notes:body.p_notes,photo_path:body.p_photo_path,details:body.p_details}
-   if(table==='create_item_with_details')state.items.push({...item,...values,id})
+   if(creating)state.items.push({...item,...values,gallery_paths:body.p_gallery_paths||[],id})
    else if(table==='update_item_with_details')state.items=state.items.map(row=>row.id===id?{...row,...values}:row)
    else return route.fulfill({status:404,json:{message:'Unexpected RPC'}})
    state.links=state.links.filter(link=>link.item_id!==id).concat((body.p_collection_ids||[]).map((collection_id:string)=>({collection_id,item_id:id})))

@@ -2,7 +2,7 @@
 Data: 2026-10-13. Implementado inicialmente na branch de redesign, Next.js em \`next-app/\`.
 
 ## Regra inviolável: preservar a marca
-- Logotipo: usar **o PNG oficial branco** de \`images/coollects.png\`, já copiado para \`next-app/public/brand/coollects.png\`. Cabeçalhos roxos mantêm contraste.
+- Logotipo: usar **o PNG oficial branco** em \`next-app/public/brand/coollects.png\`. Cabeçalhos roxos mantêm contraste.
 - Roxo principal: \`#6125BF\` (token \`--purple\`).
 - Laranja institucional: \`#F15700\` (token \`--orange\`).
 - Fonte: Work Sans Light e Bold **do legado**. Não substituir o wordmark por texto genérico.

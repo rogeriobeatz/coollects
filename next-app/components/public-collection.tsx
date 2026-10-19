@@ -2,12 +2,15 @@
 import { useCallback,useEffect,useMemo,useRef,useState } from 'react'
 import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
-import { ArrowRight,Layers3,Plus,Search,Check,X,Edit3,MoreHorizontal,Copy,Globe,Lock,UserRound,ChevronDown,Trash2 } from 'lucide-react'
+import { ArrowRight,Layers3,Plus,Search,Check,X,Edit3,MoreHorizontal,Globe,Lock,UserRound,ChevronDown,Trash2,Share2 } from 'lucide-react'
+import { Modal } from './modal'
+import { ShareButton } from './share-button'
+import { EmptyIllustration } from './empty-illustration'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { CollectionRow,ItemRow,ProfileRow,publicUrlPath } from '@/lib/catalog'
 import { CollectionCard } from './collection-card'
 import { CollectionActionPopover } from './collection-action-popover'
-import { signedImage } from '@/lib/images'
+import { signedImages } from '@/lib/images'
 import {CollectibleCard} from './collectible-card'
 import {CollectionView} from './collection-view'
 import { useAccount } from '@/hooks/use-account'
@@ -30,6 +33,8 @@ export function PublicCollection({id}:{id:string}){
  function setMessage(value:string,kind:NoticeKind='error'){setMessageValue(value);setMessageKind(kind)}
  const owner=Boolean(user&&collection&&user.id===collection.owner_id)
  const [changingVisibility,setChangingVisibility]=useState(false)
+ const [unlinkItem,setUnlinkItem]=useState<ItemRow|null>(null)
+ const [privateShare,setPrivateShare]=useState(false)
  const refresh=useCallback(()=>{
   const db=getBrowserClient();if(!db){setMessage('Não foi possível abrir esta coleção agora. Tente novamente mais tarde.');setLoading(false);return}
   let active=true
@@ -45,7 +50,8 @@ export function PublicCollection({id}:{id:string}){
     const result=await db.from('items').select('*').in('id',ids)
     if(result.error)throw result.error
     const rows=(result.data||[]) as ItemRow[]
-    itemRows=await Promise.all(rows.map(async i=>({...i,url:await signedImage(db,i.photo_path)})))
+    const signed=await signedImages(db,rows.map(i=>i.photo_path))
+    itemRows=rows.map(i=>({...i,url:i.photo_path?signed.get(i.photo_path)??null:null}))
    }
    if(active){setCollection(c);setProfile((p.data||null) as ProfileRow|null);setItems(itemRows);setLoading(false)}
   })().catch(()=>{if(active){setLoading(false);setMessage('Não foi possível carregar a coleção.')}})
@@ -74,11 +80,6 @@ export function PublicCollection({id}:{id:string}){
   dialog?.querySelector<HTMLInputElement>('input')?.focus()
   return ()=>{dialog?.close();addRef.current?.querySelector('summary')?.focus()}
  },[picker])
- async function copyCollectionLink(){
-  if(!collection?.is_public)return
-  try{await navigator.clipboard.writeText(window.location.origin+'/colecao/'+encodeURIComponent(id));setMessage('Link da coleção copiado!','success')}
-  catch{setMessage('Não foi possível copiar o link. Copie o endereço do navegador.')}
- }
  const available=useMemo(()=>{
   const existing=new Set(items.map(item=>item.id))
   return allItems.filter(i=>!existing.has(i.id)&&[i.name,i.brand,i.category].join(' ').toLowerCase().includes(pickerSearch.toLowerCase()))
@@ -97,24 +98,26 @@ export function PublicCollection({id}:{id:string}){
  }
  function closePicker(){if(working)return;setPicker(false);setPickerSearch('');setPending([])}
  async function addExisting(){if(!collection||!owner||!pending.length||working)return;const db=getBrowserClient();if(!db)return;setWorking(true);try{const {error}=await db.from('collection_items').insert(pending.map(item_id=>({item_id,collection_id:collection.id})));if(error)throw error;setPicker(false);setPending([]);setPickerSearch('');setSearch('');setMessage('Itens adicionados à coleção.','success');refresh()}catch{setMessage('Não foi possível adicionar os itens. Tente novamente.')}finally{setWorking(false)}}
- async function unlink(item:ItemRow){if(!collection||!owner||working)return;if(!confirm('Remover "'+item.name+'" desta coleção? O item continuará salvo em Meus itens.'))return;const db=getBrowserClient();if(!db)return;setWorking(true);const {error}=await db.from('collection_items').delete().eq('collection_id',collection.id).eq('item_id',item.id);setWorking(false);if(error){setMessage('Não foi possível remover o item desta coleção.');return}setMessage('Item removido da coleção, mas preservado no acervo.','success');refresh()}
+ async function unlink(item:ItemRow){if(!collection||!owner||working)return;const db=getBrowserClient();if(!db)return;setWorking(true);const {error}=await db.from('collection_items').delete().eq('collection_id',collection.id).eq('item_id',item.id);setWorking(false);setUnlinkItem(null);if(error){setMessage('Não foi possível remover o item desta coleção.');return}setMessage('Item removido da coleção, mas preservado no acervo.','success');refresh()}
  if(loading)return <div className="empty-collection-panel">Carregando coleção…</div>
- if(!collection)return <div className="empty-collection-panel"><h2>Essa coleção não está disponível.</h2><p>{message}</p><Link className="pill-btn" href="/explorar">Explorar coleções</Link></div>
+ if(!collection)return <div className="empty-collection-panel"><EmptyIllustration kind="unavailable"/><h2>Essa coleção não está disponível.</h2><p>{message}</p><Link className="pill-btn" href="/explorar">Explorar coleções</Link></div>
  const photos=items.filter(item=>item.url).sort((a,b)=>Number(b.id===collection.cover_item_id)-Number(a.id===collection.cover_item_id)).slice(0,2).map(item=>({src:item.url!,name:item.name}))
  const VisibilityIcon=collection.is_public?Globe:Lock
  const searchField=<label className="collection-search"><Search size={18} aria-hidden="true"/><input type="search" aria-label="Buscar itens nesta coleção" placeholder="Buscar itens…" value={search} onChange={e=>setSearch(e.target.value)}/></label>
  return <section className="public-collection collection-detail">
   <CollectionCard collection={collection} photos={photos} hero controls={<>
-   {owner?<CollectionActionPopover label="Visibilidade da coleção" className="collection-visibility-control" trigger={<><VisibilityIcon size={15} aria-hidden="true"/><span>{changingVisibility?'Salvando…':collection.is_public?'Pública':'Privada'}</span><ChevronDown size={12} aria-hidden="true"/></>}>
-    <button type="button" aria-pressed={!collection.is_public} disabled={changingVisibility} onClick={()=>void changeVisibility(false)}><Lock size={17}/> Privada{!collection.is_public&&<Check size={15}/>}</button>
-    <button type="button" aria-pressed={collection.is_public} disabled={changingVisibility} onClick={()=>void changeVisibility(true)}><Globe size={17}/> Pública{collection.is_public&&<Check size={15}/>}</button>
-   </CollectionActionPopover>:<span className="collection-visibility-label"><VisibilityIcon size={14} aria-hidden="true"/>{collection.is_public?'Pública':'Privada'}</span>}
+   {owner?<button type="button" role="switch" aria-checked={collection.is_public} aria-label="Coleção pública" className={'visibility-switch'+(collection.is_public?' is-on':'')} disabled={changingVisibility} onClick={()=>void changeVisibility(!collection.is_public)}>
+    <span className="visibility-switch-track" aria-hidden="true"><span className="visibility-switch-thumb"><VisibilityIcon size={11}/></span></span>
+    <span>{changingVisibility?'Salvando…':collection.is_public?'Pública':'Privada'}</span>
+   </button>:<span className="collection-visibility-label"><VisibilityIcon size={14} aria-hidden="true"/>{collection.is_public?'Pública':'Privada'}</span>}
    <div className="collection-hero-icon-actions">
+    {collection.is_public
+     ?<ShareButton className="collection-hero-icon" path={'/colecao/'+encodeURIComponent(id)} title={collection.name} text={'Veja a coleção “'+collection.name+'”'+(profile?' de '+profile.display_name:'')+' no Coollects'} icon={<Share2 size={18} aria-hidden="true"/>}><span className="visually-hidden">Compartilhar coleção</span></ShareButton>
+     :owner&&<button type="button" className="collection-hero-icon" aria-label="Compartilhar coleção" onClick={()=>setPrivateShare(true)}><Share2 size={18}/></button>}
     {profile&&<Link className="collection-hero-icon" href={publicUrlPath(profile.username)} aria-label={'Ver perfil de '+profile.display_name} title={'Coleção de '+profile.display_name}><UserRound size={18}/></Link>}
     {owner&&<>
      <Link className="collection-hero-icon" href={'/colecoes?editar='+encodeURIComponent(id)} aria-label="Editar coleção" title="Editar coleção"><Edit3 size={18}/></Link>
      <CollectionActionPopover label="Mais opções da coleção" trigger={<MoreHorizontal size={20}/>}>
-      {collection.is_public&&<button type="button" onClick={()=>void copyCollectionLink()}><Copy size={17}/> Copiar link</button>}
       <Link className="collection-danger-action" href={'/colecoes?excluir='+encodeURIComponent(id)}><Trash2 size={17}/> Excluir coleção</Link>
      </CollectionActionPopover>
     </>}
@@ -133,11 +136,11 @@ export function PublicCollection({id}:{id:string}){
  actions={owner?<div className="cc-card-actions"><button type="button" className="cc-more-trigger" aria-label={"Ações de "+i.name} aria-expanded={menuItem===i.id} onClick={()=>setMenuItem(menuItem===i.id?null:i.id)}><MoreHorizontal size={20}/></button>
  {menuItem===i.id&&<div className="cc-more-menu">
  <Link href={"/itens?editar="+encodeURIComponent(i.id)+"&voltar="+encodeURIComponent(id)}><Edit3 size={16}/> Editar item</Link>
- <button type="button" disabled={working} onClick={()=>{setMenuItem(null);void unlink(i)}}><X size={16}/> Remover da coleção</button>
+ <button type="button" disabled={working} onClick={()=>{setMenuItem(null);setUnlinkItem(i)}}><X size={16}/> Remover da coleção</button>
  </div>}</div>:undefined}
  />}/>}
   {!visible.length&&<div className="empty-collection-panel collection-detail-empty">
-   <Layers3 size={28} aria-hidden="true"/>
+   <EmptyIllustration kind={items.length?'search':'empty-collection'}/>
    <h2>{items.length?'Nenhum item encontrado':owner?'Sua coleção começa aqui':'Os itens estão chegando'}</h2>
    <p>{items.length?'Experimente outro nome, marca ou categoria.':owner?'Use “Adicionar” para cadastrar um item ou escolher do seu acervo.':'Esta coleção ainda não tem itens.'}</p>
    {items.length>0&&<button type="button" className="pill-btn" onClick={()=>setSearch('')}>Limpar busca</button>}
@@ -146,6 +149,24 @@ export function PublicCollection({id}:{id:string}){
    {acervoError?<div role="alert"><p>Não foi possível carregar seu acervo.</p><button type="button" className="pill-btn" onClick={closePicker}>Fechar e tentar novamente</button></div>:acervoLoading?<p role="status">Carregando seu acervo…</p>:<div className="picker-options">{available.map(i=><label key={i.id} className="picker-option"><input type="checkbox" disabled={working} checked={pending.includes(i.id)} onChange={e=>setPending(prev=>e.target.checked?[...prev,i.id]:prev.filter(x=>x!==i.id))}/><span><strong>{i.name}</strong><small>{i.brand||i.category}</small></span>{pending.includes(i.id)&&<Check size={17}/>}</label>)}{available.length===0&&<p>{pickerSearch?'Nenhum item corresponde à busca.':'Nenhum item disponível. Você pode cadastrar um novo item.'}</p>}{!pickerSearch&&available.length===0&&<Link className="pill-btn" href={'/cadastrar?colecao='+encodeURIComponent(id)}>Novo item <Plus size={16}/></Link>}</div>}
    {message&&messageKind==='error'&&<p role="alert">{message}</p>}
    <button className="save-item-button" disabled={working||acervoLoading||acervoError||!pending.length} onClick={()=>void addExisting()}>{working?'Adicionando…':'Adicionar '+pending.length+' '+(pending.length===1?'item':'itens')}</button></section></dialog>}
+  {unlinkItem&&<Modal label="Remover item da coleção" onClose={()=>setUnlinkItem(null)} busy={working} initialFocus=".pill-btn.secondary">
+   <section className="edit-modal"><h2>Remover da coleção?</h2><p>“{unlinkItem.name}” sai desta coleção, mas continua salvo em Meus itens.</p>
+    <div className="item-delete-actions"><button type="button" className="pill-btn secondary" disabled={working} onClick={()=>setUnlinkItem(null)}>Cancelar</button><button type="button" className="pill-btn" disabled={working} onClick={()=>void unlink(unlinkItem)}>{working?'Removendo…':'Remover'}</button></div>
+   </section>
+  </Modal>}
+  {privateShare&&owner&&<Modal label="Compartilhar coleção privada" onClose={()=>setPrivateShare(false)} busy={changingVisibility}>
+   <section className="edit-modal share-sheet">
+    <button type="button" className="close-modal" aria-label="Fechar" disabled={changingVisibility} onClick={()=>setPrivateShare(false)}><X size={20}/></button>
+    {collection.is_public?<>
+     <h2>Coleção pública!</h2><p>Agora qualquer pessoa com o link pode ver esta coleção e seus itens.</p>
+     <ShareButton className="save-item-button" path={'/colecao/'+encodeURIComponent(id)} title={collection.name} text={'Veja a coleção “'+collection.name+'” no Coollects'} label="Compartilhar agora"/>
+    </>:<>
+     <span className="share-sheet-icon"><Lock size={22}/></span>
+     <h2>Esta coleção é privada</h2><p>Para compartilhar, torne a coleção pública. Qualquer pessoa com o link poderá ver os itens dela, mas nunca seu e-mail.</p>
+     <button type="button" className="save-item-button" disabled={changingVisibility} onClick={()=>void changeVisibility(true)}><Globe size={18}/> {changingVisibility?'Publicando…':'Tornar pública'}</button>
+    </>}
+   </section>
+  </Modal>}
   <Link href="/explorar" className="collection-discover-link">Descobrir outras coleções <ArrowRight size={16}/></Link>
  </section>
 }

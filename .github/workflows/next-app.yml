@@ -16,6 +16,8 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-key-not-for-production
+      # Enables the AI capture UI; browser tests mock /api/recognize.
+      KIE_API_KEY: ci-dummy-key-not-for-production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

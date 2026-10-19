@@ -7,7 +7,7 @@ import { getBrowserClient } from '@/lib/supabase/client'
 import { CollectionRow,ItemRow,collectionUrlPath } from '@/lib/catalog'
 import { CollectionCard } from './collection-card'
 import { CollectibleCard } from './collectible-card'
-import {signedImage} from '@/lib/images'
+import {signedImages} from '@/lib/images'
 export function HomeDashboard({user}:{user:User}){
  const [loading,setLoading]=useState(true)
  const [displayName,setDisplayName]=useState('')
@@ -34,7 +34,8 @@ export function HomeDashboard({user}:{user:User}){
    setCollectionTotal(cs.count??(cs.data||[]).length)
    setItems((is.data||[]) as ItemRow[])
    const recent=(is.data||[]).slice(0,4) as ItemRow[]
-   const photos=await Promise.all(recent.map(async item=>[item.id,await signedImage(db,item.photo_path)] as const))
+   const urls=await signedImages(db,recent.map(item=>item.photo_path))
+   const photos=recent.map(item=>[item.id,item.photo_path?urls.get(item.photo_path):undefined] as const)
    if(active)setRecentPhotos(Object.fromEntries(photos.filter((entry):entry is readonly [string,string]=>Boolean(entry[1]))))
   })
    .catch(()=>{if(active)setError('Não conseguimos carregar seu acervo. Tente novamente.')})
