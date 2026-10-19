@@ -59,6 +59,7 @@ test('PWA do iPhone prepara status bar translúcida e viewport edge-to-edge',asy
  await page.setViewportSize({width:390,height:844})
  await page.goto('/explorar')
  await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute('content','yes')
+ await expect(page.locator('meta[name="mobile-web-app-capable"]')).toHaveAttribute('content','yes')
  await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content','black-translucent')
  await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content',/viewport-fit=cover/)
  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#6125BF')
