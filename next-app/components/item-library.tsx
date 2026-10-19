@@ -83,8 +83,13 @@ function Library({userId}:{userId:string}){
   setSavingEdit(true);setMessage('')
   const original=items.find(i=>i.id===editing)
   let uploaded:string|null=null
+  let photoPreparationFailed=false
   try{
-   if(editPhoto){const prepared=await preparePhoto(editPhoto);uploaded=await uploadImage(db,userId,prepared.file)}
+   if(editPhoto){
+    let prepared:Awaited<ReturnType<typeof preparePhoto>>
+    try{prepared=await preparePhoto(editPhoto)}catch(error){photoPreparationFailed=true;throw error}
+    uploaded=await uploadImage(db,userId,prepared.file)
+   }
    const newPhotoPath=uploaded||(removePhoto?null:original?.photo_path||null)
    const {error}=await db.rpc('update_item_with_details',{
     p_item_id:editing,p_name:form.name.trim(),p_brand:form.brand.trim(),
@@ -104,7 +109,7 @@ function Library({userId}:{userId:string}){
   }catch{
    // A failed RPC leaves the original item and links unchanged.
    if(uploaded)await db.storage.from(BUCKET).remove([uploaded])
-   setMessage(error instanceof Error?error.message:'Não foi possível concluir a edição. Nenhuma alteração parcial foi salva.')
+   setMessage(photoPreparationFailed&&error instanceof Error?error.message:'Não foi possível concluir a edição. Nenhuma alteração parcial foi salva.')
   }finally{setSavingEdit(false)}
  }
  async function remove(item:ItemRow){
