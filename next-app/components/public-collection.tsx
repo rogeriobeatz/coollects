@@ -29,7 +29,7 @@ export function PublicCollection({id}:{id:string}){
  const [messageKind,setMessageKind]=useState<NoticeKind>('error')
  function setMessage(value:string,kind:NoticeKind='error'){setMessageValue(value);setMessageKind(kind)}
  const owner=Boolean(user&&collection&&user.id===collection.owner_id)
- const guestSignup='/registrar?next='+encodeURIComponent('/colecao/'+encodeURIComponent(id))
+ const guestSignup='/registrar?next='+encodeURIComponent('/colecao/'+encodeURIComponent(id)+(fromExplore?'?origem=explorar':''))
  const [changingVisibility,setChangingVisibility]=useState(false)
  const refresh=useCallback(()=>{
   const db=getBrowserClient();if(!db){setMessage('Não foi possível abrir esta coleção agora. Tente novamente mais tarde.');setLoading(false);return}
