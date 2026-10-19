@@ -7,6 +7,7 @@ import { AuthGate } from './auth-gate'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { BUCKET,ItemRow,CollectionRow } from '@/lib/catalog'
 import { signedImage,uploadImage } from '@/lib/images'
+import { preparePhoto } from '@/lib/photo-preparation'
 import { CATEGORIES } from '@/lib/local-catalog'
 import {ItemCollectionPicker} from './item-collection-picker'
 import {CollectibleCard} from './collectible-card'
@@ -82,8 +83,13 @@ function Library({userId}:{userId:string}){
   setSavingEdit(true);setMessage('')
   const original=items.find(i=>i.id===editing)
   let uploaded:string|null=null
+  let photoPreparationFailed=false
   try{
-   if(editPhoto)uploaded=await uploadImage(db,userId,editPhoto)
+   if(editPhoto){
+    let prepared:Awaited<ReturnType<typeof preparePhoto>>
+    try{prepared=await preparePhoto(editPhoto)}catch(error){photoPreparationFailed=true;throw error}
+    uploaded=await uploadImage(db,userId,prepared.file)
+   }
    const newPhotoPath=uploaded||(removePhoto?null:original?.photo_path||null)
    const {error}=await db.rpc('update_item_with_details',{
     p_item_id:editing,p_name:form.name.trim(),p_brand:form.brand.trim(),
@@ -100,10 +106,10 @@ function Library({userId}:{userId:string}){
    setEditing(null);setEditPhoto(null);setRemovePhoto(false)
    setMessage(cleanupWarning?'Item salvo. A fotografia anterior ainda precisa ser removida.':'Item atualizado!',cleanupWarning?'error':'success')
    void refresh()
-  }catch{
+  }catch(error){
    // A failed RPC leaves the original item and links unchanged.
    if(uploaded)await db.storage.from(BUCKET).remove([uploaded])
-   setMessage('Não foi possível concluir a edição. Nenhuma alteração parcial foi salva.')
+   setMessage(photoPreparationFailed&&error instanceof Error?error.message:'Não foi possível concluir a edição. Nenhuma alteração parcial foi salva.')
   }finally{setSavingEdit(false)}
  }
  async function remove(item:ItemRow){
@@ -153,6 +159,6 @@ function Library({userId}:{userId:string}){
  {deleteItem&&<Modal label="Confirmar exclusão de item" onClose={()=>setDeleteItem(null)} busy={removing} returnFocus={'[data-item-id="'+deleteItem.id+'"] .cc-more-trigger'}><section className="edit-modal"><h2>Excluir item?</h2><p>Excluir “{deleteItem.name}”? Essa ação não pode ser desfeita.</p>{deleteError&&<p role="alert" className="scan-notice">{deleteError}</p>}<div className="item-delete-actions"><button type="button" className="pill-btn secondary" disabled={removing} onClick={()=>setDeleteItem(null)}>Cancelar</button><button type="button" className="account-delete-button" disabled={removing} onClick={()=>void remove(deleteItem)}>{removing?"Excluindo…":"Excluir item"}</button></div></section></Modal>}
  {editing&&<Modal label="Editar item" onClose={()=>setEditing(null)} busy={savingEdit} initialFocus="input" returnFocus={'[data-item-id="'+editing+'"] .cc-more-trigger'}><section className="edit-modal"><button type="button" className="close-modal" disabled={savingEdit} onClick={()=>setEditing(null)} aria-label="Fechar"><X size={22}/></button><h2>Editar item</h2><label className="field-label">Nome<input value={form.name} maxLength={90} onChange={e=>setForm(v=>({...v,name:e.target.value}))}/></label><label className="field-label">Marca<input value={form.brand} maxLength={70} onChange={e=>setForm(v=>({...v,brand:e.target.value}))}/></label><label className="field-label">Categoria<select value={form.category} onChange={e=>setForm(v=>({...v,category:e.target.value}))}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select></label>{form.category==='Miniaturas'&&<section className="diecast-fields"><h3>Detalhes da miniatura</h3><div className="diecast-field-grid">{([
  ['manufacturer','Montadora'],['series','Série'],['seriesNumber','Número na série'],['collectionNumber','Numeração geral'],['year','Ano da cartela'],['scale','Escala'],['color','Cor'],['condition','Condição']
-] as const).map(([key,label])=><label className="field-label" key={key}>{label}<input value={String(form.details[key]??'')} onChange={e=>setForm(v=>({...v,details:{...v.details,[key]:e.target.value}}))}/></label>)}</div><VehicleFields values={form.details} onChange={(key,value)=>setForm(v=>({...v,details:{...v.details,[key]:value}}))}/></section>}<label className="field-label">Observações<textarea rows={3} maxLength={300} value={form.notes} onChange={e=>setForm(v=>({...v,notes:e.target.value}))}/></label><label className="field-label">Substituir fotografia<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{setEditPhoto(e.target.files?.[0]||null);setRemovePhoto(false)}}/></label><label className="remove-photo-choice"><input type="checkbox" checked={removePhoto} onChange={e=>{setRemovePhoto(e.target.checked);if(e.target.checked)setEditPhoto(null)}}/> Remover foto atual</label><fieldset className="collection-selector"><legend>Coleções</legend>{collections.map(c=><label key={c.id}><input type="checkbox" checked={form.collectionIds.includes(c.id)} onChange={e=>setForm(v=>({...v,collectionIds:e.target.checked?[...v.collectionIds,c.id]:v.collectionIds.filter(id=>id!==c.id)}))}/>{c.name}</label>)}</fieldset><button className="save-item-button" disabled={savingEdit||!form.name.trim()} onClick={()=>void save()}><Check size={18}/> {savingEdit?"Salvando…":"Salvar alterações"}</button></section></Modal>}
+] as const).map(([key,label])=><label className="field-label" key={key}>{label}<input value={String(form.details[key]??'')} onChange={e=>setForm(v=>({...v,details:{...v.details,[key]:e.target.value}}))}/></label>)}</div><VehicleFields values={form.details} onChange={(key,value)=>setForm(v=>({...v,details:{...v.details,[key]:value}}))}/></section>}<label className="field-label">Observações<textarea rows={3} maxLength={300} value={form.notes} onChange={e=>setForm(v=>({...v,notes:e.target.value}))}/></label><label className="field-label">Substituir fotografia<input type="file" accept="image/jpeg,image/png,image/webp,.heic,.heif" onChange={e=>{setEditPhoto(e.target.files?.[0]||null);setRemovePhoto(false)}}/></label><label className="remove-photo-choice"><input type="checkbox" checked={removePhoto} onChange={e=>{setRemovePhoto(e.target.checked);if(e.target.checked)setEditPhoto(null)}}/> Remover foto atual</label><fieldset className="collection-selector"><legend>Coleções</legend>{collections.map(c=><label key={c.id}><input type="checkbox" checked={form.collectionIds.includes(c.id)} onChange={e=>setForm(v=>({...v,collectionIds:e.target.checked?[...v.collectionIds,c.id]:v.collectionIds.filter(id=>id!==c.id)}))}/>{c.name}</label>)}</fieldset><button className="save-item-button" disabled={savingEdit||!form.name.trim()} onClick={()=>void save()}><Check size={18}/> {savingEdit?"Salvando…":"Salvar alterações"}</button></section></Modal>}
  </section>
 }
