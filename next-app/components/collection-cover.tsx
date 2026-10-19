@@ -5,7 +5,7 @@ import {signedImage} from '@/lib/images'
 import {CategoryArt} from './category-art'
 
 /** Use a real photograph if a collection has an available item; fall back safely. */
-export function CollectionCover({id,category,selectedId}:{id:string;category:string;selectedId?:string|null}){
+export function CollectionCover({id,category,emoji,selectedId}:{id:string;category:string;emoji?:string|null;selectedId?:string|null}){
  const [url,setUrl]=useState<string|null>(null)
  useEffect(()=>{
   let active=true
@@ -25,5 +25,5 @@ export function CollectionCover({id,category,selectedId}:{id:string;category:str
   })()
   return ()=>{active=false}
  },[id,selectedId])
- return url?<img className="collection-cover-photo" src={url} alt="" loading="lazy"/>:<CategoryArt category={category}/>
+ return url?<img className="collection-cover-photo" src={url} alt="" loading="lazy"/>:<CategoryArt category={category} emoji={emoji}/>
 }

@@ -1,4 +1,5 @@
 'use client'
+import {Modal} from './modal'
 import {useCallback,useEffect,useState} from 'react'
 import Link from 'next/link'
 import {Check,Layers3,Plus,X} from 'lucide-react'
@@ -38,8 +39,8 @@ export function ItemCollectionPicker({itemId,onClose,onChanged}:{itemId:string;o
   else{setLinked(prev=>present?prev.filter(x=>x!==collectionId):[...prev,collectionId]);onChanged()}
   setWorking(null)
  }
- return <div className="edit-overlay" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget&&!working)onClose()}}>
-  <section className="edit-modal collection-picker" role="dialog" aria-modal="true" aria-label="Adicionar item a coleções">
+ return <Modal label="Adicionar item a coleções" onClose={onClose} busy={Boolean(working)} returnFocus={'[data-item-id="'+itemId+'"] .cc-more-trigger'}>
+  <section className="edit-modal collection-picker">
    <button type="button" className="close-modal" aria-label="Fechar seletor de coleções" disabled={Boolean(working)} onClick={onClose}><X size={22}/></button>
    <h2>Organizar item</h2><p>Escolha em quais coleções este item deve aparecer.</p>
    {error&&<p role="alert" className="scan-notice">{error} <button type="button" onClick={()=>void load()}>Tentar novamente</button></p>}
@@ -50,7 +51,7 @@ export function ItemCollectionPicker({itemId,onClose,onChanged}:{itemId:string;o
     </button>)}</div>
    :<p>Você ainda não criou uma coleção. Crie uma para organizar este item.</p>}
    <Link className="pill-btn" href={"/colecoes?criar=1&voltar=item/"+encodeURIComponent(itemId)}><Plus size={18}/> Nova coleção</Link>
-   <button type="button" className="save-item-button" onClick={onClose}>Concluir</button>
+   <button type="button" className="save-item-button" disabled={Boolean(working)} onClick={onClose}>Concluir</button>
   </section>
- </div>
+ </Modal>
 }

@@ -56,8 +56,13 @@ export function itemCardPalette(item:Pick<ItemRow,'name'|'brand'|'category'|'det
   ?item.details.manufacturer.trim()
   :item.brand||item.category||'Coollects'
  if(!frame)return {...defaultPalette,label}
- const darkText=luminance(frame)>.39
- return {frame,accent:darkText?'#34213f':'#fff0b5',ink:darkText?'#211827':'#ffffff',label}
+ const light=luminance(frame)
+ // Preserve the brand's dark ink when it passes; black covers middle tones
+ // where neither the purple ink nor white reaches 4.5:1.
+ const darkContrast=(light+.05)/(luminance('#211827')+.05)
+ const whiteContrast=1.05/(light+.05)
+ const ink=darkContrast>=4.5?'#211827':whiteContrast>=4.5?'#ffffff':'#000000'
+ return {frame,accent:ink==='#ffffff'?'#fff0b5':'#34213f',ink,label}
 }
 export function itemCardStyle(item:Pick<ItemRow,'name'|'brand'|'category'|'details'>):CSSProperties{
  const p=itemCardPalette(item)

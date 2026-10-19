@@ -6,7 +6,7 @@ function walk(folder:string):string[]{
 }
 const app=resolve(process.cwd(),'app')
 const components=resolve(process.cwd(),'components')
-const routes=walk(app).filter(x=>/\/page\.tsx$/.test(x)).map(x=>'/'+relative(app,x).replace(/\\/g,'/').replace(/(^|\/)page\.tsx$/,'').replace(/\/page\.tsx$/,''))
+const routes=walk(app).filter(x=>/[\\/]page\.tsx$/.test(x)).map(x=>'/'+relative(app,x).replace(/\\/g,'/').replace(/(^|\/)page\.tsx$/,'').replace(/\/page\.tsx$/,''))
 const cleanRoutes=routes.map(x=>x==='/page.tsx'||x==='/page'||x==='/'?'/' : x)
 function matchesRoute(path:string){
  return cleanRoutes.some(route=>route.replace(/\[(?:\.\.\.)?[^\]]+\]/g,'[^/]+')&&new RegExp('^'+route.replace(/\[(?:\.\.\.)?[^\]]+\]/g,'[^/]+')+'$').test(path))

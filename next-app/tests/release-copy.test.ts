@@ -16,8 +16,7 @@ const customerFacing = [
  'app/privacidade/page.tsx',
  'app/termos/page.tsx',
  'app/recuperar/page.tsx',
- 'app/redefinir/page.tsx',
- 'components/launch-hold.tsx'
+ 'app/redefinir/page.tsx'
 ]
 const unacceptable = [
  /configure o supabase/i,
@@ -34,11 +33,6 @@ describe('Conformidade dos textos de interface',()=>{
  it.each(customerFacing)('%s não mostra mensagens de engenharia ou placeholders',path=>{
   const src=readFileSync(resolve(process.cwd(),path),'utf8')
   for(const pattern of unacceptable)expect(src, 'Texto inadequado em '+path).not.toMatch(pattern)
- })
- it('o padrão de publicação exige liberação explícita',()=>{
-  const root=readFileSync(resolve(process.cwd(),'app/layout.tsx'),'utf8')
-  expect(root).toContain("process.env.COOLLECTS_SITE_MODE === 'open'")
-  expect(root).toContain('<LaunchHold/>')
  })
  it('a IA só aparece quando o serviço estiver habilitado',()=>{
   const src=readFileSync(resolve(process.cwd(),'components/scan-workspace.tsx'),'utf8')

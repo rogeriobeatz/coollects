@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from 'next'
-import { connection } from 'next/server'
 import { PwaRegister } from '@/components/pwa-register'
-import { LaunchHold } from '@/components/launch-hold'
-import { supabaseConfig } from '@/lib/supabase/config'
+import { ItemPresentationProvider } from '@/components/item-presentation-provider'
 import './globals.css'
+import './item-cards.css'
 
 export const metadata: Metadata = {
  title: { default: 'Coollects — Suas coleções em um só lugar', template: '%s | Coollects' },
@@ -15,10 +14,6 @@ export const metadata: Metadata = {
 }
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#6125BF' }
 
-// Never allow half-configured production to show broken onboarding or CRUD forms.
-// Evaluated per request so server-only Vercel settings are never baked into a static build.
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
- await connection()
- const ready = process.env.COOLLECTS_SITE_MODE === 'open' && Boolean(supabaseConfig())
- return <html lang="pt-BR"><body>{ready ? <>{children}<PwaRegister/></> : <LaunchHold/>}</body></html>
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+ return <html lang="pt-BR" data-scroll-behavior="smooth"><body><ItemPresentationProvider>{children}</ItemPresentationProvider><PwaRegister/></body></html>
 }

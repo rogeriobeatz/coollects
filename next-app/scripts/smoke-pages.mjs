@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 
-const mode=process.argv[2]||'open'
-const port=process.argv[3]||'3200'
+const port=process.argv[2]||'3200'
 const root='http://127.0.0.1:'+port
 async function wait(){
  for(let i=0;i<60;i++){
@@ -12,16 +11,6 @@ async function wait(){
  throw new Error('O servidor não iniciou em 30 segundos')
 }
 await wait()
-if(mode==='maintenance'){
- const res=await fetch(root+'/entrar')
- assert.equal(res.status,200,'A página de espera deve responder')
- const html=await res.text()
- assert.match(html,/O melhor de colecionar/)
- assert.doesNotMatch(html,/Configure o Supabase|Supabase ainda não configurado|Falta conectar o banco/i)
- const health=await fetch(root+'/api/health')
- assert.equal(health.status,503,'Manutenção nunca pode sinalizar pronto')
- console.log('✓ Modo de manutenção testado (sem vazamento técnico)')
-}else{
  const pages=[
   '/', '/entrar','/registrar','/recuperar','/redefinir',
   '/colecoes','/cadastrar','/explorar','/itens','/perfil',
@@ -32,10 +21,10 @@ if(mode==='maintenance'){
   assert.equal(response.status,200, page+': HTTP '+response.status)
   const html=await response.text()
   assert.match(html,/Coollects/i,page+' sem identidade visível')
+  assert.doesNotMatch(html,/O melhor de colecionar|está chegando\./,page+' bloqueada por manutenção')
   assert.doesNotMatch(html,/Configure o Supabase|Supabase ainda não configurado|Conecte o Supabase|Documento inicial de desenvolvimento/i,page+' com texto interno')
   console.log('✓',page)
  }
  const notFound=await fetch(root+'/rota-que-nao-existe')
  assert.equal(notFound.status,404,'Rota inexistente deveria retornar 404')
  console.log('✓ 404')
-}

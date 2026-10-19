@@ -1,4 +1,5 @@
 'use client'
+import {Modal} from './modal'
 import { useEffect,useState,type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertTriangle,Trash2,X } from 'lucide-react'
@@ -33,8 +34,8 @@ export function AccountDeletion(){
   <h3>Controle da conta</h3>
   <p>Você pode solicitar a exclusão permanente da sua conta, das coleções e das fotografias salvas. Essa ação não pode ser desfeita.</p>
   <button className="account-delete-button" onClick={()=>{setMessage('');setOpen(true)}}><Trash2 size={17}/> Excluir minha conta</button>
-  {open&&<div className="edit-overlay" role="dialog" aria-modal="true" aria-label="Excluir conta"><section className="edit-modal">
-    <button type="button" className="close-modal" onClick={()=>{if(!busy){setOpen(false);setPassword('');setConfirmation('')}}} aria-label="Cancelar exclusão"><X size={20}/></button>
+  {open&&<Modal label="Excluir conta" busy={busy} onClose={()=>{setOpen(false);setPassword('');setConfirmation('')}}><section className="edit-modal">
+    <button type="button" className="close-modal" disabled={busy} onClick={()=>{if(!busy){setOpen(false);setPassword('');setConfirmation('')}}} aria-label="Cancelar exclusão"><X size={20}/></button>
     <span className="account-warn-icon"><AlertTriangle size={28}/></span>
     <h2>Excluir sua conta?</h2>
     <p>Suas coleções, itens e fotografias serão removidos permanentemente. Se tiver certeza, informe sua senha e digite EXCLUIR.</p>
@@ -44,6 +45,6 @@ export function AccountDeletion(){
      <button type="submit" className="account-delete-button" disabled={busy||confirmation!=='EXCLUIR'||!password}>{busy?'Excluindo…':'Excluir definitivamente'}</button>
     </form>
     {message&&<p role="alert" className="scan-notice">{message}</p>}
-   </section></div>}
+   </section></Modal>}
  </section>
 }

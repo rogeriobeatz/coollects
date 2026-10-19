@@ -16,7 +16,6 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: https://example.invalid
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-key-not-for-production
-      COOLLECTS_SITE_MODE: open
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,7 +36,7 @@ jobs:
           ./node_modules/.bin/next start -p 3200 >/tmp/coollects-open.log 2>&1 &
           server=$!
           trap 'kill $server || true' EXIT
-          node scripts/smoke-pages.mjs open 3200
+          node scripts/smoke-pages.mjs 3200
       - name: Install headless Chromium
         run: npx playwright install --with-deps chromium
       - name: Browser tests on 320px and 390px
@@ -46,11 +45,3 @@ jobs:
           server=$!
           trap 'kill $server || true' EXIT
           npm run test:browser
-      - name: Maintenance-mode smoke test
-        env:
-          COOLLECTS_SITE_MODE: maintenance
-        run: |
-          ./node_modules/.bin/next start -p 3201 >/tmp/coollects-hold.log 2>&1 &
-          server=$!
-          trap 'kill $server || true' EXIT
-          node scripts/smoke-pages.mjs maintenance 3201

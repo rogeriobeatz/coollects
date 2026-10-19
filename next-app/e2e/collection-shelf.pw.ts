@@ -1,0 +1,77 @@
+import { test,expect } from '@playwright/test'
+import { mockAcervo,collection,item,collectionId,ownerId,backendUrl } from './helpers/acervo'
+
+for(const width of [320,390]){
+ test('Estante usa cards largos, duas fotos reais e ações só no detalhe: '+width+'px',async({page})=>{
+  await page.setViewportSize({width,height:844})
+  const state=await mockAcervo(page)
+  state.items[0].photo_path=ownerId+'/first.jpg'
+  const secondId='00000000-0000-4000-8000-000000000004'
+  state.items.push({...item,id:secondId,name:'Segunda miniatura',photo_path:ownerId+'/second.jpg'})
+  state.links.push({collection_id:collectionId,item_id:secondId})
+  state.collections.push({...collection,id:'00000000-0000-4000-8000-000000000005',name:'Meus discos',category:'Discos',color:'#F15700',emoji:'💿'})
+  await page.goto('/colecoes')
+  await expect(page.getByRole('navigation',{name:'Navegar no acervo'})).toHaveCount(0)
+  await expect(page.getByText('Todos os itens',{exact:true})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:/^Editar /})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:/^Excluir /})).toHaveCount(0)
+  const card=page.getByRole('link',{name:'Minha garagem',exact:true})
+  await expect(card.locator('.collection-teaser-gallery img')).toHaveCount(2)
+  await expect(card.locator('.collector-collection-label')).toContainText('2 itens')
+  for(const image of await card.locator('.collection-teaser-gallery img').all())await expect.poll(()=>image.evaluate((element:HTMLImageElement)=>element.complete&&element.naturalWidth>0)).toBe(true)
+  const first=await card.boundingBox(),shelf=await page.locator('.collection-shelf').boundingBox()
+  expect(Math.abs(first!.width-shelf!.width)).toBeLessThan(1)
+  const other=page.getByRole('link',{name:'Meus discos',exact:true})
+  await expect(other.locator('.collection-teaser-gallery')).toHaveCount(0)
+  await expect(other.locator('.art-emoji')).toHaveText('💿')
+  const second=await other.boundingBox()
+  expect(second!.y).toBeGreaterThan(first!.y+first!.height)
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+  await card.click()
+  await expect(page.getByRole('link',{name:'Editar coleção',exact:true})).toBeVisible()
+  await expect(page.getByRole('link',{name:'Excluir coleção',exact:true})).not.toBeVisible()
+  await page.getByRole('button',{name:'Mais opções da coleção'}).click()
+  await expect(page.getByRole('link',{name:'Excluir coleção',exact:true})).toBeVisible()
+  await expect(page.getByRole('button',{name:'Copiar link',exact:true})).toBeVisible()
+ })
+}
+
+test('Avisos informativos e de sucesso desaparecem depois de cinco segundos',async({page})=>{
+ await page.clock.install()
+ await mockAcervo(page)
+ await page.goto('/colecoes')
+ await expect(page.getByText(/Conta conectada: suas coleções/)).toBeVisible()
+ await page.clock.fastForward(5100)
+ await expect(page.getByText(/Conta conectada: suas coleções/)).toHaveCount(0)
+ await page.getByRole('link',{name:'Minha garagem',exact:true}).click()
+ await page.getByRole('link',{name:'Editar coleção',exact:true}).click()
+ for(let step=0;step<3;step++)await page.getByRole('button',{name:'Continuar',exact:true}).click()
+ await page.getByRole('button',{name:'Salvar coleção',exact:true}).click()
+ await expect(page.getByText('Coleção salva e sincronizada!',{exact:true})).toBeVisible()
+ await page.clock.fastForward(5100)
+ await expect(page.getByText('Coleção salva e sincronizada!',{exact:true})).toHaveCount(0)
+})
+
+test('Erro de gravação continua visível e uma foto quebrada usa o emoji',async({page})=>{
+ await page.clock.install()
+ const state=await mockAcervo(page)
+ state.items[0].photo_path=ownerId+'/unavailable.jpg'
+ await page.route(backendUrl+'/storage/v1/object/sign/coollects-items/**',route=>route.fulfill({status:404,body:'missing'}))
+ await page.goto('/colecoes')
+ const card=page.getByRole('link',{name:'Minha garagem',exact:true})
+ await expect(card).toBeVisible()
+ await expect(card.locator('.art-emoji')).toHaveText('🚀')
+ await expect(card.locator('.collection-teaser-gallery img')).toHaveCount(0)
+ await card.click()
+ await page.getByRole('link',{name:'Editar coleção',exact:true}).click()
+ await page.route(backendUrl+'/rest/v1/collections*',async route=>{
+  if(route.request().method()==='PATCH')return route.fulfill({status:500,json:{message:'Test save failure'}})
+  return route.fallback()
+ })
+ for(let step=0;step<3;step++)await page.getByRole('button',{name:'Continuar',exact:true}).click()
+ await page.getByRole('button',{name:'Salvar coleção',exact:true}).click()
+ const error=page.getByRole('alert').filter({hasText:'Não foi possível salvar a coleção'})
+ await expect(error).toBeVisible()
+ await page.clock.fastForward(6100)
+ await expect(error).toBeVisible()
+})

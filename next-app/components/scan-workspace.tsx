@@ -10,6 +10,7 @@ import { uploadImage } from '@/lib/images'
 import { preparePhoto } from '@/lib/photo-preparation'
 import { collectibleDetailsSchema } from '@/lib/kie-parser'
 import { CATEGORIES } from '@/lib/local-catalog'
+import { VehicleFields } from './vehicle-fields'
 export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
 function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const params=useSearchParams()
@@ -22,6 +23,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const [collections,setCollections]=useState<CollectionRow[]>([])
  const [saving,setSaving]=useState(false),[recognizing,setRecognizing]=useState(false),[scanStage,setScanStage]=useState(0)
  const [details,setDetails]=useState({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
+ const [vehicleDetails,setVehicleDetails]=useState<Record<string,string>>({})
  const requestId=useRef(0)
  const savingRef=useRef(false)
  const [analysisError,setAnalysisError]=useState('')
@@ -36,7 +38,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
   setPreparing(true);setNotice('Preparando a fotografia…')
   try{
    const prepared=await preparePhoto(chosen)
-   setFile(prepared.file);setSaved(false);setName('');setBrand('');setNotes('');setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
+   setVehicleDetails({});setFile(prepared.file);setSaved(false);setName('');setBrand('');setNotes('');setAnalysisError('');setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''})
    setNotice('Fotografia preparada. Nossa equipe digital está identificando o item…')
   }catch(error){setNotice(error instanceof Error?error.message:'Não foi possível abrir a fotografia. Tente novamente.')}
   finally{setPreparing(false)}
@@ -79,7 +81,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    if(file)uploaded=await uploadImage(db,userId,file)
    const {data:itemId,error}=await db.rpc('create_item_with_details',{
     p_name:name.trim(),p_brand:brand.trim(),p_category:category,p_notes:notes.trim(),
-    p_photo_path:uploaded,p_collection_ids:collectionIds,p_details:category==='Miniaturas'?{...details,year:details.year?Number(details.year):null}:{}
+    p_photo_path:uploaded,p_collection_ids:collectionIds,p_details:category==='Miniaturas'?{...details,...vehicleDetails,year:details.year?Number(details.year):null}:{}
    })
    if(error||!itemId)throw error||new Error('Não foi possível salvar o item.')
    setSaved(true)
@@ -91,7 +93,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
    setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
   }finally{savingRef.current=false;setSaving(false)}
  }
- function reset(){requestId.current++;setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
+ function reset(){requestId.current++;setVehicleDetails({});setDetails({manufacturer:'',series:'',seriesNumber:'',collectionNumber:'',year:'',scale:'',color:'',condition:''});setAnalysisError('');setFile(null);setName('');setBrand('');setCategory('Miniaturas');setNotes('');setCollectionIds(preferredCollection?[preferredCollection]:[]);setSaved(false);setNotice('')}
  return <section className="scan-workspace">
   <div className={'scanner-stage '+(image?'has-image ':'')+((recognizing||preparing)?'is-scanning':'')}>
    {image?<div className="ocr-preview-frame"><img className="scanner-photo" src={image} alt="Prévia da fotografia do item"/></div>:<div className="scanner-placeholder"><div className="scanner-symbol"><ScanLine size={58}/></div><strong>Aponte. Fotografe.<br/>Colecione.</strong><p>Seu acervo, um item de cada vez.</p></div>}
@@ -119,7 +121,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
     ['scale','Escala','Ex.: 1:64'],
     ['color','Cor','Ex.: Vermelho'],
     ['condition','Condição','Ex.: Lacrado']
-   ] as const).map(([key,label,placeholder])=><label key={key} className="field-label">{label}<input value={details[key]} onChange={e=>setDetails(v=>({...v,[key]:e.target.value}))} placeholder={placeholder} maxLength={key==='year'?4:90} inputMode={key==='year'?'numeric':'text'}/></label>)}</div></section>}
+   ] as const).map(([key,label,placeholder])=><label key={key} className="field-label">{label}<input value={details[key]} onChange={e=>setDetails(v=>({...v,[key]:e.target.value}))} placeholder={placeholder} maxLength={key==='year'?4:90} inputMode={key==='year'?'numeric':'text'}/></label>)}</div><VehicleFields values={vehicleDetails} onChange={(key,value)=>setVehicleDetails(v=>({...v,[key]:value}))}/></section>}
    <fieldset className="collection-selector"><legend>Adicionar a coleções (opcional)</legend>{collections.length?collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}/>{c.name}</label>):<p>Você ainda não possui coleções. <Link href="/colecoes">Criar coleção</Link></p>}</fieldset>
    <label className="field-label" htmlFor="item-notes">Observações pessoais (podem ser visíveis em coleções públicas)<textarea id="item-notes" rows={3} maxLength={300} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="História, origem, conservação ou notas pessoais..."/></label>
    <button type="button" disabled={saving||preparing||recognizing||saved} className="save-item-button" onClick={()=>void save()}>{saved?<Check size={23}/>:<ArrowRight size={22}/>} {saving?'Salvando…':saved?'Item salvo!':'Salvar no meu acervo'}</button>

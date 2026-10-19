@@ -5,7 +5,7 @@ export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export async function GET(){
  const config=supabaseConfig()
- if(!config||process.env.COOLLECTS_SITE_MODE!=='open')
+ if(!config)
   return NextResponse.json({status:'unavailable'},{status:503,headers:{'Cache-Control':'no-store'}})
  try{
   const db=createClient(config.url,config.key,{auth:{autoRefreshToken:false,persistSession:false}})

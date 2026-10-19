@@ -8,5 +8,5 @@ export default function ItemDetailPage(){
  const context=params.get('voltar')
  const fromExplore=params.get('origem')==='explorar'
  const backHref=context&&/^colecao\/[0-9a-f-]{36}$/i.test(context)?'/'+context:'/itens'
- return <Screen backHref={backHref} active={fromExplore?"explorar":"colecoes"} title="" subtitle="" compact><ItemShowcase id={id}/></Screen>
+ return <Screen backHref={backHref} active={fromExplore?"explorar":backHref.startsWith('/colecao/')?"colecoes":"itens"} title="" subtitle="" compact><ItemShowcase id={id}/></Screen>
 }

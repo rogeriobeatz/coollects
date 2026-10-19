@@ -1,0 +1,74 @@
+import { test, expect } from '@playwright/test'
+import { mockAcervo, item, collectionId, backendUrl } from './helpers/acervo'
+
+for(const width of [320,390]){
+ test('Menu dá acesso a Itens e perfil fica no header: '+width+'px',async({page})=>{
+  await page.setViewportSize({width,height:844})
+  await mockAcervo(page)
+  await page.goto('/')
+  const nav=page.getByRole('navigation',{name:'Navegação principal'})
+  await expect(nav.getByRole('link')).toHaveCount(5)
+  const labels=['Home','Itens','Adicionar','Coleções','Explorar']
+  for(let index=0;index<labels.length;index++)await expect(nav.getByRole('link').nth(index)).toHaveAttribute('aria-label',labels[index])
+  await expect(nav.getByRole('link',{name:'Perfil',exact:true})).toHaveCount(0)
+  await nav.getByRole('link',{name:'Itens',exact:true}).click()
+  await expect(page).toHaveURL(/\/itens$/)
+  await expect(page.getByRole('heading',{name:'Meus itens.'})).toBeVisible()
+  await expect(nav.getByRole('link',{name:'Itens',exact:true})).toHaveAttribute('aria-current','page')
+  const geometry=await page.locator('.topbar').evaluate(header=>{
+   const bounds=header.getBoundingClientRect(),logo=header.querySelector('.official-logo')!.getBoundingClientRect(),profile=header.querySelector('.header-profile-link')!.getBoundingClientRect()
+   return {delta:Math.abs(bounds.left+bounds.width/2-logo.left-logo.width/2),overlap:logo.right>profile.left,right:profile.right}
+  })
+  expect(geometry.delta).toBeLessThan(1)
+  expect(geometry.overlap).toBe(false)
+  expect(geometry.right).toBeLessThanOrEqual(width)
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+  await page.getByRole('link',{name:'Meu perfil',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Seu perfil.'})).toBeVisible()
+  await expect(page.getByRole('link',{name:'Meu perfil',exact:true})).toHaveAttribute('aria-current','page')
+  await expect(nav.locator('[aria-current="page"]')).toHaveCount(0)
+  await nav.getByRole('link',{name:'Coleções',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Minhas coleções.'})).toBeVisible()
+  await nav.getByRole('link',{name:'Adicionar',exact:true}).click()
+  await expect(page).toHaveURL(/\/cadastrar$/)
+  await expect(nav.getByRole('link',{name:'Adicionar',exact:true})).toHaveAttribute('aria-current','page')
+ })
+}
+
+test('Meus itens combina busca, categoria, coleção e ordenação',async({page})=>{
+ await page.setViewportSize({width:390,height:844})
+ const state=await mockAcervo(page)
+ state.items.push({...item,id:'00000000-0000-4000-8000-000000000004',name:'Zelda',category:'Games',brand:'Nintendo',created_at:'2026-02-01T00:00:00Z'})
+ state.items.push({...item,id:'00000000-0000-4000-8000-000000000005',name:'Aventura',category:'Games',brand:'Nintendo',created_at:'2026-03-01T00:00:00Z'})
+ await page.goto('/itens')
+ const cards=page.locator('.cc-item-title')
+ await expect(cards).toHaveText(['Aventura','Zelda','Carrinho favorito'])
+ await page.getByRole('combobox',{name:'Ordenar por',exact:true}).selectOption('name')
+ await expect(cards).toHaveText(['Aventura','Carrinho favorito','Zelda'])
+ await page.getByRole('group',{name:'Filtrar itens por categoria'}).getByRole('button',{name:'Games',exact:true}).click()
+ await expect(cards).toHaveText(['Aventura','Zelda'])
+ await page.getByLabel('Buscar no meu acervo',{exact:true}).fill('zelda')
+ await expect(cards).toHaveText(['Zelda'])
+ await page.getByRole('combobox',{name:'Coleção',exact:true}).selectOption(collectionId)
+ await expect(page.getByText('Nenhum item corresponde aos filtros.',{exact:true})).toBeVisible()
+ await page.getByRole('button',{name:'Limpar filtros',exact:true}).last().click()
+ await expect(cards).toHaveCount(3)
+ await page.getByRole('combobox',{name:'Coleção',exact:true}).selectOption('unassigned')
+ await expect(cards).toHaveText(['Aventura','Zelda'])
+ await page.getByRole('combobox',{name:'Coleção',exact:true}).selectOption(collectionId)
+ await expect(cards).toHaveText(['Carrinho favorito'])
+ await page.getByRole('link',{name:'Carrinho favorito',exact:true}).click()
+ await expect(page.getByRole('navigation',{name:'Navegação principal'}).getByRole('link',{name:'Itens',exact:true})).toHaveAttribute('aria-current','page')
+})
+
+test('Falha ao carregar itens oferece nova tentativa sem mostrar acervo vazio',async({page})=>{
+ await mockAcervo(page)
+ const pattern=backendUrl+'/rest/v1/items*'
+ await page.route(pattern,route=>route.fulfill({status:500,json:{message:'Test failure'}}))
+ await page.goto('/itens')
+ await expect(page.getByRole('alert').filter({hasText:'Não conseguimos carregar seus itens'})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'O primeiro item é especial.'})).toHaveCount(0)
+ await page.unroute(pattern)
+ await page.getByRole('button',{name:'Tentar novamente',exact:true}).click()
+ await expect(page.getByRole('link',{name:'Carrinho favorito',exact:true})).toBeVisible()
+})

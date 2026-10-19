@@ -4,17 +4,22 @@ const leaked=/Configure o Supabase|Conecte o Supabase|Supabase ainda n[aã]o con
 for(const viewport of [{width:320,height:780},{width:390,height:844}]){
  test.describe('Coollects mobile '+viewport.width+'px',()=>{
   test.use({viewport})
-  test('Home carrega logo, navegação e não tem rolagem horizontal',async({page})=>{
+  test('Boas-vindas oferece acesso imediato e não tem rolagem horizontal',async({page})=>{
    await page.goto('/')
-   await expect(page.getByRole('heading',{name:/Meu acervo/i})).toBeVisible()
+   await expect(page.getByRole('heading',{name:/Suas coleções. Suas histórias./i})).toBeVisible()
    await expect(page.locator('.official-logo')).toBeVisible()
-   await expect(page.getByRole('navigation',{name:'Navegação principal'})).toBeVisible()
+   await expect(page.getByRole('link',{name:'Criar conta',exact:true})).toHaveAttribute('href','/registrar?next=/')
+   await expect(page.getByRole('link',{name:/Já tenho conta/})).toHaveAttribute('href','/entrar?next=/')
+   await page.getByRole('link',{name:'Criar conta',exact:true}).click()
+   await expect(page.getByRole('heading',{name:/Comece seu universo/i})).toBeVisible()
    await expect(page.locator('body')).not.toContainText(leaked)
    const fits=await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)
    expect(fits).toBe(true)
   })
   test('A navegação entre telas funciona',async({page})=>{
    await page.goto('/')
+   await page.getByRole('link',{name:'Explorar coleções',exact:true}).click()
+   await expect(page.getByRole('heading',{name:/Explorar universos/i})).toBeVisible()
    await page.getByRole('link',{name:'Coleções'}).last().click()
    await expect(page).toHaveURL(/\/colecoes$/)
    await expect(page.getByRole('heading',{name:/Minhas coleções/i})).toBeVisible()
