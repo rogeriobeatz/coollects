@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { MAX_PHOTO_BYTES } from '@/lib/photo-limits'
 import { parseKieSuggestion, prompt } from '@/lib/kie-parser'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 export const runtime='nodejs'
@@ -22,7 +23,7 @@ export async function POST(request:Request){
  try{
   stage='image'
   const form=await request.formData(),image=form.get('image')
-  if(!(image instanceof File)||image.size===0||image.size>4*1024*1024)return failure('IMAGE_SIZE','A IA aceita fotos de até 4 MB. Reabra a foto na galeria e tente novamente.',400)
+  if(!(image instanceof File)||image.size===0||image.size>MAX_PHOTO_BYTES)return failure('IMAGE_SIZE','A imagem para análise deve ter no máximo 600 KB. Selecione a foto novamente.',400)
   const bytes=new Uint8Array(await image.arrayBuffer()),mime=mimeHeader(bytes)
   if(!mime)return failure('IMAGE_TYPE','Formato inválido. Use JPG, PNG ou WebP.',400)
   stage='quota'
