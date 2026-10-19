@@ -10,9 +10,9 @@ export const metadata: Metadata = {
  applicationName: 'Coollects',
  manifest: '/manifest.webmanifest',
  icons: { icon: [{ url: '/icon.svg', type: 'image/svg+xml' }], apple: [{ url: '/brand/coollects.png' }] },
- appleWebApp: { capable: true, title: 'Coollects', statusBarStyle: 'default' }
+ appleWebApp: { capable: true, title: 'Coollects', statusBarStyle: 'black-translucent' }
 }
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#6125BF' }
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#6125BF' }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
  return <html lang="pt-BR" data-scroll-behavior="smooth"><body><ItemPresentationProvider>{children}</ItemPresentationProvider><PwaRegister/></body></html>
