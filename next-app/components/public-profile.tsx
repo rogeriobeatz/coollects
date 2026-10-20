@@ -8,7 +8,6 @@ import { CollectionRow,ProfileRow,collectionUrlPath } from '@/lib/catalog'
 import { CollectionCard } from './collection-card'
 import { SocialProfileStats } from './social-interactions'
 import {signedImage} from '@/lib/images'
-import type {ItemRow} from '@/lib/catalog'
 export function PublicProfile({username}:{username:string}){
  const [profile,setProfile]=useState<ProfileRow|null>(null),[collections,setCollections]=useState<CollectionRow[]>([])
  const [loading,setLoading]=useState(true)
