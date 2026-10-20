@@ -13,7 +13,13 @@ export const metadata: Metadata = {
  description: 'Digitalize, organize, descubra e compartilhe suas coleções.',
  applicationName: 'Coollects',
  manifest: '/manifest.webmanifest',
- icons: { icon: [{ url: '/icon.svg', type: 'image/svg+xml' }], apple: [{ url: '/brand/coollects.png' }] },
+ icons: {
+  icon: [
+   { url: '/brand/icon-192.png', sizes: '192x192', type: 'image/png' },
+   { url: '/brand/icon-512.png', sizes: '512x512', type: 'image/png' }
+  ],
+  apple: [{ url: '/brand/icon-180.png', sizes: '180x180', type: 'image/png' }]
+ },
  appleWebApp: { capable: true, title: 'Coollects', statusBarStyle: 'black-translucent' }
 }
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#6125BF' }
