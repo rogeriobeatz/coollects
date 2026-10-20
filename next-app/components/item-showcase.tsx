@@ -9,6 +9,7 @@ import {ItemCollectionPicker} from './item-collection-picker'
 import {ItemCardViewer} from './item-card-viewer'
 import {ItemGallery} from './item-gallery'
 import {ShareButton} from './share-button'
+import {ItemLike} from './social-interactions'
 import {ItemRow,CollectionRow,ProfileRow,publicUrlPath} from '@/lib/catalog'
 type ItemInfo=ItemRow&{photoUrl:string|null;galleryUrls:string[]}
 export function ItemShowcase({id}:{id:string}){
@@ -57,6 +58,7 @@ export function ItemShowcase({id}:{id:string}){
   <ItemCardViewer item={item} photoUrl={item.photoUrl} headingLevel="h1"/>
   <ItemGallery name={item.name} urls={item.galleryUrls}/>
   <div className="collectible-actions"><div className="collectible-belongs"><span>DO ACERVO DE</span>{owner?<Link href={publicUrlPath(owner.username)}>{owner.display_name||owner.username}</Link>:<strong>Coollects</strong>}{collections.length>0&&<small>{collections.map(c=>c.name).join(' · ')}</small>}</div>{publicCollection?<ShareButton className="collectible-share" path={'/item/'+encodeURIComponent(item.id)} title={item.name} text={'Olha este item'+(owner?' do acervo de '+(owner.display_name||owner.username):'')+' no Coollects: '+item.name}/>:isOwner&&<button type="button" className="collectible-share is-private" onClick={()=>setPicker(true)}><LockKeyhole size={17}/> Compartilhar</button>}</div>
+  {publicCollection&&<ItemLike itemId={item.id} ownerId={item.owner_id}/>}
   {isOwner&&<div className="item-showcase-hint"><p>{publicCollection?'Este item faz parte de uma coleção pública.':'Para compartilhar, adicione este item a uma coleção pública.'}</p><button type="button" className="pill-btn" onClick={()=>setPicker(true)}>Adicionar a uma coleção</button></div>}
   {picker&&isOwner&&<ItemCollectionPicker itemId={item.id} onClose={()=>setPicker(false)} onChanged={()=>void refresh()}/>}
   {item.notes&&<details className="collectible-more"><summary>História e observações</summary><p>{item.notes}</p></details>}
