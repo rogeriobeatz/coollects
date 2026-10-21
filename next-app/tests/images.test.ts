@@ -43,10 +43,14 @@ describe('Isolamento do cache entre sessões',()=>{
  it('descarta a URL assinada que terminou de carregar depois do logout',async()=>{
   let resolveFirst:(value:{data:{signedUrl:string};error:null})=>void=()=>{}
   const first=new Promise<{data:{signedUrl:string};error:null}>(resolve=>{resolveFirst=resolve})
-  const createSignedUrl=vi.fn().mockImplementationOnce(()=>first)
+  let notifyStarted:()=>void=()=>{}
+  const started=new Promise<void>(resolve=>{notifyStarted=resolve})
+  const createSignedUrl=vi.fn().mockImplementationOnce(()=>{notifyStarted();return first})
    .mockResolvedValue({data:{signedUrl:'https://example.invalid/new-session'},error:null})
   const db={storage:{from:()=>({createSignedUrl})}} as unknown as SupabaseClient
   const pending=signedImage(db,'old-user/photo.jpg',{full:true})
+  // Wait until the URL signing request is actually in flight before logging out.
+  await started
   await clearImageCache()
   resolveFirst({data:{signedUrl:'https://example.invalid/old-session'},error:null})
   await expect(pending).resolves.toBeNull()
