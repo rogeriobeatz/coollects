@@ -13,7 +13,7 @@ async function wait(){
 await wait()
  const pages=[
   '/', '/entrar','/registrar','/recuperar','/redefinir',
-  '/colecoes','/cadastrar','/explorar','/itens','/perfil',
+  '/colecoes','/cadastrar','/explorar','/itens','/perfil','/perfil/editar','/notificacoes',
   '/privacidade','/termos','/u/colecionador_qa','/colecao/00000000-0000-0000-0000-000000000000'
  ]
  for(const page of pages){

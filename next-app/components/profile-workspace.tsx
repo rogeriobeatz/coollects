@@ -1,13 +1,13 @@
 'use client'
 import { useEffect,useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight,Check,Copy,LogOut,UserRound } from 'lucide-react'
+import { ArrowRight,Check,LogOut,UserRound } from 'lucide-react'
+import { CollectorAvatar } from './collector-avatar'
 import { AuthGate } from './auth-gate'
 import { LegacyImport } from './legacy-import'
 import { AccountDeletion } from './account-deletion'
-import { ShareButton } from './share-button'
 import { getBrowserClient } from '@/lib/supabase/client'
-import { ProfileRow,publicUrlPath } from '@/lib/catalog'
+import { ProfileRow } from '@/lib/catalog'
 import { useRouter } from 'next/navigation'
 export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileEditor userId={userId}/>}</AuthGate>}
 function ProfileEditor({userId}:{userId:string}){
@@ -33,19 +33,22 @@ function ProfileEditor({userId}:{userId:string}){
   setBusy(false)
  }
  async function signOut(){const db=getBrowserClient();if(!db){setMessage('Serviço indisponível. Tente novamente.');return}setBusy(true);const {error}=await db.auth.signOut();setBusy(false);if(error){setMessage('Não foi possível encerrar sua sessão. Tente novamente.');return}router.replace('/');router.refresh()}
- return <div className="profile-preview"><span className="profile-avatar"><UserRound size={42}/></span><h2>{profile?.display_name||'Seu universo'}</h2><p>Personalize seu perfil público e compartilhe suas coleções.</p>
+ return <div className="profile-preview profile-editor">
+  {profile?<CollectorAvatar name={profile.display_name||profile.username} seed={profile.id} size="lg"/>:<span className="profile-avatar"><UserRound size={42}/></span>}
+  <h2>{profile?.display_name||'Seu universo'}</h2>
+  <p>{profile?'@'+profile.username:'Personalize seu perfil público e compartilhe suas coleções.'}</p>
   <label className="field-label">Nome de exibição<input maxLength={60} value={displayName} onChange={e=>setDisplayName(e.target.value)}/></label>
   <label className="field-label">Usuário (URL pública)<input maxLength={30} value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))}/></label>
   <label className="field-label">Biografia<textarea rows={3} maxLength={300} value={bio} onChange={e=>setBio(e.target.value)}/></label>
   <button className="save-item-button" disabled={busy||!profile} onClick={()=>void save()}><Check size={18}/>{busy?'Salvando...':'Salvar perfil'}</button>
   {message&&<p role="status" className="scan-notice">{message}</p>}
   <div className="profile-links">
-   {profile&&<><Link href={publicUrlPath(profile.username)}>Ver perfil público <ArrowRight size={16}/></Link><ShareButton className="profile-share" path={publicUrlPath(profile.username)} title={profile.display_name||profile.username} text={'Conheça as coleções de '+(profile.display_name||profile.username)+' no Coollects'} label="Compartilhar perfil"/></>}
+   {profile&&<Link href="/perfil">Ver meu perfil <ArrowRight size={16}/></Link>}
    <Link href="/itens">Gerenciar meus itens <ArrowRight size={16}/></Link>
    <button disabled={busy} onClick={()=>void signOut()}>Sair da conta <LogOut size={16}/></button>
   </div>
   <LegacyImport userId={userId}/>
   <AccountDeletion/>
-  <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seu e-mail nunca aparece no perfil.</p>
+  <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seguidores e curtidas são públicos. Seu e-mail nunca aparece no perfil.</p>
  </div>
 }

@@ -1,70 +1,145 @@
 'use client'
-import {useCallback,useEffect,useState} from 'react'
-import {Heart,UserPlus,UserCheck} from 'lucide-react'
-import {getBrowserClient} from '@/lib/supabase/client'
-import {useAccount} from '@/hooks/use-account'
+import { useEffect,useRef,useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { Heart,UserCheck,UserPlus } from 'lucide-react'
+import { getBrowserClient } from '@/lib/supabase/client'
+import { useAccount } from '@/hooks/use-account'
+import { publicUrlPath } from '@/lib/catalog'
+import { countLabel,formatCount,signInHref,type CollectorSummary,type ItemSocial } from '@/lib/social'
+import { emitSocial,loadItemSocial,onSocial,setFollowing,setLiked } from '@/lib/social-data'
+import { CollectorAvatar } from './collector-avatar'
+import { FeedbackNotice } from './feedback-notice'
 
-export function SocialProfileStats({profileId}:{profileId:string}){
- const {user}=useAccount()
- const [followers,setFollowers]=useState(0),[likes,setLikes]=useState(0)
- const [following,setFollowing]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('')
- const refresh=useCallback(async()=>{
-  const db=getBrowserClient();if(!db)return
-  const [{data:counts,error:countError},{data:relation}]=await Promise.all([
-   db.rpc('social_profile_counts',{p_user_id:profileId}),
-   user?db.from('user_follows').select('follower_id').eq('follower_id',user.id).eq('followed_id',profileId).maybeSingle():Promise.resolve({data:null})
-  ])
-  if(countError){setError('Os indicadores sociais ainda não estão disponíveis.');return}
-  const count=Array.isArray(counts)?counts[0]:counts
-  setFollowers(Number(count?.followers??0));setLikes(Number(count?.total_likes??0))
-  setFollowing(Boolean(relation))
- },[profileId,user])
- useEffect(()=>{void refresh()},[refresh])
+/** Follow / unfollow with an instant response; reverts if the server refuses. */
+export function FollowButton({profileId,name,following:initial,followsMe=false,compact=false}:{
+ profileId:string;name:string;following:boolean;followsMe?:boolean;compact?:boolean
+}){
+ const {user,loading}=useAccount()
+ const path=usePathname()
+ const [following,setState]=useState(initial)
+ const busy=useRef(false)
+ useEffect(()=>setState(initial),[initial])
+ useEffect(()=>onSocial(event=>{if(event.type==='follow'&&event.profileId===profileId)setState(event.following)}),[profileId])
+ if(user?.id===profileId)return null
+ const className='follow-button'+(following?' is-following':'')+(compact?' is-compact':'')
+ const label=following?'Seguindo':followsMe?'Seguir de volta':'Seguir'
+ const Icon=following?UserCheck:UserPlus
+ if(!loading&&!user)return <Link className={className} href={signInHref(path)} aria-label={'Entre para seguir '+name}><Icon size={compact?17:18} aria-hidden="true"/>{!compact&&<span>Seguir</span>}</Link>
  async function toggle(){
-  if(!user||user.id===profileId||busy)return
-  const db=getBrowserClient();if(!db)return
-  setBusy(true);setError('')
-  const result=following
-   ?await db.from('user_follows').delete().eq('follower_id',user.id).eq('followed_id',profileId)
-   :await db.from('user_follows').insert({follower_id:user.id,followed_id:profileId})
-  if(result.error)setError('Não foi possível atualizar a conexão.')
-  else await refresh()
-  setBusy(false)
+  const db=getBrowserClient()
+  if(!user||!db||busy.current)return
+  busy.current=true
+  const next=!following
+  emitSocial({type:'follow',profileId,following:next})
+  try{await setFollowing(db,user.id,profileId,next);emitSocial({type:'saved',action:'follow'})}
+  catch{
+   emitSocial({type:'follow',profileId,following:!next})
+   emitSocial({type:'error',message:next?'Não foi possível seguir '+name+'. Tente novamente.':'Não foi possível deixar de seguir '+name+'. Tente novamente.'})
+  }
+  finally{busy.current=false}
  }
- return <div className="social-profile-stats">
-  <div style={{display:'flex',gap:28,justifyContent:'center',margin:'16px 0'}}>
-   <div><strong style={{fontSize:25,display:'block'}}>{followers}</strong><span>seguidores</span></div>
-   <div><strong style={{fontSize:25,display:'block'}}>{likes}</strong><span>curtidas</span></div>
-  </div>
-  {user&&user.id!==profileId&&<button className="pill-btn" type="button" disabled={busy} onClick={()=>void toggle()}>{following?<><UserCheck size={17}/> Seguindo</>:<><UserPlus size={17}/> Seguir</>}</button>}
-  {error&&<p role="alert" className="scan-notice">{error}</p>}
+ return <button type="button" className={className} aria-pressed={following} disabled={loading} onClick={()=>void toggle()}
+  aria-label={compact?(following?'Seguindo ':'Seguir ')+name:undefined} title={compact?(following?'Deixar de seguir ':'Seguir ')+name:undefined}>
+  <Icon size={compact?17:18} aria-hidden="true"/>{!compact&&<><span>{label}</span><span className="visually-hidden"> {name}</span></>}
+ </button>
+}
+
+/** Heart + count. Owners see the count only; visitors are invited to sign in. */
+export function LikeButton({itemId,itemName,ownerId,social,size='card'}:{
+ itemId:string;itemName:string;ownerId:string;social:ItemSocial;size?:'card'|'detail'
+}){
+ const {user,loading}=useAccount()
+ const path=usePathname()
+ const [state,setState]=useState(social)
+ const [pop,setPop]=useState(false)
+ const busy=useRef(false)
+ useEffect(()=>setState({likes:social.likes,liked:social.liked}),[social.likes,social.liked])
+ useEffect(()=>onSocial(event=>{if(event.type==='like'&&event.itemId===itemId)setState(event.social)}),[itemId])
+ const className='like-button like-'+size+(state.liked?' is-liked':'')+(pop?' is-popping':'')
+ const heart=<Heart size={size==='detail'?22:17} aria-hidden="true" fill={state.liked?'currentColor':'none'}/>
+ const count=<span className="like-count">{formatCount(state.likes)}</span>
+ const summary=countLabel(state.likes,'curtida','curtidas')
+ if(user?.id===ownerId)return <span className={className+' is-static'} role="img" aria-label={summary}>{heart}{count}</span>
+ if(!loading&&!user)return <Link className={className} href={signInHref(path)} aria-label={'Entre para curtir '+itemName+' · '+summary}>{heart}{count}</Link>
+ async function toggle(){
+  const db=getBrowserClient()
+  if(!user||!db||busy.current)return
+  busy.current=true
+  const previous=state
+  const next={liked:!state.liked,likes:Math.max(0,state.likes+(state.liked?-1:1))}
+  emitSocial({type:'like',itemId,ownerId,social:next,change:next.liked?1:-1})
+  if(next.liked)setPop(true)
+  try{await setLiked(db,user.id,itemId,next.liked);emitSocial({type:'saved',action:'like'})}
+  catch{
+   emitSocial({type:'like',itemId,ownerId,social:previous,change:previous.liked?1:-1})
+   emitSocial({type:'error',message:'Não foi possível atualizar a curtida. Tente novamente.'})
+  }
+  finally{busy.current=false}
+ }
+ return <button type="button" className={className} aria-pressed={state.liked} aria-label={'Curtir '+itemName+' · '+summary} disabled={loading} onClick={()=>void toggle()} onAnimationEnd={()=>setPop(false)}>{heart}{count}</button>
+}
+
+/** Whether the signed-in viewer follows a profile (false for visitors and owners). */
+export function useFollowing(profileId:string|null|undefined){
+ const {user}=useAccount()
+ const [following,setState]=useState(false)
+ useEffect(()=>{
+  const db=getBrowserClient()
+  if(!db||!user||!profileId||user.id===profileId){setState(false);return}
+  let active=true
+  void db.from('user_follows').select('follower_id').eq('follower_id',user.id).eq('followed_id',profileId).maybeSingle()
+   .then(({data})=>{if(active)setState(Boolean(data))})
+  return ()=>{active=false}
+ },[user?.id,profileId])
+ return following
+}
+
+export type SocialStatus='loading'|'ready'|'error'
+
+/** Likes for every card in a list with one request; stays in sync with the page. */
+export function useItemSocial(itemIds:string[]){
+ const {user,loading}=useAccount()
+ const key=[...new Set(itemIds)].sort().join(',')
+ const [map,setMap]=useState<Map<string,ItemSocial>>(()=>new Map())
+ const [status,setStatus]=useState<SocialStatus>('loading')
+ const [attempt,setAttempt]=useState(0)
+ useEffect(()=>{
+  if(loading)return
+  const ids=key?key.split(','):[]
+  setMap(new Map())
+  const db=getBrowserClient()
+  if(!ids.length){setStatus('ready');return}
+  if(!db){setStatus('error');return}
+  let active=true
+  setStatus('loading')
+  loadItemSocial(db,ids)
+   .then(result=>{if(!active)return;setMap(result);setStatus('ready')})
+   .catch(()=>{if(active)setStatus('error')})
+  return ()=>{active=false}
+ },[key,user?.id,loading,attempt])
+ useEffect(()=>onSocial(event=>{
+  if(event.type!=='like')return
+  setMap(previous=>{if(!previous.has(event.itemId))return previous;const next=new Map(previous);next.set(event.itemId,event.social);return next})
+ }),[])
+ return {social:map,status,retry:()=>setAttempt(value=>value+1)}
+}
+
+/** Footer for CollectibleCard: optional author and the like control. */
+export function CardSocialBar({itemId,itemName,ownerId,social,status,author}:{
+ itemId:string;itemName:string;ownerId:string;social?:ItemSocial;status:SocialStatus;author?:CollectorSummary|null
+}){
+ if(!author&&!social&&status!=='loading')return null
+ return <div className="cc-social-bar">
+  {author&&<Link className="cc-social-author" href={publicUrlPath(author.username)} aria-label={'Ver perfil de '+author.display_name} title={author.display_name+' · @'+author.username}><CollectorAvatar name={author.display_name} seed={author.id} size="xs"/><span>{author.display_name.trim().split(/\s+/)[0]||'@'+author.username}</span></Link>}
+  {social?<LikeButton itemId={itemId} itemName={itemName} ownerId={ownerId} social={social}/>:status==='loading'?<span className="like-button like-card is-placeholder" aria-hidden="true"><Heart size={17}/></span>:null}
  </div>
 }
 
-export function ItemLike({itemId,ownerId}:{itemId:string;ownerId:string}){
- const {user}=useAccount()
- const [count,setCount]=useState(0),[liked,setLiked]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('')
- const refresh=useCallback(async()=>{
-  const db=getBrowserClient();if(!db)return
-  const [{count:total,error:readError},{data:mine}]=await Promise.all([
-   db.from('item_likes').select('item_id',{head:true,count:'exact'}).eq('item_id',itemId),
-   user?db.from('item_likes').select('item_id').eq('item_id',itemId).eq('user_id',user.id).maybeSingle():Promise.resolve({data:null})
-  ])
-  if(readError){setError('Curtidas indisponíveis.');return}
-  setCount(total??0);setLiked(Boolean(mine))
- },[itemId,user])
- useEffect(()=>{void refresh()},[refresh])
- async function toggle(){
-  if(!user||busy||user.id===ownerId)return
-  const db=getBrowserClient();if(!db)return
-  setBusy(true);setError('')
-  const result=liked?await db.from('item_likes').delete().eq('item_id',itemId).eq('user_id',user.id):await db.from('item_likes').insert({item_id:itemId,user_id:user.id})
-  if(result.error)setError('Não foi possível atualizar a curtida.')
-  else await refresh()
-  setBusy(false)
- }
- return <div style={{margin:'14px 0'}}>
-  <button type="button" className="pill-btn" onClick={()=>void toggle()} disabled={!user||user.id===ownerId||busy} aria-pressed={liked} title={!user?'Entre para curtir':user.id===ownerId?'Você não pode curtir seu próprio item':undefined}><Heart size={18} fill={liked?'currentColor':'none'}/>{count} {count===1?'curtida':'curtidas'}</button>
-  {error&&<p role="alert" className="scan-notice">{error}</p>}
- </div>
+/** Errors from follows and likes stay visible until dismissed. */
+export function SocialToaster(){
+ const [message,setMessage]=useState(''),[serial,setSerial]=useState(0)
+ useEffect(()=>onSocial(event=>{if(event.type==='error'){setMessage(event.message);setSerial(value=>value+1)}}),[])
+ if(!message)return null
+ return <div className="social-toast"><FeedbackNotice key={serial} message={message} kind="error"/></div>
 }

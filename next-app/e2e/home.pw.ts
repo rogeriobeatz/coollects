@@ -15,45 +15,44 @@ async function account(page: Page, populated = false, fail = false) {
 for (const width of [320, 390]) {
  test.describe('Home pessoal ' + width + 'px', () => {
   test.use({ viewport: { width, height: 844 } })
-  test('Conta vazia vai direto à home e orienta o primeiro cadastro', async ({ page }) => {
+  test('Conta vazia abre o feed com a IA em destaque e orienta o primeiro cadastro', async ({ page }) => {
    await account(page)
    await page.goto('/')
    await expect(page.getByRole('heading', { name: 'Olá, Rogério!' })).toBeVisible()
    await expect(page.getByRole('heading', { name: /Qual peça conta/ })).toBeVisible()
-   await expect(page.getByRole('heading', { name: /Suas histórias/ })).toHaveCount(0)
    await expect(page.getByRole('navigation', { name: 'Navegação principal' })).toBeVisible()
-   await expect(page.getByRole('link', { name: 'Cadastrar item', exact: true })).toHaveAttribute('href', '/cadastrar')
+   await expect(page.getByRole('link', { name: 'Catalogar com IA', exact: true })).toHaveAttribute('href', '/cadastrar')
+   await expect(page.getByRole('link', { name: 'Notificações', exact: true })).toHaveAttribute('href', '/notificacoes')
    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
    await page.getByRole('link', { name: 'Nova coleção', exact: true }).click()
    await expect(page).toHaveURL(/\/colecoes\?criar=1$/)
    await expect(page.getByRole('heading', { name: 'O que vamos colecionar?' })).toBeVisible()
   })
-  test('Conta com acervo mantém coleções e itens recentes', async ({ page }) => {
+  test('Conta com acervo público vê as próprias postagens no feed', async ({ page }) => {
    await account(page, true)
    await page.goto('/')
-   await expect(page.getByRole('link', { name: /Minha garagem/ })).toBeVisible()
-   const collectionCard=page.locator('.collector-collection-card').first()
-   await expect(collectionCard.getByRole('img',{name:'Coleção'})).toBeVisible()
-   const size=await collectionCard.boundingBox()
-   expect(size).not.toBeNull()
-   expect(Math.abs(size!.width-size!.height*5/3)).toBeLessThan(1)
-   await expect(page.getByRole('link', { name: 'Carrinho favorito', exact: true })).toBeVisible()
-   await expect(page.getByLabel('Resumo do acervo')).toContainText('1 item')
+   const post=page.getByRole('article',{name:/publicou Carrinho favorito/})
+   await expect(post).toBeVisible()
+   await expect(post.getByRole('link', { name: 'Carrinho favorito', exact: true })).toHaveAttribute('href', /\/item\/.+\?voltar=inicio$/)
+   await expect(post.getByRole('button', { name: 'Compartilhar Carrinho favorito', exact: true })).toBeVisible()
+   await expect(page.getByText('Você está em dia')).toBeVisible()
    await expect(page.getByRole('heading', { name: /Qual peça conta/ })).toHaveCount(0)
+   await expect(page.getByRole('link', { name: 'Explorar', exact: true })).toHaveAttribute('href','/explorar')
    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   })
  })
 }
 
-test('Falha ao buscar o acervo oferece nova tentativa sem sugerir conta vazia', async ({ page }) => {
- await account(page, false, true)
- await page.goto('/')
- await expect(page.getByRole('alert').filter({ hasText: 'Não conseguimos carregar seu acervo' })).toBeVisible()
- await expect(page.getByRole('button', { name: 'Tentar novamente' })).toBeVisible()
- await expect(page.getByRole('heading', { name: /Qual peça conta/ })).toHaveCount(0)
+test('Falha ao buscar o feed oferece nova tentativa sem sugerir conta vazia', async ({ page }) => {
  await account(page, true)
+ const pattern=backendUrl+'/rest/v1/rpc/home_feed'
+ await page.route(pattern,route=>route.fulfill({status:500,json:{message:'Temporary test failure'}}))
+ await page.goto('/')
+ await expect(page.getByRole('alert').filter({ hasText: 'Não foi possível carregar seu feed' })).toBeVisible()
+ await expect(page.getByRole('heading', { name: /Qual peça conta/ })).toHaveCount(0)
+ await page.unroute(pattern)
  await page.getByRole('button', { name: 'Tentar novamente' }).click()
- await expect(page.getByRole('link', { name: /Minha garagem/ })).toBeVisible()
+ await expect(page.getByRole('article',{name:/publicou Carrinho favorito/})).toBeVisible()
 })
 
 test('Movimento reduzido mantém logo estático e permite entrar', async ({ page }) => {
@@ -104,7 +103,7 @@ test('Emoji personalizado é salvo, reaparece na home e pode voltar ao padrão',
  await page.getByRole('button',{name:'Salvar coleção',exact:true}).click()
  await expect(page.getByRole('link',{name:'Minha garagem',exact:true})).toBeVisible()
  expect(collection.emoji).toBe('🚀')
- await page.goto('/')
+ await page.goto('/colecoes')
  await expect(page.locator('.collector-collection-card .art-emoji')).toHaveText('🚀')
  await page.reload()
  await expect(page.locator('.collector-collection-card .art-emoji')).toHaveText('🚀')
@@ -119,7 +118,7 @@ test('Emoji personalizado é salvo, reaparece na home e pode voltar ao padrão',
  await page.getByRole('button',{name:'Salvar coleção',exact:true}).click()
  await expect(page.getByRole('link',{name:'Minha garagem',exact:true})).toBeVisible()
  expect(collection.emoji).toBeNull()
- await page.goto('/')
+ await page.goto('/colecoes')
  await expect(page.locator('.collector-collection-card .art-emoji')).toHaveText('🏎️')
 })
 

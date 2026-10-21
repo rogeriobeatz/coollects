@@ -15,6 +15,8 @@ import {CollectibleCard} from './collectible-card'
 import {CollectionView} from './collection-view'
 import { useAccount } from '@/hooks/use-account'
 import { FeedbackNotice,type NoticeKind } from './feedback-notice'
+import { CollectorAvatar } from './collector-avatar'
+import { CardSocialBar,FollowButton,useFollowing,useItemSocial } from './social-interactions'
 type VisibleItem=ItemRow&{url:string|null}
 export function PublicCollection({id}:{id:string}){
  const {user}=useAccount()
@@ -84,6 +86,8 @@ export function PublicCollection({id}:{id:string}){
   const existing=new Set(items.map(item=>item.id))
   return allItems.filter(i=>!existing.has(i.id)&&[i.name,i.brand,i.category].join(' ').toLowerCase().includes(pickerSearch.toLowerCase()))
  },[allItems,items,pickerSearch])
+ const {social,status:socialStatus,retry:retryLikes}=useItemSocial(collection?.is_public?items.map(item=>item.id):[])
+ const creatorFollowed=useFollowing(owner?null:profile?.id)
  const visible=items.filter(i=>[i.name,i.brand,i.category,...Object.values(i.details||{}).map(String)].join(' ').toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')))
  async function changeVisibility(next:boolean){
   if(!collection||!owner||changingVisibility||next===collection.is_public)return
@@ -114,7 +118,7 @@ export function PublicCollection({id}:{id:string}){
     {collection.is_public
      ?<ShareButton className="collection-hero-icon" path={'/colecao/'+encodeURIComponent(id)} title={collection.name} text={'Veja a coleção “'+collection.name+'”'+(profile?' de '+profile.display_name:'')+' no Coollects'} icon={<Share2 size={18} aria-hidden="true"/>}><span className="visually-hidden">Compartilhar coleção</span></ShareButton>
      :owner&&<button type="button" className="collection-hero-icon" aria-label="Compartilhar coleção" onClick={()=>setPrivateShare(true)}><Share2 size={18}/></button>}
-    {profile&&<Link className="collection-hero-icon" href={publicUrlPath(profile.username)} aria-label={'Ver perfil de '+profile.display_name} title={'Coleção de '+profile.display_name}><UserRound size={18}/></Link>}
+    {profile&&owner&&<Link className="collection-hero-icon" href={publicUrlPath(profile.username)} aria-label={'Ver perfil de '+profile.display_name} title={'Coleção de '+profile.display_name}><UserRound size={18}/></Link>}
     {owner&&<>
      <Link className="collection-hero-icon" href={'/colecoes?editar='+encodeURIComponent(id)} aria-label="Editar coleção" title="Editar coleção"><Edit3 size={18}/></Link>
      <CollectionActionPopover label="Mais opções da coleção" trigger={<MoreHorizontal size={20}/>}>
@@ -123,6 +127,13 @@ export function PublicCollection({id}:{id:string}){
     </>}
    </div>
   </>}/>
+  {profile&&!owner&&<div className="collection-owner-row">
+   <Link className="item-owner" href={publicUrlPath(profile.username)} aria-label={'Ver perfil de '+(profile.display_name||profile.username)}>
+    <CollectorAvatar name={profile.display_name||profile.username} seed={profile.id} size="sm"/>
+    <span><strong>{profile.display_name||profile.username}</strong><small>@{profile.username}</small></span>
+   </Link>
+   <FollowButton profileId={profile.id} name={profile.display_name||profile.username} following={creatorFollowed}/>
+  </div>}
   {collection.description.trim()&&<details className="collection-description"><summary>Sobre a coleção <ChevronDown size={15}/></summary><p>{collection.description}</p></details>}
   <div className="collection-items-heading">
    <h2>{items.length} {items.length===1?'item':'itens'}</h2>
@@ -132,7 +143,9 @@ export function PublicCollection({id}:{id:string}){
    </CollectionActionPopover></div>}
   </div>
   {message&&<FeedbackNotice key={message} message={message} kind={messageKind}/>}
+  {collection.is_public&&socialStatus==='error'&&<p className="profile-inline-error" role="alert">Não foi possível carregar as curtidas. <button type="button" onClick={retryLikes}>Tentar novamente</button></p>}
   {items.length>0&&<CollectionView compact toolbarStart={searchField} storageKey="coollects-collection-view" items={visible} getItem={i=>({item:i,photoUrl:i.url,href:itemHref(i.id)})} renderCard={(i:VisibleItem)=><CollectibleCard key={i.id} item={i} photoUrl={i.url} href={itemHref(i.id)}
+ footer={collection.is_public?<CardSocialBar itemId={i.id} itemName={i.name} ownerId={i.owner_id} social={social.get(i.id)} status={socialStatus}/>:undefined}
  actions={owner?<div className="cc-card-actions"><button type="button" className="cc-more-trigger" aria-label={"Ações de "+i.name} aria-expanded={menuItem===i.id} onClick={()=>setMenuItem(menuItem===i.id?null:i.id)}><MoreHorizontal size={20}/></button>
  {menuItem===i.id&&<div className="cc-more-menu">
  <Link href={"/itens?editar="+encodeURIComponent(i.id)+"&voltar="+encodeURIComponent(id)}><Edit3 size={16}/> Editar item</Link>

@@ -3,6 +3,7 @@ import { PwaRegister } from '@/components/pwa-register'
 import { ItemPresentationProvider } from '@/components/item-presentation-provider'
 import './globals.css'
 import './item-cards.css'
+import './social.css'
 
 // Absolute base for link previews; on Vercel the production URL is used automatically.
 const siteUrl=process.env.NEXT_PUBLIC_SITE_URL

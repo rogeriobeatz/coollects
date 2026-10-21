@@ -14,7 +14,7 @@ npm run dev
 
 A aplicação abre diretamente, sem etapa de liberação ou modo de manutenção. Configure a URL e a chave publicável do projeto Supabase em `.env.local` para usar contas e salvar coleções. Rode as migrações documentadas quando necessário.
 
-Visitantes recebem uma tela de boas-vindas com acesso a cadastro, login e exploração pública. Contas conectadas abrem diretamente o acervo, com saudação pessoal e atalhos de cadastro. A animação original está em `public/brand/intro-anim.json`, recuperada do site anterior; o player é carregado somente na boas-vindas e respeita movimento reduzido.
+Visitantes recebem uma tela de boas-vindas com acesso a cadastro, login e exploração pública. Contas conectadas abrem o feed com peças públicas próprias e de quem seguem, saudação pessoal e atalhos de cadastro. A animação original está em `public/brand/intro-anim.json`, recuperada do site anterior; o player é carregado somente na boas-vindas e respeita movimento reduzido.
 
 O emoji personalizado é escolhido junto da cor na criação ou edição da coleção. A migração `supabase/migrations/20261018154621_collection_emoji.sql` adiciona o campo opcional `collections.emoji` e já foi aplicada ao projeto Coollects. Não a execute novamente nesse projeto. Valores nulos mantêm o emoji da categoria; o emoji escolhido acompanha a coleção na home, na biblioteca e nas páginas públicas.
 
@@ -22,7 +22,9 @@ Todos os cards de coleção usam `components/collection-card.tsx`, com proporç�
 
 `components/feedback-notice.tsx` apresenta avisos informativos e de sucesso por aproximadamente cinco segundos, com fechamento manual. Erros continuam visíveis até serem corrigidos ou dispensados.
 
-A navegação principal segue Home, Itens, Adicionar (+), Coleções e Explorar. O perfil fica à direita do header compartilhado, com o logo centralizado. Meus itens oferece busca, filtros por categoria e coleção (incluindo peças sem coleção), ordenação e visualização em grade ou baralho, mantendo as ações de cadastro, edição e exclusão. Preferências antigas pelo modo lista voltam à grade.
+A navegação principal segue Home, Itens, Adicionar (+), Coleções e Perfil. Explorar fica acessível pela Home; o sino de notificações fica à direita do header compartilhado, com o logo centralizado. Meus itens oferece busca, filtros por categoria e coleção (incluindo peças sem coleção), ordenação e visualização em grade ou baralho, mantendo as ações de cadastro, edição e exclusão. Preferências antigas pelo modo lista voltam à grade.
+
+A camada social permite seguir colecionadores, curtir itens públicos, consultar seguidores/seguindo e receber atividade recente. O perfil próprio reutiliza `/u/[username]`; a edição fica em `/perfil/editar`. A migração consolidada `20261020183212_social_network_completion.sql` já foi aplicada ao Supabase Coollects. Consulte [Rede social](../docs/SOCIAL_NETWORK.md) para regras de privacidade, testes e limites. `npm run test:social-backend` verifica a API real sem gravar dados.
 
 Os cards de item compartilham a mesma identidade na Home, no acervo, nas coleções e no detalhe. Colecionador destaca foto, marca da miniatura, modelo, montadora, escala e numeração. Gearhead exibe a ficha do veículo sem fotografia; a preferência é local e acompanha a navegação. O baralho apresenta até cinco cartas selecionáveis (três em telas baixas), com profundidade em CSS, toque/gesto e botões. Abrir uma carta permite virá-la, navegar entre itens e retornar ao baralho com restauração de foco. Nenhuma biblioteca 3D adicional é necessária.
 

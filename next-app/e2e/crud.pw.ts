@@ -5,7 +5,7 @@ for(const width of [320,390]){
  test('Cards de coleção usam o mesmo padrão 5:3 em todas as listas: '+width+'px',async({page})=>{
   await page.setViewportSize({width,height:844})
   await mockAcervo(page)
-  for(const path of ['/','/colecoes','/explorar','/u/colecionador_test']){
+  for(const path of ['/perfil','/colecoes','/explorar','/u/colecionador_test']){
    await page.goto(path)
    const card=page.locator('.collector-collection-card').first()
    await expect(card).toBeVisible()

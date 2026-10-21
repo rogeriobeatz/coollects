@@ -1,3 +1,12 @@
+## 2026-10-20 — Conclusão da camada social
+- Home com feed cronológico de peças públicas próprias e de perfis seguidos, descoberta da comunidade, paginação e recuperação de erros sem perder os posts.
+- Perfil público e próprio compartilhando componentes: contadores, seguidores/seguindo, coleções, itens publicados e curtidos; edição em `/perfil/editar`.
+- Seguir/desseguir, curtir/descurtir e listas de conexões com atualização imediata, reversão em falhas, teclado e retorno de foco. A atualização de feeds aguarda a confirmação do banco.
+- Notificações de seguidores e curtidas em `/notificacoes`, com sino no header e leitura isolada por conta neste navegador.
+- Migração consolidada `20261020183212_social_network_completion.sql` aplicada ao Supabase Coollects: funções sociais SECURITY INVOKER, feeds, índices e permissões mínimas das tabelas/RPCs. Clientes antigos preservados durante a transição.
+- Testes SQL reais com identidades temporárias em BEGIN/ROLLBACK; smoke de leitura da Data API em `npm run test:social-backend`. Detalhes e limites em `docs/SOCIAL_NETWORK.md`.
+- Política de privacidade atualizada para conexões e curtidas públicas. Cadastro manual disponível na Home sem chave de IA.
+
 ## 2026-10-19 — Compartilhamento, fluidez e ilustrações
 - Compartilhar abre a folha nativa do celular (coleção, item e perfil); sem ela, janela própria com copiar link, WhatsApp, Telegram e e-mail.
 - Seletor público/privado na coleção. Coleção privada guia a publicação antes de compartilhar; item privado leva ao seletor de coleções.

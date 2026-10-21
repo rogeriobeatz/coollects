@@ -10,7 +10,10 @@ export const collection:CollectionRow={id:collectionId,owner_id:ownerId,name:'Mi
 export const item:ItemRow={id:itemId,owner_id:ownerId,name:'Carrinho favorito',brand:'Matchbox',category:'Miniaturas',notes:'',photo_path:null,details:{},created_at:'2026-01-01T00:00:00Z'}
 
 /** A stateful fake Data API: browser tests never write to a real account. */
-export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;emptyItems?:boolean}={}){
+export const visitorId='00000000-0000-4000-8000-000000000099'
+
+export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;emptyItems?:boolean;viewer?:'owner'|'visitor'}={}){
+ const viewerId=options.viewer==='visitor'?visitorId:ownerId
  // A running local app can be tested with its public backend URL. All browser
  // backend calls are intercepted; synthetic cookies never reach the app server.
  await page.route(url=>(url.hostname==='127.0.0.1'||url.hostname==='localhost')&&!url.pathname.startsWith('/_next/'),route=>{
@@ -22,12 +25,14 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
   collections:options.emptyCollections?[]:[{...collection}],
   items:options.emptyItems?[]:[{...item}],
   links:options.emptyCollections||options.emptyItems?[]:[{collection_id:collectionId,item_id:itemId}],
-  zeroDelete:false
+  zeroDelete:false,
+  likes:[] as {user_id:string;item_id:string}[],
+  follows:[] as {follower_id:string;followed_id:string}[]
  }
- const user={id:ownerId,aud:'authenticated',role:'authenticated',email:'test@example.invalid',app_metadata:{provider:'email'},user_metadata:{display_name:'Rogério Silva'},created_at:'2026-01-01T00:00:00Z'}
+ const user={id:viewerId,aud:'authenticated',role:'authenticated',email:'test@example.invalid',app_metadata:{provider:'email'},user_metadata:{display_name:'Rogério Silva'},created_at:'2026-01-01T00:00:00Z'}
  const encode=(value:unknown)=>Buffer.from(JSON.stringify(value)).toString('base64url')
  const exp=Math.floor(Date.now()/1000)+3600
- await page.context().addCookies([{name:'sb-'+new URL(backendUrl).hostname.split('.')[0]+'-auth-token',domain:new URL(process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3202').hostname,path:'/',value:'base64-'+encode({access_token:encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:ownerId,exp,aud:'authenticated',role:'authenticated'})+'.test',refresh_token:'test-refresh',expires_at:exp,expires_in:3600,token_type:'bearer',user})}])
+ await page.context().addCookies([{name:'sb-'+new URL(backendUrl).hostname.split('.')[0]+'-auth-token',domain:new URL(process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3202').hostname,path:'/',value:'base64-'+encode({access_token:encode({alg:'HS256',typ:'JWT'})+'.'+encode({sub:viewerId,exp,aud:'authenticated',role:'authenticated'})+'.test',refresh_token:'test-refresh',expires_at:exp,expires_in:3600,token_type:'bearer',user})}])
  await page.route(backendUrl+'/auth/v1/user',route=>route.fulfill({json:user}))
  await page.route(backendUrl+'/storage/v1/**',route=>{
   const request=route.request(),url=new URL(request.url())
@@ -44,7 +49,32 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
    return true
   })
   if(url.pathname.includes('/rpc/')){
-   const body=request.postDataJSON()
+   const body=request.postDataJSON()||{}
+   const publicItems=()=>state.items.filter(row=>state.links.some(link=>link.item_id===row.id&&state.collections.some(c=>c.id===link.collection_id&&c.is_public)))
+   const social:Record<string,()=>unknown>={
+    profile_social_summary:()=>[{
+     followers:state.follows.filter(f=>f.followed_id===body.p_profile_id).length,
+     following:state.follows.filter(f=>f.follower_id===body.p_profile_id).length,
+     likes_received:state.likes.filter(l=>publicItems().some(i=>i.id===l.item_id&&i.owner_id===body.p_profile_id)).length,
+     likes_given:state.likes.filter(l=>l.user_id===body.p_profile_id).length,
+     public_items:publicItems().filter(i=>i.owner_id===body.p_profile_id).length,
+     public_collections:state.collections.filter(c=>c.is_public&&c.owner_id===body.p_profile_id).length,
+     followed_by_me:state.follows.some(f=>f.follower_id===viewerId&&f.followed_id===body.p_profile_id),
+     follows_me:state.follows.some(f=>f.followed_id===viewerId&&f.follower_id===body.p_profile_id)
+    }],
+    item_social_summary:()=>(body.p_item_ids||[]).map((id:string)=>({item_id:id,likes:state.likes.filter(l=>l.item_id===id).length,liked_by_me:state.likes.some(l=>l.item_id===id&&l.user_id===viewerId)})),
+    profile_public_items:()=>publicItems().filter(i=>i.owner_id===body.p_profile_id),
+    profile_liked_items:()=>publicItems().filter(i=>state.likes.some(l=>l.item_id===i.id&&l.user_id===body.p_profile_id)),
+    home_feed:()=>publicItems().filter(i=>i.owner_id===viewerId||state.follows.some(f=>f.follower_id===viewerId&&f.followed_id===i.owner_id)),
+    community_feed:()=>publicItems().filter(i=>i.owner_id!==viewerId),
+    suggested_collectors:()=>viewerId===ownerId||state.follows.some(f=>f.follower_id===viewerId&&f.followed_id===ownerId)?[]:[{id:ownerId,username:'colecionador_test',display_name:'Rogério Silva',bio:'',followers:0,public_items:publicItems().length}],
+    // Only the owner profile exists in this fake backend.
+    profile_connections:()=>body.p_direction==='following'
+     ?state.follows.filter(f=>f.follower_id===body.p_profile_id&&f.followed_id===ownerId).map(f=>({id:ownerId,username:'colecionador_test',display_name:'Rogério Silva',bio:'',followed_by_me:f.follower_id===viewerId,connected_at:'2026-01-01T00:00:00Z'}))
+     :[],
+    item_likers:()=>[],my_social_activity:()=>[]
+   }
+   if(table&&social[table])return route.fulfill({json:social[table]()})
    const creating=table==='create_item_with_details'||table==='create_item_with_gallery'
    const id=creating?itemId:body.p_item_id
    const values={name:body.p_name,brand:body.p_brand,category:body.p_category,notes:body.p_notes,photo_path:body.p_photo_path,details:body.p_details}
@@ -57,6 +87,13 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
   if(table==='profiles'){
    const profile={id:ownerId,display_name:'Rogério Silva',username:'colecionador_test',bio:''}
    return route.fulfill({json:request.headers()['accept']?.includes('vnd.pgrst.object')?profile:[profile]})
+  }
+  if(table==='item_likes'||table==='user_follows'){
+   const list:Record<string,unknown>[]=table==='item_likes'?state.likes:state.follows
+   if(method==='POST')list.push(request.postDataJSON())
+   if(method==='DELETE'){const keep=list.filter(row=>!matches(row));list.splice(0,list.length,...keep)}
+   const rows=method==='GET'?list.filter(row=>matches(row)):[]
+   return route.fulfill({status:method==='POST'?201:200,json:rows})
   }
   if(table==='collection_items'){
    if(method==='POST')state.links.push(...request.postDataJSON())

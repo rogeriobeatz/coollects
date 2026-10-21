@@ -1,0 +1,269 @@
+/* Collector social layer: profile, follows, likes, feed and activity.
+   Reuses the brand tokens (--purple, --orange, --ink) and existing shapes. */
+
+/* Avatar: initials on a stable brand tone. */
+.collector-avatar{display:inline-grid;place-items:center;flex-shrink:0;border-radius:50%;font-weight:900;letter-spacing:-.04em;line-height:1;user-select:none;background:var(--purple);color:#fff}
+.avatar-xs{width:24px;height:24px;font-size:10px}
+.avatar-sm{width:44px;height:44px;font-size:15px}
+.avatar-md{width:58px;height:58px;font-size:20px}
+.avatar-lg{width:84px;height:84px;font-size:30px;border-radius:40% 60% 50% 50%}
+.avatar-purple{background:var(--purple);color:#fff}
+.avatar-orange{background:var(--orange);color:#fff}
+.avatar-ink{background:#28164e;color:#fff}
+.avatar-lilac{background:#c9adff;color:#2a1458}
+.avatar-mint{background:#98e6d5;color:#0f4a3f}
+.avatar-yellow{background:var(--yellow);color:#4a3500}
+
+/* Follow: orange call to action, calm once following. */
+.follow-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:1px solid var(--orange);border-radius:999px;background:var(--orange);color:#fff;font-size:13px;font-weight:900;white-space:nowrap;transition:background .18s ease,color .18s ease,transform .18s ease}
+.follow-button:active{transform:scale(.96)}
+.follow-button.is-following{background:#f3edfc;border-color:#daccf0;color:var(--purple)}
+.follow-button.is-compact{width:44px;padding:0;border-radius:50%;background:#f3edfc;border-color:#e3d8f3;color:var(--purple)}
+.follow-button.is-compact.is-following{background:var(--purple);border-color:var(--purple);color:#fff}
+.follow-button:disabled{opacity:.6}
+
+/* Like: heart + count. Inside cards it follows the card ink for contrast. */
+.like-button{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;gap:6px;min-height:44px;min-width:44px;padding:0 12px;border:0;border-radius:999px;font-weight:800;font-variant-numeric:tabular-nums;cursor:pointer}
+.like-button svg{flex-shrink:0}
+.like-card{padding:0 11px}
+.like-button.is-static{cursor:default}
+.like-button.is-placeholder{opacity:.35}
+.like-card{margin-left:auto;background:color-mix(in srgb,var(--deck-ink,#fff) 12%,transparent);color:inherit;font-size:13px}
+.like-card.is-liked{background:color-mix(in srgb,var(--deck-ink,#fff) 26%,transparent)}
+.like-detail{min-height:48px;padding:0 18px;background:#f3edfc;color:var(--purple);font-size:15px}
+.like-detail.is-liked{background:#ffe7ee;color:#c81e4b}
+.like-button.is-popping svg{animation:like-pop .42s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes like-pop{0%{transform:scale(1)}45%{transform:scale(1.4)}100%{transform:scale(1)}}
+
+/* Card footer: author on the left, heart on the right. */
+.cc-social-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0;padding:4px 3px 1px;color:var(--deck-ink,#fff)}
+.cc-social-author{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;min-height:44px;color:inherit;font-size:12px;font-weight:700}
+.cc-social-author>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-social-bar :focus-visible{outline:3px solid var(--deck-ink,#fff);outline-offset:2px}
+
+/* Public profile hero. */
+.collector-profile{padding-top:10px}
+.collector-hero{position:relative;isolation:isolate;overflow:hidden;padding:22px 18px 18px;border-radius:28px;background:var(--purple);color:#fff;box-shadow:0 16px 34px #3b17792e}
+.collector-hero:before{content:"";position:absolute;z-index:-1;right:-78px;bottom:-112px;width:200px;height:190px;border-radius:40% 60% 60% 40%;background:var(--orange);transform:rotate(-16deg);opacity:.85}
+.collector-hero:after{content:"";position:absolute;z-index:-1;right:-40px;top:-60px;width:170px;height:170px;border:2px solid #ffffff2e;border-radius:50%}
+.collector-hero-identity{display:flex;align-items:center;gap:14px;min-width:0}
+.collector-hero-identity .avatar-lg{box-shadow:0 0 0 4px #ffffff2b}
+.collector-hero-names{min-width:0}
+.collector-hero h1{margin:0;font-size:clamp(24px,6.6vw,30px);line-height:1.05;letter-spacing:-.05em;font-weight:900;overflow-wrap:anywhere;text-wrap:balance}
+.collector-hero-names p{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:6px 0 0;font-size:13px;color:#e3cfff;overflow-wrap:anywhere}
+.follows-you-chip{padding:3px 8px;border-radius:999px;background:#ffffff26;color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.collector-hero-bio{margin:14px 0 0;font-size:13px;line-height:1.55;color:#f1e8ff;white-space:pre-wrap;overflow-wrap:anywhere}
+.collector-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:16px 0 0;padding:0;list-style:none}
+.collector-stats li{display:flex;min-width:0}
+.collector-stats a,.collector-stats button,.collector-stats li>span{display:grid;justify-items:center;align-content:center;gap:2px;width:100%;min-height:66px;padding:9px 3px;border:1px solid #ffffff24;border-radius:16px;background:#ffffff17;color:#fff;font:inherit;text-align:center}
+.collector-stats svg{color:#ffb279}
+.collector-stats strong{font-size:18px;line-height:1.1;font-weight:900;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.collector-stats small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#e3cfff}
+.collector-stats a:hover,.collector-stats button:hover{background:#ffffff26}
+.collector-hero :focus-visible{outline:3px solid #fff;outline-offset:3px}
+.collector-hero-actions{display:flex;align-items:center;gap:8px;margin-top:16px}
+.collector-hero-actions>.follow-button{flex:1;min-height:48px}
+.collector-hero .follow-button.is-following{background:#fff;border-color:#fff;color:var(--purple)}
+.collector-hero .collector-edit{background:#fff;border-color:#fff;color:var(--purple)}
+.collector-hero-icon{display:grid;place-items:center;flex-shrink:0;width:48px;height:48px;padding:0;border:1px solid #ffffff45;border-radius:16px;background:#ffffff1f;color:#fff}
+.collector-hero-icon.is-light{border-color:#e1d6ee;background:#fff;color:var(--purple)}
+
+/* Collections rail (5:3 cards, like every collection list). */
+.profile-section{margin-top:22px}
+.profile-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 10px}
+.profile-section-head h2{display:flex;align-items:center;gap:7px;margin:0;font-size:18px;letter-spacing:-.04em}
+.profile-section-head h2 svg{color:var(--orange)}
+.profile-section-head>span{min-width:28px;padding:4px 9px;border-radius:999px;background:#f0e9fb;color:var(--purple);font-size:12px;font-weight:900;text-align:center}
+.profile-collection-rail{display:grid;grid-auto-flow:column;grid-auto-columns:min(78%,300px);gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:20px;margin:0 -20px;padding:2px 20px 10px;scrollbar-width:none}
+.profile-collection-rail::-webkit-scrollbar{display:none}
+.profile-collection-rail:has(>:only-child){grid-auto-columns:100%}
+.profile-collection-rail>*{scroll-snap-align:start;min-width:0}
+.profile-empty-cta{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px dashed #d3c2ed;border-radius:18px;background:#f8f4fd;color:var(--purple)}
+.profile-empty-cta>svg{flex-shrink:0;width:40px;height:40px;padding:10px;border-radius:50%;background:var(--purple);color:#fff}
+.profile-empty-cta strong{display:block;font-size:14px}
+.profile-empty-cta small{display:block;margin-top:2px;font-size:12px;color:var(--muted);line-height:1.4}
+
+/* Icon tabs: Itens / Curtidos. */
+.profile-tabs{display:grid;grid-template-columns:1fr 1fr;margin:14px 0 6px;border-bottom:1px solid var(--line)}
+.profile-tabs button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:50px;border:0;border-bottom:2px solid transparent;background:transparent;color:#8a7998}
+.profile-tabs button[aria-selected="true"]{border-bottom-color:var(--purple);color:var(--purple)}
+.profile-tabs b{font-size:13px;font-weight:900;font-variant-numeric:tabular-nums}
+.profile-tab-panel{min-height:120px}
+.profile-empty{margin:14px 0;padding:28px 20px;border-radius:22px;background:#f6f1fc;text-align:center}
+.profile-empty-icon{display:inline-grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#e9ddfb;color:var(--purple)}
+.profile-empty h3{margin:12px 0 6px;font-size:19px;letter-spacing:-.04em}
+.profile-empty p{margin:0 auto;max-width:300px;font-size:13px;line-height:1.55;color:var(--muted)}
+.profile-empty .pill-btn{margin-top:16px}
+.profile-inline-error{margin:12px 0;padding:12px 14px;border:1px solid #ebc4ca;border-radius:14px;background:#fff1f2;color:#922d40;font-size:12px;line-height:1.5}
+.profile-inline-error button{min-height:44px;padding:0 4px;border:0;background:transparent;color:inherit;font-weight:900;text-decoration:underline}
+.load-more{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;margin:16px 0 4px;border:1px solid #daccf0;border-radius:14px;background:#f3edfc;color:var(--purple);font-size:13px;font-weight:900}
+
+/* Loading placeholders keep the final footprint. */
+.skeleton-card,.collector-hero.is-skeleton i,.is-skeleton i,.is-skeleton .collector-avatar{background:linear-gradient(100deg,#eee7f8 30%,#f8f4fd 50%,#eee7f8 70%);background-size:300% 100%;animation:social-shimmer 1.4s ease-in-out infinite}
+.skeleton-card{display:block;width:100%;aspect-ratio:2/3;border-radius:22px}
+.social-grid-skeleton{margin-top:14px}
+.collector-hero.is-skeleton{display:grid;gap:10px;min-height:230px;background:#f3edfc;box-shadow:none}
+.collector-hero.is-skeleton:before,.collector-hero.is-skeleton:after{display:none}
+.collector-hero.is-skeleton i{display:block;height:16px;border-radius:8px;width:60%}
+.collector-hero.is-skeleton i+i{width:40%}
+.is-skeleton>span:last-child{display:grid;gap:6px;flex:1}
+.is-skeleton>span:last-child i{display:block;height:11px;border-radius:6px;width:55%}
+.is-skeleton>span:last-child i+i{width:35%}
+@keyframes social-shimmer{to{background-position:-150% 0}}
+
+/* Owner line on item and collection pages. */
+.item-social{margin:14px 0 6px;padding:12px 2px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.item-owner-row,.collection-owner-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.collection-owner-row{margin:14px 2px 8px}
+.item-owner{display:flex;align-items:center;gap:10px;flex:1;min-width:0;min-height:44px;color:var(--ink)}
+.item-owner>span{display:grid;min-width:0}
+.item-owner strong{font-size:15px;font-weight:900;letter-spacing:-.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-owner small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-social-actions{display:flex;align-items:center;gap:8px;margin-top:12px}
+.item-social-actions:empty{display:none}
+.item-social-spacer{flex:1}
+.item-social-icon{display:grid;place-items:center;flex-shrink:0;width:48px;height:48px;padding:0;border:1px solid #e1d6ee;border-radius:16px;background:#fff;color:var(--purple)}
+.item-social-icon.is-primary{border-color:var(--purple);background:var(--purple);color:#fff}
+.item-social-icon.is-private{background:#f3edfc}
+
+/* Followers / following / likers sheet. */
+.connections-sheet{display:flex;flex-direction:column;max-height:min(80dvh,680px)}
+.connections-sheet h2{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding-right:44px;font-size:24px}
+.connections-sheet h2 b,.connections-tabs b{padding:2px 8px;border-radius:999px;background:#f0e9fb;color:var(--purple);font-size:12px;font-weight:900}
+.connections-close{display:grid;place-items:center;width:44px!important;height:44px!important}
+.connections-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 48px 8px 0;padding:4px;border-radius:14px;background:#efe7fb}
+.connections-tabs button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:6px;border:0;border-radius:10px;background:transparent;color:var(--purple);font-size:12px;font-weight:900}
+.connections-tabs button[aria-selected="true"]{background:#fff;box-shadow:0 2px 8px #30204712}
+.connections-body{overflow-y:auto;overscroll-behavior:contain;min-height:120px}
+.collector-list{margin:6px 0;padding:0;list-style:none}
+.collector-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.collector-row:last-child{border-bottom:0}
+.collector-row-identity{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:var(--ink)}
+.collector-row-identity>span{display:grid;min-width:0}
+.collector-row strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.collector-row small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.connections-state{display:grid;justify-items:center;gap:6px;padding:26px 12px;text-align:center;font-size:13px;color:var(--muted)}
+.connections-state-icon{display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#f0e9fb;color:var(--purple)}
+
+/* Explore: Descobrir / Seguindo. */
+.explore-tabs>button{border:0;background:transparent}
+.explore-tabs [aria-selected="true"]{background:#fff;box-shadow:0 2px 8px #30204712}
+.feed-invite{margin:6px 0 10px;padding:30px 22px;border-radius:24px;background:linear-gradient(160deg,#f1e8ff,#fff6ee);text-align:center}
+.feed-invite-icon{display:inline-grid;place-items:center;width:60px;height:60px;border-radius:50%;background:var(--purple);color:#fff;box-shadow:0 10px 22px #6125bf40}
+.feed-invite h2{margin:14px 0 6px;font-size:24px;line-height:1.1;letter-spacing:-.05em}
+.feed-invite p{margin:0 auto;max-width:290px;font-size:13px;line-height:1.55;color:var(--muted)}
+.feed-invite .pill-btn{margin-top:16px}
+.suggested-collectors{margin:26px 0 6px}
+.suggested-collectors h2{display:flex;align-items:center;gap:7px;margin:0 2px 10px;font-size:18px;letter-spacing:-.04em}
+.suggested-collectors h2 svg{color:var(--orange)}
+.suggested-rail{display:grid;grid-auto-flow:column;grid-auto-columns:150px;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:20px;margin:0 -20px;padding:4px 20px 12px;list-style:none;scrollbar-width:none}
+.suggested-rail::-webkit-scrollbar{display:none}
+.suggested-card{display:flex;flex-direction:column;align-items:stretch;gap:10px;min-width:0;padding:14px 12px 12px;border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:0 8px 18px #2316380d;scroll-snap-align:start}
+.suggested-identity{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;color:var(--ink);text-align:center}
+.suggested-identity .collector-avatar{margin-bottom:6px}
+.suggested-identity strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:900;letter-spacing:-.03em}
+.suggested-identity small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:var(--muted)}
+.suggested-meta{display:flex;gap:10px;margin-top:4px;color:var(--purple);font-size:11px;font-weight:800}
+.suggested-meta>span{display:inline-flex;align-items:center;gap:3px}
+.suggested-card .follow-button{width:100%;padding:0 10px}
+
+/* Edit profile (/perfil/editar). */
+.profile-editor .avatar-lg{display:grid;margin:0 auto}
+.profile-editor h2{margin:14px 0 2px}
+
+/* Notifications (/notificacoes). */
+.notifications-screen{padding-top:14px}
+.notifications-title{display:flex;align-items:center;gap:9px;margin:4px 2px 14px;font-size:28px;line-height:1.05;letter-spacing:-.055em}
+.notifications-title svg{color:var(--orange)}
+.social-activity{display:grid;gap:8px}
+.social-activity section{padding:14px 16px 4px;border:1px solid var(--line);border-radius:22px;background:#fff}
+.social-activity h2{margin:0 0 2px;font-size:14px;letter-spacing:-.02em;color:#6a5d7b}
+.activity-list{margin:0;padding:0;list-style:none}
+.activity-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.activity-row:last-child{border-bottom:0}
+.activity-avatar{position:relative;flex-shrink:0;display:grid}
+.activity-kind{position:absolute;right:-3px;bottom:-3px;display:grid;place-items:center;width:20px;height:20px;border:2px solid #fff;border-radius:50%;color:#fff}
+.activity-kind.is-like{background:var(--orange)}
+.activity-kind.is-follow{background:var(--purple)}
+.activity-row p{flex:1;min-width:0;margin:0;font-size:13px;line-height:1.45;color:#3b2d4d;overflow-wrap:anywhere}
+.activity-row p a{color:var(--ink);font-weight:800}
+.activity-row time{display:block;font-size:11px;color:var(--muted)}
+.activity-empty{margin:4px 0 12px;font-size:13px;line-height:1.55;color:var(--muted)}
+
+/* Header bell with an unread dot. */
+.header-dot{position:absolute;top:8px;right:9px;width:10px;height:10px;border:2px solid var(--purple);border-radius:50%;background:var(--orange)}
+
+/* Home: AI cataloguing comes first. */
+.home-feed{padding-top:12px}
+.ai-composer{position:relative;isolation:isolate;overflow:hidden;padding:20px 18px 16px;border-radius:26px;background:linear-gradient(150deg,#f3ebff,#fff4ea);border:1px solid #eadff7}
+.ai-composer:before{content:"✳";position:absolute;z-index:-1;right:14px;top:4px;font-size:64px;color:#6125bf14;line-height:1}
+.ai-composer h1{margin:0;font-size:clamp(26px,7vw,34px);line-height:1.06;letter-spacing:-.055em;overflow-wrap:anywhere}
+.ai-composer h1 em{font-style:normal;color:var(--orange)}
+.ai-composer>p{margin:6px 0 14px;font-size:13px;line-height:1.5;color:#6a5d7b;max-width:320px}
+.ai-composer-cta{display:flex;align-items:center;gap:13px;min-height:74px;padding:12px 16px 12px 12px;border-radius:20px;background:var(--orange);color:#fff;box-shadow:0 10px 0 #420e8820;transition:transform .18s ease,box-shadow .18s ease}
+.ai-composer-cta:active{transform:translateY(4px);box-shadow:0 5px 0 #420e8820}
+.ai-composer-icon{display:grid;place-items:center;flex-shrink:0;width:50px;height:50px;border-radius:50%;background:#fff;color:var(--ink)}
+.ai-composer-copy{display:grid;flex:1;min-width:0}
+.ai-composer-copy strong{font-size:19px;line-height:1.1;letter-spacing:-.035em;font-weight:900}
+.ai-composer-copy small{font-size:12px;color:#ffe4d3}
+.ai-composer-spark{flex-shrink:0;color:#ffe0c9}
+.ai-composer-secondary{display:inline-flex;align-items:center;gap:7px;min-height:44px;margin-top:8px;padding:0 4px;color:var(--purple);font-size:12px;font-weight:900}
+
+/* Stories-like rail: you, Explore, people you follow. */
+.collectors-rail{margin:14px -20px 4px}
+.collectors-rail ul{display:flex;gap:14px;overflow-x:auto;overscroll-behavior-x:contain;margin:0;padding:4px 20px 8px;list-style:none;scrollbar-width:none}
+.collectors-rail ul::-webkit-scrollbar{display:none}
+.rail-person{display:flex;flex-direction:column;align-items:center;gap:6px;width:70px;color:var(--ink);font-size:11px;font-weight:700;text-align:center}
+.rail-person>span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rail-ring{display:grid;place-items:center;width:66px;height:66px;padding:3px;border-radius:50%;background:conic-gradient(from 200deg,var(--orange),#ffb279,var(--purple),var(--orange))}
+.rail-ring>*{box-shadow:0 0 0 3px var(--paper)}
+.rail-ring .avatar-md{width:58px;height:58px}
+.rail-ring.is-me{background:#e6dcf3}
+.rail-ring.is-explore{background:#e6dcf3}
+.rail-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:#fff;color:var(--purple)}
+.rail-person:focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:12px}
+
+/* Feed posts: author, shared item card, actions, caption. */
+.feed-list{display:grid;gap:22px;margin-top:10px}
+.feed-post{display:grid;gap:10px;min-width:0}
+.feed-post-head{display:flex;align-items:center;gap:10px;min-width:0}
+.feed-post-author{display:grid;flex-shrink:0;border-radius:50%}
+.feed-post-meta{display:grid;flex:1;min-width:0}
+.feed-post-meta a,.feed-post-meta strong{color:var(--ink);font-size:14px;font-weight:900;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed-post-meta small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.feed-post>.cc-item-card{width:100%}
+.feed-post-actions{display:flex;align-items:center;gap:8px}
+.feed-post-actions .like-detail.is-placeholder{width:84px}
+.feed-post-caption{margin:0 2px;font-size:13px;line-height:1.5;color:#3b2d4d;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+.feed-post-caption.is-open{display:block;-webkit-line-clamp:unset;line-clamp:none}
+.feed-post-caption strong{color:var(--ink)}
+.feed-post-caption button{min-height:32px;margin-left:4px;padding:0;border:0;background:transparent;color:var(--muted);font-weight:800}
+.feed-post.is-skeleton .skeleton-card{aspect-ratio:4/5}
+.feed-skeleton-lines{display:grid;gap:6px;flex:1}
+.feed-skeleton-lines i{display:block;height:11px;border-radius:6px;width:45%;background:linear-gradient(100deg,#eee7f8 30%,#f8f4fd 50%,#eee7f8 70%);background-size:300% 100%;animation:social-shimmer 1.4s ease-in-out infinite}
+.feed-skeleton-lines i+i{width:28%}
+.feed-end{display:flex;align-items:center;justify-content:center;gap:8px;margin:26px 0 4px;color:#4f8a6d;font-size:13px;font-weight:800}
+.feed-community{margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}
+.feed-community>h2{display:flex;align-items:center;gap:8px;margin:0 2px 4px;font-size:18px;letter-spacing:-.04em}
+.feed-community>h2 svg{color:var(--orange)}
+.home-feed .home-first-item{margin-top:16px}
+.home-feed .feed-invite{margin-top:16px}
+
+/* Error toast for follows and likes: stays until dismissed. */
+.social-toast{position:fixed;z-index:36;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));width:min(calc(100% - 32px),518px);transform:translateX(-50%)}
+.social-toast .feedback-error{margin:0;box-shadow:0 10px 30px #28134126}
+
+@media(max-width:360px){
+ .collector-hero{padding:18px 14px 14px}
+ .collector-hero-identity{gap:11px}
+ .avatar-lg{width:68px;height:68px;font-size:24px}
+ .collector-stats{gap:4px}
+ .collector-stats a,.collector-stats button,.collector-stats li>span{min-height:60px;padding:8px 2px}
+ .collector-stats strong{font-size:16px}
+ .collector-stats small{font-size:9px}
+ .follow-button{padding:0 14px}
+ .cc-social-author{flex:0 0 auto}
+ .cc-social-author>span:last-child{display:none}
+}
+@media(hover:hover){.follow-button:not(.is-following):not(:disabled):hover{filter:brightness(1.06)}.suggested-card:hover{border-color:#d8c8f0}}
+@media(prefers-reduced-motion:reduce){.like-button.is-popping svg,.skeleton-card,.is-skeleton i,.is-skeleton .collector-avatar,.feed-skeleton-lines i{animation:none}.follow-button,.ai-composer-cta{transition:none}}
