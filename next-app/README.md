@@ -37,7 +37,7 @@ Dados do veículo são opcionais e editáveis no cadastro/edição, separados do
 - Node.js: 22
 - `NEXT_PUBLIC_SUPABASE_URL` = endereço do projeto Coollects
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = chave publicável do projeto
-- `GOOGLE_GENERATIVE_AI_API_KEY` = opcional; sem ela a interface de IA fica oculta
+- `KIE_API_KEY` = opcional; sem ela a interface de IA fica oculta
 
 `/api/health` verifica a conexão com o banco e retorna 503 quando faltam credenciais ou o banco não responde. Isso não bloqueia a abertura das páginas.
 
@@ -56,3 +56,13 @@ O banco real Coollects possui migrações `20261014_release_integrity.sql`, `202
 
 ## Build reproduzível
 O arquivo `package-lock.json` foi obtido de uma execução aprovada do GitHub Actions. Use `npm ci` para instalar as versões testadas; não atualize dependências sem executar auditoria npm, testes unitários, smoke HTTP, TypeScript, build e Playwright.
+
+## Ajustes de experiência — 21/10/2026
+
+Cadastro cria coleções privadas sem sair da ficha e permite continuar manualmente durante a análise. Falhas de vínculo e galeria podem ser retomadas sem duplicação ou descarte das fotos selecionadas. O Explorar consulta nomes, descrições, categorias e autores no servidor e pagina as coleções públicas; a área pessoal lê metadados em páginas e apresenta cards/fotos progressivamente. Nenhuma migração nova é necessária. Ajuda e privacidade: contato@coollects.com.br. Consulte ../docs/RELEASE_QA.md para validação e limites.
+
+## Reconhecimento enquanto você navega
+
+O cadastro mantém um rascunho por conta na sessão aberta do app. Após escolher a foto, é possível navegar entre as páginas: o indicador flutuante mostra a análise em andamento (progresso estimado), a conclusão para revisão ou uma falha recuperável. Retomar não envia a mesma foto outra vez; campos editados manualmente continuam protegidos. Fotos, ficha e coleções permanecem no provider do layout até salvar, descartar ou sair da conta. O app não salva o item automaticamente.
+
+Essa continuidade vale para navegação interna na mesma aba. Atualizar, fechar a aba ou o navegador suspender o processo pode interromper a sessão; o aviso de saída da aba ajuda a evitar descarte involuntário. Não há fila durável no backend nem migração nova.

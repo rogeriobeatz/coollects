@@ -21,7 +21,7 @@
 - [ ] Testar ponta a ponta com dois usuários (RLS, storage e compartilhamento)
 - [ ] Testar Android, iOS e PWA instalada; ícone PNG dedicado para iOS se necessário
 - [ ] Configurar rate limits por IP/CAPTCHA de cadastro, prevenção contra abuso e observabilidade de custos
-- [ ] Canal de suporte, política de privacidade/termos completos e revisão de LGPD
+- [ ] Validar atendimento em contato@coollects.com.br e concluir revisão jurídica de privacidade/termos
 - [ ] Migração do PHP/MySQL histórico, se houver dump utilizável (não encontrado no repositório)
 - [ ] Beta controlado → correções → lançamento público
 

@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from 'next'
 import { PwaRegister } from '@/components/pwa-register'
 import { ItemPresentationProvider } from '@/components/item-presentation-provider'
+import {CaptureProvider} from '@/components/capture-provider'
 import './globals.css'
 import './item-cards.css'
 import './social.css'
+import './capture.css'
 
 // Absolute base for link previews; on Vercel the production URL is used automatically.
 const siteUrl=process.env.NEXT_PUBLIC_SITE_URL
@@ -26,5 +28,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#6125BF' }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
- return <html lang="pt-BR" data-scroll-behavior="smooth"><head><meta name="apple-mobile-web-app-capable" content="yes" /></head><body><ItemPresentationProvider>{children}</ItemPresentationProvider><PwaRegister/></body></html>
+ return <html lang="pt-BR" data-scroll-behavior="smooth"><head><meta name="apple-mobile-web-app-capable" content="yes" /></head><body><ItemPresentationProvider><CaptureProvider>{children}</CaptureProvider></ItemPresentationProvider><PwaRegister/></body></html>
 }

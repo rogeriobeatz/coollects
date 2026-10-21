@@ -115,8 +115,8 @@ export function PublicProfile({username}:{username:string}){
   </section>}
 
   <div className="profile-tabs" role="tablist" aria-label="Conteúdo do perfil" id="perfil-itens" onKeyDown={navigateTabs}>
-   <button type="button" role="tab" tabIndex={tab==='itens'?0:-1} id="aba-itens" aria-controls="painel-perfil" aria-selected={tab==='itens'} aria-label="Itens publicados" title="Itens publicados" onClick={()=>setTab('itens')}><Grid2X2 size={20} aria-hidden="true"/>{social&&<b>{formatCount(social.public_items)}</b>}</button>
-   <button type="button" role="tab" tabIndex={tab==='curtidos'?0:-1} id="aba-curtidos" aria-controls="painel-perfil" aria-selected={tab==='curtidos'} aria-label="Itens curtidos" title="Itens curtidos" onClick={()=>setTab('curtidos')}><Heart size={20} aria-hidden="true"/>{social&&<b>{formatCount(social.likes_given)}</b>}</button>
+   <button type="button" role="tab" tabIndex={tab==='itens'?0:-1} id="aba-itens" aria-controls="painel-perfil" aria-selected={tab==='itens'} aria-label="Itens publicados" title="Itens publicados" onClick={()=>setTab('itens')}><Grid2X2 size={20} aria-hidden="true"/><span>Publicados</span>{social&&<b>{formatCount(social.public_items)}</b>}</button>
+   <button type="button" role="tab" tabIndex={tab==='curtidos'?0:-1} id="aba-curtidos" aria-controls="painel-perfil" aria-selected={tab==='curtidos'} aria-label="Itens curtidos" title="Itens curtidos" onClick={()=>setTab('curtidos')}><Heart size={20} aria-hidden="true"/><span>Curtidos</span>{social&&<b>{formatCount(social.likes_given)}</b>}</button>
   </div>
   <div className="profile-tab-panel" role="tabpanel" id="painel-perfil" aria-labelledby={tab==='itens'?'aba-itens':'aba-curtidos'}>
    <ProfileItems key={profile.id+tab} profileId={profile.id} kind={tab} isOwner={isOwner} name={name} username={profile.username}/>

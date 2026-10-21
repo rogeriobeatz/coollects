@@ -81,10 +81,12 @@ export async function signedImages(client:SupabaseClient,paths:(string|null|unde
  if(epoch!==cacheEpoch)return new Map()
  if(missing.length){
   try{
-   const {data}=await client.storage.from(BUCKET).createSignedUrls(missing,SIGN_SECONDS)
+   for(let start=0;start<missing.length;start+=200){
+   const {data}=await client.storage.from(BUCKET).createSignedUrls(missing.slice(start,start+200),SIGN_SECONDS)
    if(epoch!==cacheEpoch)return new Map()
    for(const photo of data||[])if(photo.path&&photo.signedUrl&&!photo.error){
     result.set(photo.path,photo.signedUrl);keepSigned(photo.path,photo.signedUrl);rememberThumb(photo.path,photo.signedUrl)
+   }
    }
   }catch{/* A missing photo never blocks the list; cards show their placeholder. */}
  }

@@ -13,6 +13,7 @@ import {FollowButton,LikeButton,useFollowing,useItemSocial} from './social-inter
 import {CollectorAvatar} from './collector-avatar'
 import {ConnectionsSheet} from './connections-sheet'
 import {ItemRow,CollectionRow,ProfileRow,publicUrlPath} from '@/lib/catalog'
+import {readAll,readChunks} from '@/lib/pagination'
 type ItemInfo=ItemRow&{photoUrl:string|null;galleryUrls:string[]}
 export function ItemShowcase({id}:{id:string}){
  const {user}=useAccount()
@@ -23,6 +24,7 @@ export function ItemShowcase({id}:{id:string}){
  const [error,setError]=useState('')
  const [visibilityError,setVisibilityError]=useState(false)
  const [picker,setPicker]=useState(false)
+ const [sharing,setSharing]=useState(false)
  const [likers,setLikers]=useState(false)
  const refresh=useCallback(async(silent=false)=>{
   const db=getBrowserClient()
@@ -39,7 +41,7 @@ export function ItemShowcase({id}:{id:string}){
    const result=data as ItemRow
    const [profileResponse,linksResponse,url,gallery]=await Promise.all([
     db.from('profiles').select('*').eq('id',result.owner_id).maybeSingle(),
-    db.from('collection_items').select('collection_id').eq('item_id',id),
+    readAll<{collection_id:string}>((from,to)=>db.from('collection_items').select('collection_id',{count:'exact'}).eq('item_id',id).order('collection_id').range(from,to)).then(data=>({data,error:null})).catch(error=>({data:[] as {collection_id:string}[],error})),
     signedImage(db,result.photo_path).catch(()=>null),
     Promise.all((result.gallery_paths||[]).map(path=>signedImage(db,path,{full:true}).catch(()=>null)))
    ])
@@ -48,9 +50,7 @@ export function ItemShowcase({id}:{id:string}){
    if(!failedVisibility){
     const ids=(linksResponse.data||[]).map(link=>link.collection_id)
     if(ids.length){
-     const response=await db.from('collections').select('*').in('id',ids)
-     if(response.error)failedVisibility=true
-     else visibleCollections=(response.data||[]) as CollectionRow[]
+     try{visibleCollections=await readChunks<CollectionRow>(ids,chunk=>readAll((from,to)=>db.from('collections').select('*',{count:'exact'}).in('id',chunk).order('id').range(from,to)))}catch{failedVisibility=true}
     }
    }
    setVisibilityError(failedVisibility)
@@ -99,12 +99,12 @@ export function ItemShowcase({id}:{id:string}){
     {publicCollection&&itemSocial&&itemSocial.likes>0&&<button type="button" className="item-social-icon" aria-label="Ver quem curtiu" title="Ver quem curtiu" onClick={()=>setLikers(true)}><Users size={19} aria-hidden="true"/></button>}
     <span className="item-social-spacer"/>
     {publicCollection?<ShareButton className="item-social-icon is-primary" path={'/item/'+encodeURIComponent(item.id)} title={item.name} text={'Olha este item'+(owner?' do acervo de '+ownerName:'')+' no Coollects: '+item.name} icon={<Share2 size={19} aria-hidden="true"/>}><span className="visually-hidden">Compartilhar</span></ShareButton>
-     :isOwner&&!visibilityError&&<button type="button" className="item-social-icon is-private" aria-label="Compartilhar" title="Compartilhar" onClick={()=>setPicker(true)}><LockKeyhole size={18} aria-hidden="true"/></button>}
+     :isOwner&&!visibilityError&&<button type="button" className="item-social-icon is-private" aria-label="Compartilhar" title="Compartilhar" onClick={()=>{setSharing(true);setPicker(true)}}><LockKeyhole size={18} aria-hidden="true"/></button>}
    </div>
   </div>
   {likers&&<ConnectionsSheet targetId={item.id} kinds={['likers']} initial="likers" label={'Quem curtiu '+item.name} counts={itemSocial?{likers:itemSocial.likes}:{}} onClose={()=>setLikers(false)}/>}
-  {isOwner&&!visibilityError&&<div className="item-showcase-hint"><p>{publicCollection?'Este item faz parte de uma coleção pública.':'Para compartilhar, adicione este item a uma coleção pública.'}</p><button type="button" className="pill-btn" onClick={()=>setPicker(true)}>Adicionar a uma coleção</button></div>}
-  {picker&&isOwner&&<ItemCollectionPicker itemId={item.id} onClose={()=>setPicker(false)} onChanged={()=>void refresh(true)}/>}
+  {isOwner&&!visibilityError&&<div className="item-showcase-hint"><p>{publicCollection?'Este item faz parte de uma coleção pública.':'Para compartilhar, adicione este item a uma coleção pública.'}</p><button type="button" className="pill-btn" onClick={()=>{setSharing(false);setPicker(true)}}>Adicionar a uma coleção</button></div>}
+  {picker&&isOwner&&<ItemCollectionPicker sharing={sharing} itemId={item.id} onClose={()=>setPicker(false)} onChanged={()=>void refresh(true)}/>}
   {item.notes&&<details className="collectible-more"><summary>História e observações</summary><p>{item.notes}</p></details>}
   {collections.length>0&&<details className="collectible-more"><summary>Ver coleções</summary><div className="item-showcase-collections">{collections.map(c=><Link href={'/colecao/'+encodeURIComponent(c.id)} key={c.id}>{c.name} <ExternalLink size={14}/></Link>)}</div></details>}
   {error&&<p role="alert">{error}</p>}

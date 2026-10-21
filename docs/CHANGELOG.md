@@ -1,3 +1,26 @@
+## 2026-10-21 — Reconhecimento durante a navegação
+- Rascunho e requisição de reconhecimento mantidos em um provider do layout, independentes da tela de cadastro.
+- A pessoa pode navegar dentro do app e retomar fotos, ficha, campos revisados e coleções por um indicador flutuante acessível.
+- Indicador pulsante durante a análise, estimativa de progresso e estados persistentes de conclusão/erro. Movimento reduzido desativa a pulsação.
+- O resultado nunca salva automaticamente nem muda a tela atual. A conclusão orienta revisão e salvamento manual.
+- Rascunho único por sessão; descartá-lo exige confirmação. Logout/troca de conta limpam fotos e estado e invalidam respostas tardias.
+- Não há fila no servidor, persistência após recarregar nem garantia ao fechar/suspender o navegador. O aviso de saída da aba permanece ativo nas demais telas.
+- Nenhuma migração ou dependência adicional. O endpoint de reconhecimento existente continua responsável pela análise.
+
+## 2026-10-21 — Recuperação, descoberta e continuidade
+- Cadastro distingue carregamento, vazio e erro; recupera coleções e usa a categoria contextual sem substituir a edição manual.
+- Criação rápida de coleção privada na própria ficha; confirmação ao sair por links ou fechar/atualizar a página com alterações pendentes. Fechar o editor também permite cancelar o descarte.
+- Criação parcial conserva a coleção já criada e retoma apenas a operação pendente, sem duplicar.
+- Edição preserva fotos extras após falha e informa o salvamento parcial; nova tentativa mantém a foto principal já gravada.
+- Explorar compacto, com busca pública paginada no servidor por coleção, categoria, descrição e autor, usando a Data API existente.
+- Acervo, vínculos e coleções consultados em páginas estáveis; filtros IN e assinaturas de imagens divididos em lotes. Cards pessoais e de coleção renderizados progressivamente.
+- Item privado orienta a publicação da coleção e compartilha o item original; visitantes sem origem voltam para Explorar.
+- Abas do perfil com rótulos visíveis; contato oficial contato@coollects.com.br; textos de privacidade esclarecem múltiplas coleções públicas e cópias já recebidas.
+- Importador ignora conflitos de itens existentes; indisponibilidade de localStorage não transforma importação concluída em falha.
+- Baralho mantém a posição durante a estabilização do scroll-snap ao redimensionar.
+- Documentação operacional reconciliada com abertura direta, KIE e validade de uma hora das imagens. Sem deploy ou migração nova nesta entrega.
+- Validação local: 108 testes unitários e 95 cenários de navegador aprovados, mais 10 repetições sem falhas do redimensionamento do baralho, TypeScript/build e 16 rotas + 404 aprovados. Busca por autor/nome/categoria validada na Data API real somente com leitura. Primeira coleção do Explorar a 321 px em 320 px e 302 px em 390 px, sem overflow nas telas verificadas. SMTP, duas contas reais e aparelhos físicos continuam pendentes.
+
 ## 2026-10-20 — Conclusão da camada social
 - Home com feed cronológico de peças públicas próprias e de perfis seguidos, descoberta da comunidade, paginação e recuperação de erros sem perder os posts.
 - Perfil público e próprio compartilhando componentes: contadores, seguidores/seguindo, coleções, itens publicados e curtidos; edição em `/perfil/editar`.

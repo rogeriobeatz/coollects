@@ -31,7 +31,7 @@ export function LegacyImport({userId}:{userId:string}){
     const {error}=await db.from('items').upsert({
      id:item.id,owner_id:userId,name:item.name.slice(0,90),brand:(item.brand||'').slice(0,70),
      category:(item.category||'Outros').slice(0,50),notes:(item.notes||'').slice(0,300),photo_path:null
-    },{onConflict:'id'})
+    },{onConflict:'id',ignoreDuplicates:true})
     if(error)throw error
     if(item.collectionId && collections.some(c=>c.id===item.collectionId)){
      const {error:linkError}=await db.from('collection_items').upsert({
@@ -40,7 +40,8 @@ export function LegacyImport({userId}:{userId:string}){
      if(linkError)throw linkError
     }
    }
-   localStorage.setItem(key,'true');setDone(true)
+   try{localStorage.setItem(key,'true')}catch{/* Import succeeded even if local preferences are unavailable. */}
+   setDone(true)
    setMessage('Dados locais importados! Atualize a página para visualizar seu acervo.')
   }catch(e){setMessage('Não foi possível concluir a importação. Seus dados deste aparelho continuam preservados.')}
   finally{setImporting(false)}

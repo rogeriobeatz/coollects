@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { PROFILE_SELECT, type CollectionRow, type ItemRow } from './catalog'
 import { collectionPreviewItems, type CollectionPhoto, type PreviewLink } from './collection-previews'
 import { signedImages } from './images'
+import {readAll,readChunks} from './pagination'
 import {
  PAGE_SIZE, toProfileSocial,
  type ActivityEntry, type CollectorSummary, type Connection, type ConnectionKind, type ItemSocial, type ProfileSocial, type SuggestedCollector
@@ -100,14 +101,9 @@ export async function loadActivity(db:SupabaseClient,limit=30):Promise<ActivityE
 
 /** Public collections of a collector with item counts and up to two photos each. */
 export async function loadPublicCollections(db:SupabaseClient,ownerId:string){
- const {data,error}=await db.from('collections').select('*').eq('owner_id',ownerId).eq('is_public',true).order('created_at',{ascending:false})
- if(error)throw error
- const collections=(data||[]) as CollectionRow[]
- const joined=collections.length
-  ?await db.from('collection_items').select('collection_id,item_id,created_at,items(id,name,photo_path)').in('collection_id',collections.map(c=>c.id)).order('created_at',{ascending:true})
-  :{data:[],error:null}
- if(joined.error)throw joined.error
- const picked=collectionPreviewItems(collections,(joined.data||[]) as unknown as PreviewLink[])
+ const collections=await readAll<CollectionRow>((from,to)=>db.from('collections').select('*',{count:'exact'}).eq('owner_id',ownerId).eq('is_public',true).order('created_at',{ascending:false}).order('id').range(from,to))
+ const joined=await readChunks<PreviewLink>(collections.map(c=>c.id),ids=>readAll((from,to)=>db.from('collection_items').select('collection_id,item_id,created_at,items(id,name,photo_path)',{count:'exact'}).in('collection_id',ids).order('collection_id').order('item_id').range(from,to)))
+ const picked=collectionPreviewItems(collections,joined)
  const urls=await signedImages(db,Object.values(picked.previews).flat().map(item=>item.photo_path))
  const photos:Record<string,CollectionPhoto[]>={}
  for(const [id,items] of Object.entries(picked.previews))photos[id]=items.flatMap(item=>{

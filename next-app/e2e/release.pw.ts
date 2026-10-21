@@ -19,7 +19,7 @@ for(const viewport of [{width:320,height:780},{width:390,height:844}]){
   test('A navegação entre telas funciona',async({page})=>{
    await page.goto('/')
    await page.getByRole('link',{name:'Explorar coleções',exact:true}).click()
-   await expect(page.getByRole('heading',{name:/Explorar universos/i})).toBeVisible()
+    await expect(page.getByRole('heading',{name:'Explorar',exact:true})).toBeVisible()
    await page.getByRole('link',{name:'Coleções'}).last().click()
    await expect(page).toHaveURL(/\/colecoes$/)
    await expect(page.getByRole('heading',{name:/Minhas coleções/i})).toBeVisible()

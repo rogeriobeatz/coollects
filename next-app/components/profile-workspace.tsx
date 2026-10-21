@@ -10,21 +10,25 @@ import { getBrowserClient } from '@/lib/supabase/client'
 import { clearImageCache } from '@/lib/images'
 import { ProfileRow } from '@/lib/catalog'
 import { useRouter } from 'next/navigation'
+import {useUnsavedChanges} from './use-unsaved-changes'
 export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileEditor userId={userId}/>}</AuthGate>}
 function ProfileEditor({userId}:{userId:string}){
  const [profile,setProfile]=useState<ProfileRow|null>(null),[displayName,setDisplayName]=useState(''),[username,setUsername]=useState(''),[bio,setBio]=useState('')
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false)
+ const [loadFailed,setLoadFailed]=useState(false),[attempt,setAttempt]=useState(0)
+ useUnsavedChanges(Boolean(profile&&(displayName!==profile.display_name||username!==profile.username||bio!==profile.bio))&&!busy)
  const router=useRouter()
  useEffect(()=>{
-  const db=getBrowserClient();if(!db)return
+  const db=getBrowserClient();if(!db){setLoadFailed(true);return}
+  setLoadFailed(false);setMessage('')
   let active=true
   void Promise.resolve(db.from('profiles').select('*').eq('id',userId).single()).then(({data,error})=>{
    if(!active)return
-   if(error){setMessage('Não conseguimos carregar o perfil agora. Tente novamente.');return}
+   if(error||!data){setLoadFailed(true);return}
    if(data){const p=data as ProfileRow;setProfile(p);setDisplayName(p.display_name);setUsername(p.username);setBio(p.bio)}
-  }).catch(()=>{if(active)setMessage('Não conseguimos carregar o perfil agora. Tente novamente.')})
+  }).catch(()=>{if(active)setLoadFailed(true)})
   return ()=>{active=false}
- },[userId])
+ },[userId,attempt])
  async function save(){
   if(displayName.trim().length<2||!/^[a-z0-9_]{3,30}$/.test(username)){setMessage('Nome com pelo menos 2 caracteres; usuário de 3 a 30 letras minúsculas, números ou _.');return}
   if(busy)return
@@ -55,6 +59,7 @@ function ProfileEditor({userId}:{userId:string}){
   {profile?<CollectorAvatar name={profile.display_name||profile.username} seed={profile.id} size="lg"/>:<span className="profile-avatar"><UserRound size={42}/></span>}
   <h2>{profile?.display_name||'Seu universo'}</h2>
   <p>{profile?'@'+profile.username:'Personalize seu perfil público e compartilhe suas coleções.'}</p>
+  {loadFailed&&<div role="alert" className="scan-notice">Não conseguimos carregar o perfil agora. <button type="button" onClick={()=>setAttempt(v=>v+1)}>Tentar novamente</button></div>}
   <label className="field-label">Nome de exibição<input maxLength={60} value={displayName} onChange={e=>setDisplayName(e.target.value)}/></label>
   <label className="field-label">Usuário (URL pública)<input maxLength={30} value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))}/></label>
   <label className="field-label">Biografia<textarea rows={3} maxLength={300} value={bio} onChange={e=>setBio(e.target.value)}/></label>
@@ -63,6 +68,7 @@ function ProfileEditor({userId}:{userId:string}){
   <div className="profile-links">
    {profile&&<Link href="/perfil">Ver meu perfil <ArrowRight size={16}/></Link>}
    <Link href="/itens">Gerenciar meus itens <ArrowRight size={16}/></Link>
+   <a href="mailto:contato@coollects.com.br">Ajuda e privacidade <ArrowRight size={16}/></a>
    <button disabled={busy} onClick={()=>void signOut()}>Sair da conta <LogOut size={16}/></button>
   </div>
   <LegacyImport userId={userId}/>

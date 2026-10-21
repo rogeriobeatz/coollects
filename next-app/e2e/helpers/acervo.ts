@@ -37,12 +37,13 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
  await page.route(backendUrl+'/storage/v1/**',route=>{
   const request=route.request(),url=new URL(request.url())
   if(request.method()==='GET')return route.fulfill({path:resolve(process.cwd(),'e2e/fixtures/image2.jpg'),contentType:'image/jpeg'})
-  const body=request.postDataJSON()
+  const body=request.headers()['content-type']?.includes('multipart/form-data')?{}:request.postDataJSON()
   if(Array.isArray(body.paths))return route.fulfill({json:body.paths.map((path:string)=>({path,signedURL:'/object/sign/coollects-items/'+path+'?token=test',error:null}))})
   return route.fulfill({json:{signedURL:url.pathname.replace('/storage/v1','')+'?token=test'}})
  })
  await page.route(backendUrl+'/rest/v1/**',route=>{
   const request=route.request(),url=new URL(request.url()),table=url.pathname.split('/').pop(),method=request.method()
+  const paged=<T,>(rows:T[])=>rows.slice(Number(url.searchParams.get('offset')||0),url.searchParams.has('limit')?Number(url.searchParams.get('offset')||0)+Number(url.searchParams.get('limit')):undefined)
   const matches=(row:Record<string,unknown>)=>[...url.searchParams].every(([key,value])=>{
    if(value.startsWith('eq.'))return String(row[key])===value.slice(3)
    if(value.startsWith('in.('))return value.slice(4,-1).split(',').includes(String(row[key]))
@@ -101,11 +102,15 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
     state.links.push(...(Array.isArray(payload)?payload:[payload]))
    }
    if(method==='DELETE')state.links=state.links.filter(row=>!matches(row))
-   const links=state.links.filter(row=>matches(row))
+   const links=paged(state.links.filter(row=>matches(row)))
    return route.fulfill({json:url.searchParams.get('select')?.includes('items(')?links.map(link=>({...link,items:state.items.find(item=>item.id===link.item_id)||null})):links})
   }
   const rows=table==='collections'?state.collections:table==='items'?state.items:[]
   let result=rows.filter(row=>matches(row))
+  if(method==='GET'&&table==='collections'&&url.searchParams.get('or')?.includes('name.ilike.')){
+   const match=url.searchParams.get('or')!.match(/name\.ilike\.("(?:\\.|[^"\\])*")/)
+   if(match){const term=(JSON.parse(match[1]) as string).slice(1,-1).replace(/\\(.)/g,'$1').toLocaleLowerCase('pt-BR');result=result.filter(row=>[row.name,row.category,'description' in row?row.description:'','Rogério Silva','colecionador_test'].join(' ').toLocaleLowerCase('pt-BR').includes(term))}
+  }
   if(method==='POST'&&table==='collections'){
    const record={...collection,...request.postDataJSON(),id:collectionId}
    state.collections.push(record);result=[record]
@@ -124,8 +129,11 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
     else{state.items=state.items.filter(row=>!ids.has(row.id));state.links=state.links.filter(link=>!ids.has(link.item_id))}
    }
   }
+  const total=result.length
+  if(method==='GET')result=paged(result)
   const single=request.headers()['accept']?.includes('vnd.pgrst.object')
-  return route.fulfill({json:single?result[0]:result,headers:{'Content-Range':result.length?'0-'+(result.length-1)+'/'+result.length:'*/0'}})
+  const response=result.map(row=>table==='collections'&&url.searchParams.get('select')?.includes('author:')?{...row,author:{id:ownerId,display_name:'Rogério Silva',username:'colecionador_test'}}:row)
+  return route.fulfill({json:single?response[0]:response,headers:{'Content-Range':total?'0-'+(Math.max(0,result.length-1))+'/'+total:'*/0'}})
  })
  return state
 }
