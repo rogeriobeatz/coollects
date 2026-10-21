@@ -21,27 +21,47 @@ export function ItemShowcase({id}:{id:string}){
  const [collections,setCollections]=useState<CollectionRow[]>([])
  const [loading,setLoading]=useState(true)
  const [error,setError]=useState('')
+ const [visibilityError,setVisibilityError]=useState(false)
  const [picker,setPicker]=useState(false)
  const [likers,setLikers]=useState(false)
- const refresh=useCallback(async()=>{
-  const db=getBrowserClient();if(!db){setError('Serviço indisponível.');setLoading(false);return}
-  setLoading(true)
-  const {data,error:itemError}=await db.from('items').select('*').eq('id',id).maybeSingle()
-  if(itemError||!data){setError('Este item é privado ou não está disponível.');setItem(null);setLoading(false);return}
-  const result=data as ItemRow
-  const [{data:profile},{data:links},url,gallery]=await Promise.all([
-   db.from('profiles').select('*').eq('id',result.owner_id).maybeSingle(),
-   db.from('collection_items').select('collection_id').eq('item_id',id),
-   signedImage(db,result.photo_path),
-   Promise.all((result.gallery_paths||[]).map(path=>signedImage(db,path,{full:true})))
-  ])
-  const ids=(links||[]).map(link=>link.collection_id)
-  let visibleCollections:CollectionRow[]=[]
-  if(ids.length){
-   const {data:rows}=await db.from('collections').select('*').in('id',ids)
-   visibleCollections=(rows||[]) as CollectionRow[]
-  }
-  setItem({...result,photoUrl:url,galleryUrls:gallery.filter((u):u is string=>Boolean(u))});upgradePhoto(db,result.photo_path);setOwner((profile||null) as ProfileRow|null);setCollections(visibleCollections);setError('');setLoading(false)
+ const refresh=useCallback(async(silent=false)=>{
+  const db=getBrowserClient()
+  if(!db){setError('Serviço indisponível.');if(!silent)setLoading(false);return}
+  if(!silent)setLoading(true)
+  setError('');setVisibilityError(false)
+  try{
+   const {data,error:itemError}=await db.from('items').select('*').eq('id',id).maybeSingle()
+   if(itemError||!data){
+    setError('Este item é privado ou não está disponível.')
+    if(!silent)setItem(null)
+    return
+   }
+   const result=data as ItemRow
+   const [profileResponse,linksResponse,url,gallery]=await Promise.all([
+    db.from('profiles').select('*').eq('id',result.owner_id).maybeSingle(),
+    db.from('collection_items').select('collection_id').eq('item_id',id),
+    signedImage(db,result.photo_path).catch(()=>null),
+    Promise.all((result.gallery_paths||[]).map(path=>signedImage(db,path,{full:true}).catch(()=>null)))
+   ])
+   let visibleCollections:CollectionRow[]=[]
+   let failedVisibility=Boolean(linksResponse.error)
+   if(!failedVisibility){
+    const ids=(linksResponse.data||[]).map(link=>link.collection_id)
+    if(ids.length){
+     const response=await db.from('collections').select('*').in('id',ids)
+     if(response.error)failedVisibility=true
+     else visibleCollections=(response.data||[]) as CollectionRow[]
+    }
+   }
+   setVisibilityError(failedVisibility)
+   setCollections(visibleCollections)
+   setItem({...result,photoUrl:url,galleryUrls:gallery.filter((u):u is string=>Boolean(u))})
+   setOwner((profileResponse.data||null) as ProfileRow|null)
+   upgradePhoto(db,result.photo_path)
+  }catch{
+   setError('Não foi possível carregar este item. Verifique sua conexão e tente novamente.')
+   if(!silent)setItem(null)
+  }finally{if(!silent)setLoading(false)}
  },[id])
  useEffect(()=>{void refresh()},[refresh])
  const publicCollection=collections.some(c=>c.is_public)
@@ -54,16 +74,17 @@ export function ItemShowcase({id}:{id:string}){
   void signedImage(db,path,{full:true}).then(full=>{
    if(!full)return
    const img=new Image();img.onload=()=>setItem(v=>v&&v.photo_path===path?{...v,photoUrl:full}:v);img.src=full
-  })
+  }).catch(()=>{/* The compressed image is still available. */})
  }
  if(loading)return <section className="item-showcase-state">Preparando a ficha técnica…</section>
- if(!item)return <section className="item-showcase-state"><LockKeyhole size={35}/><h2>Item indisponível</h2><p>{error}</p><Link href="/explorar">Explorar coleções</Link></section>
+ if(!item)return <section className="item-showcase-state"><LockKeyhole size={35}/><h2>Item indisponível</h2><p>{error}</p><button type="button" className="pill-btn" onClick={()=>void refresh()}>Tentar novamente</button><Link href="/explorar">Explorar coleções</Link></section>
  const isOwner=user?.id===item.owner_id
  const ownerName=owner?(owner.display_name||owner.username):''
  return <article className="collectible-detail">
   <div className="collectible-toolbar"><span>{item.category}</span>{isOwner&&<div className="owner-management"><Link href={'/itens?editar='+encodeURIComponent(item.id)}>Editar <ExternalLink size={14}/></Link><Link className="owner-delete" href={'/itens?excluir='+encodeURIComponent(item.id)}>Excluir</Link></div>}</div>
   <ItemCardViewer item={item} photoUrl={item.photoUrl} headingLevel="h1"/>
   <ItemGallery name={item.name} urls={item.galleryUrls}/>
+  {visibilityError&&<p className="profile-inline-error" role="alert">Não foi possível confirmar a visibilidade deste item. <button type="button" onClick={()=>void refresh(true)}>Tentar novamente</button></p>}
   <div className="item-social">
    <div className="item-owner-row">
     {owner?<Link className="item-owner" href={publicUrlPath(owner.username)}>
@@ -78,12 +99,12 @@ export function ItemShowcase({id}:{id:string}){
     {publicCollection&&itemSocial&&itemSocial.likes>0&&<button type="button" className="item-social-icon" aria-label="Ver quem curtiu" title="Ver quem curtiu" onClick={()=>setLikers(true)}><Users size={19} aria-hidden="true"/></button>}
     <span className="item-social-spacer"/>
     {publicCollection?<ShareButton className="item-social-icon is-primary" path={'/item/'+encodeURIComponent(item.id)} title={item.name} text={'Olha este item'+(owner?' do acervo de '+ownerName:'')+' no Coollects: '+item.name} icon={<Share2 size={19} aria-hidden="true"/>}><span className="visually-hidden">Compartilhar</span></ShareButton>
-     :isOwner&&<button type="button" className="item-social-icon is-private" aria-label="Compartilhar" title="Compartilhar" onClick={()=>setPicker(true)}><LockKeyhole size={18} aria-hidden="true"/></button>}
+     :isOwner&&!visibilityError&&<button type="button" className="item-social-icon is-private" aria-label="Compartilhar" title="Compartilhar" onClick={()=>setPicker(true)}><LockKeyhole size={18} aria-hidden="true"/></button>}
    </div>
   </div>
   {likers&&<ConnectionsSheet targetId={item.id} kinds={['likers']} initial="likers" label={'Quem curtiu '+item.name} counts={itemSocial?{likers:itemSocial.likes}:{}} onClose={()=>setLikers(false)}/>}
-  {isOwner&&<div className="item-showcase-hint"><p>{publicCollection?'Este item faz parte de uma coleção pública.':'Para compartilhar, adicione este item a uma coleção pública.'}</p><button type="button" className="pill-btn" onClick={()=>setPicker(true)}>Adicionar a uma coleção</button></div>}
-  {picker&&isOwner&&<ItemCollectionPicker itemId={item.id} onClose={()=>setPicker(false)} onChanged={()=>void refresh()}/>}
+  {isOwner&&!visibilityError&&<div className="item-showcase-hint"><p>{publicCollection?'Este item faz parte de uma coleção pública.':'Para compartilhar, adicione este item a uma coleção pública.'}</p><button type="button" className="pill-btn" onClick={()=>setPicker(true)}>Adicionar a uma coleção</button></div>}
+  {picker&&isOwner&&<ItemCollectionPicker itemId={item.id} onClose={()=>setPicker(false)} onChanged={()=>void refresh(true)}/>}
   {item.notes&&<details className="collectible-more"><summary>História e observações</summary><p>{item.notes}</p></details>}
   {collections.length>0&&<details className="collectible-more"><summary>Ver coleções</summary><div className="item-showcase-collections">{collections.map(c=><Link href={'/colecao/'+encodeURIComponent(c.id)} key={c.id}>{c.name} <ExternalLink size={14}/></Link>)}</div></details>}
   {error&&<p role="alert">{error}</p>}

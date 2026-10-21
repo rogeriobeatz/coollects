@@ -16,28 +16,34 @@ export function ItemCollectionPicker({itemId,onClose,onChanged}:{itemId:string;o
   const db=getBrowserClient()
   if(!db){setError('Não foi possível conectar. Tente novamente.');setLoading(false);return}
   setLoading(true);setError('')
-  const {data:{user},error:authError}=await db.auth.getUser()
-  if(authError||!user){setError('Entre na sua conta para organizar este item.');setLoading(false);return}
-  const [cs,ls]=await Promise.all([
-   db.from('collections').select('*').eq('owner_id',user.id).order('created_at',{ascending:false}),
-   db.from('collection_items').select('collection_id').eq('item_id',itemId)
-  ])
-  if(cs.error||ls.error)setError('Não foi possível carregar suas coleções. Tente novamente.')
-  else{setCollections((cs.data||[]) as CollectionRow[]);setLinked((ls.data||[]).map(x=>x.collection_id))}
-  setLoading(false)
+  try{
+   const {data:{user},error:authError}=await db.auth.getUser()
+   if(authError||!user){setError('Entre na sua conta para organizar este item.');return}
+   const [cs,ls]=await Promise.all([
+    db.from('collections').select('*').eq('owner_id',user.id).order('created_at',{ascending:false}),
+    db.from('collection_items').select('collection_id').eq('item_id',itemId)
+   ])
+   if(cs.error||ls.error)setError('Não foi possível carregar suas coleções. Tente novamente.')
+   else{setCollections((cs.data||[]) as CollectionRow[]);setLinked((ls.data||[]).map(x=>x.collection_id))}
+  }catch{setError('Não foi possível carregar suas coleções. Verifique sua conexão e tente novamente.')}
+  finally{setLoading(false)}
  },[itemId])
  useEffect(()=>{void load()},[load])
  async function toggle(collectionId:string){
   if(working)return
-  const db=getBrowserClient();if(!db)return
+  const db=getBrowserClient()
+  if(!db){setError('Não foi possível conectar. Tente novamente.');return}
   setWorking(collectionId);setError('')
   const present=linked.includes(collectionId)
-  const response=present
-   ?await db.from('collection_items').delete().eq('item_id',itemId).eq('collection_id',collectionId)
-   :await db.from('collection_items').insert({item_id:itemId,collection_id:collectionId})
-  if(response.error)setError('Não foi possível atualizar a coleção. Tente novamente.')
-  else{setLinked(prev=>present?prev.filter(x=>x!==collectionId):[...prev,collectionId]);onChanged()}
-  setWorking(null)
+  try{
+   const response=present
+    ?await db.from('collection_items').delete().eq('item_id',itemId).eq('collection_id',collectionId)
+    :await db.from('collection_items').insert({item_id:itemId,collection_id:collectionId})
+   if(response.error){setError('Não foi possível atualizar a coleção. Tente novamente.');return}
+   setLinked(prev=>present?prev.filter(x=>x!==collectionId):[...prev,collectionId])
+   onChanged()
+  }catch{setError('Não foi possível atualizar a coleção. Verifique sua conexão e tente novamente.')}
+  finally{setWorking(null)}
  }
  return <Modal label="Adicionar item a coleções" onClose={onClose} busy={Boolean(working)} returnFocus={'[data-item-id="'+itemId+'"] .cc-more-trigger'}>
   <section className="edit-modal collection-picker">

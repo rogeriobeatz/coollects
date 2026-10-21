@@ -55,6 +55,7 @@ export function HomeFeed({user,aiEnabled}:{user:User;aiEnabled:boolean}){
   {status==='error'&&<p className="profile-inline-error" role="alert">Não foi possível carregar as curtidas. <button type="button" onClick={retryLikes}>Tentar novamente</button></p>}
   {home.status==='loading'&&<FeedSkeleton/>}
   {home.status==='error'&&<p className="profile-inline-error" role="alert">Não foi possível carregar seu feed. <button type="button" onClick={home.retry}>Tentar novamente</button></p>}
+  {home.refreshError&&<p className="profile-inline-error" role="alert">Não foi possível atualizar seu feed. As postagens anteriores continuam disponíveis. <button type="button" onClick={home.retry}>Tentar novamente</button></p>}
   {home.status==='ready'&&<>
    {home.items.length>0
     ?<div className="feed-list">{home.items.map(item=><FeedPost key={item.id} item={item} {...postProps}/>)}</div>
@@ -82,6 +83,7 @@ export function HomeFeed({user,aiEnabled}:{user:User;aiEnabled:boolean}){
     <LoadMore hasMore={community.hasMore} loading={community.loadingMore} automatic={!community.moreError} onMore={community.more}/>
    </section>}
    {homeDone&&community.status==='error'&&<p className="profile-inline-error" role="alert">Não foi possível carregar as novidades da comunidade. <button type="button" onClick={community.retry}>Tentar novamente</button></p>}
+   {homeDone&&community.refreshError&&<p className="profile-inline-error" role="alert">Não foi possível atualizar as novidades. <button type="button" onClick={community.retry}>Tentar novamente</button></p>}
   </>}
   {likers&&<ConnectionsSheet targetId={likers.id} kinds={['likers']} initial="likers" label={'Quem curtiu '+likers.name}
    counts={social.get(likers.id)?{likers:social.get(likers.id)!.likes}:{}} onClose={()=>setLikers(null)}/>}
@@ -94,19 +96,23 @@ function usePagedFeed(kind:ItemListKind,enabled:boolean){
  const [status,setStatus]=useState<'idle'|'loading'|'ready'|'error'>(enabled?'loading':'idle')
  const [hasMore,setHasMore]=useState(false),[loadingMore,setLoadingMore]=useState(false)
  const [moreError,setMoreError]=useState(false)
+ const [refreshError,setRefreshError]=useState(false)
  const [version,setVersion]=useState(0)
+ const loaded=useRef(false)
  const busy=useRef(false),generation=useRef(0),nextOffset=useRef(0)
  useEffect(()=>{
   if(!enabled)return
   const db=getBrowserClient()
-  if(!db){setStatus('error');return}
+  if(!db){if(loaded.current)setRefreshError(true);else setStatus('error');return}
   let active=true
   generation.current+=1
   busy.current=true
-  setMoreError(false);setLoadingMore(false)
-  // Later refreshes (after a follow) keep the current posts on screen.
-  setStatus(current=>current==='ready'?current:'loading')
-  loadItemPage(db,kind,null,0).then(page=>{if(active){nextOffset.current=page.items.length;setItems(page.items);setHasMore(page.hasMore);setStatus('ready')}}).catch(()=>{if(active)setStatus('error')}).finally(()=>{if(active)busy.current=false})
+  setRefreshError(false);setMoreError(false);setLoadingMore(false)
+  // Refreshes retain the rendered posts even when the network fails.
+  if(!loaded.current)setStatus('loading')
+  loadItemPage(db,kind,null,0).then(page=>{if(active){nextOffset.current=page.items.length;setItems(page.items);setHasMore(page.hasMore);loaded.current=true;setStatus('ready')}})
+   .catch(()=>{if(active){if(loaded.current)setRefreshError(true);else setStatus('error')}})
+   .finally(()=>{if(active)busy.current=false})
   return ()=>{active=false;generation.current+=1}
  },[kind,enabled,version])
  // Following someone new brings their posts into the home feed.
@@ -125,8 +131,8 @@ function usePagedFeed(kind:ItemListKind,enabled:boolean){
   catch{if(generation.current===requestGeneration)setMoreError(true)}
   finally{if(generation.current===requestGeneration){busy.current=false;setLoadingMore(false)}}
  },[kind,items.length])
- const retry=useCallback(()=>{setStatus('loading');setVersion(value=>value+1)},[])
- return {items,status,hasMore,loadingMore,moreError,more,retry}
+ const retry=useCallback(()=>{if(!loaded.current)setStatus('loading');setRefreshError(false);setVersion(value=>value+1)},[])
+ return {items,status,hasMore,loadingMore,moreError,refreshError,more,retry}
 }
 
 function AiComposer({firstName,empty,aiEnabled}:{firstName:string;empty:boolean;aiEnabled:boolean}){

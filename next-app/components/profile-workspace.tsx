@@ -7,6 +7,7 @@ import { AuthGate } from './auth-gate'
 import { LegacyImport } from './legacy-import'
 import { AccountDeletion } from './account-deletion'
 import { getBrowserClient } from '@/lib/supabase/client'
+import { clearImageCache } from '@/lib/images'
 import { ProfileRow } from '@/lib/catalog'
 import { useRouter } from 'next/navigation'
 export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileEditor userId={userId}/>}</AuthGate>}
@@ -21,18 +22,35 @@ function ProfileEditor({userId}:{userId:string}){
    if(!active)return
    if(error){setMessage('Não conseguimos carregar o perfil agora. Tente novamente.');return}
    if(data){const p=data as ProfileRow;setProfile(p);setDisplayName(p.display_name);setUsername(p.username);setBio(p.bio)}
-  })
+  }).catch(()=>{if(active)setMessage('Não conseguimos carregar o perfil agora. Tente novamente.')})
   return ()=>{active=false}
  },[userId])
  async function save(){
   if(displayName.trim().length<2||!/^[a-z0-9_]{3,30}$/.test(username)){setMessage('Nome com pelo menos 2 caracteres; usuário de 3 a 30 letras minúsculas, números ou _.');return}
-  setBusy(true);const db=getBrowserClient();if(!db)return
-  const {error}=await db.from('profiles').update({display_name:displayName.trim(),username,bio:bio.trim()}).eq('id',userId)
-  setMessage(error?'Não foi possível atualizar o perfil. O nome de usuário pode já estar em uso.':'Perfil atualizado!')
-  if(!error)setProfile(p=>p?{...p,display_name:displayName.trim(),username,bio:bio.trim()}:p)
-  setBusy(false)
+  if(busy)return
+  const db=getBrowserClient()
+  if(!db){setMessage('Serviço indisponível. Tente novamente.');return}
+  setBusy(true);setMessage('')
+  try{
+   const {error}=await db.from('profiles').update({display_name:displayName.trim(),username,bio:bio.trim()}).eq('id',userId)
+   if(error){setMessage('Não foi possível atualizar o perfil. O nome de usuário pode já estar em uso.');return}
+   setProfile(p=>p?{...p,display_name:displayName.trim(),username,bio:bio.trim()}:p)
+   setMessage('Perfil atualizado!')
+  }catch{setMessage('Não foi possível atualizar o perfil. Verifique sua conexão e tente novamente.')}
+  finally{setBusy(false)}
  }
- async function signOut(){const db=getBrowserClient();if(!db){setMessage('Serviço indisponível. Tente novamente.');return}setBusy(true);const {error}=await db.auth.signOut();setBusy(false);if(error){setMessage('Não foi possível encerrar sua sessão. Tente novamente.');return}router.replace('/');router.refresh()}
+ async function signOut(){
+  const db=getBrowserClient();if(!db){setMessage('Serviço indisponível. Tente novamente.');return}
+  setBusy(true)
+  try{
+   const {error}=await db.auth.signOut()
+   if(error){setMessage('Não foi possível encerrar sua sessão. Tente novamente.');return}
+   // The global SIGNED_OUT listener also clears; await here before navigating.
+   await clearImageCache()
+   router.replace('/');router.refresh()
+  }catch{setMessage('Não foi possível encerrar sua sessão. Tente novamente.')}
+  finally{setBusy(false)}
+ }
  return <div className="profile-preview profile-editor">
   {profile?<CollectorAvatar name={profile.display_name||profile.username} seed={profile.id} size="lg"/>:<span className="profile-avatar"><UserRound size={42}/></span>}
   <h2>{profile?.display_name||'Seu universo'}</h2>

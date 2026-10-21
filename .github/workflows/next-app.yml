@@ -3,7 +3,7 @@ on:
   pull_request:
     paths: ['next-app/**','.github/workflows/next-app.yml']
   push:
-    branches: [main]
+    branches: [main, feat/social-connections-likes]
     paths: ['next-app/**','.github/workflows/next-app.yml']
 jobs:
   build:
