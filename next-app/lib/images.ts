@@ -23,6 +23,8 @@ export async function validateImageFile(file:File):Promise<string>{
 const thumbUrls=new Map<string,string>()
 const signedUrls=new Map<string,{url:string;until:number}>()
 let cacheEpoch=0
+// Wait for IndexedDB deletion before reading thumbnails for a new session.
+let pendingClear:Promise<void>=Promise.resolve()
 
 function freshSigned(path:string){
  const hit=signedUrls.get(path)
@@ -49,6 +51,8 @@ async function localThumb(path:string,epoch=cacheEpoch){
 export async function signedImage(client:SupabaseClient,path:string|null,options:{full?:boolean}={}):Promise<string|null>{
  const epoch=cacheEpoch
  if(!path)return null
+ await pendingClear
+ if(epoch!==cacheEpoch)return null
  if(!options.full){const local=await localThumb(path,epoch);if(epoch!==cacheEpoch)return null;if(local)return local}
  let url=freshSigned(path)
  if(!url){
@@ -64,7 +68,9 @@ export async function signedImage(client:SupabaseClient,path:string|null,options
 /** Batch version for lists: one request signs every photo not cached yet. */
 export async function signedImages(client:SupabaseClient,paths:(string|null|undefined)[]):Promise<Map<string,string>>{
  const epoch=cacheEpoch
+ await pendingClear
  const result=new Map<string,string>()
+ if(epoch!==cacheEpoch)return result
  const unique=[...new Set(paths.filter((path):path is string=>Boolean(path)))]
  const missing:string[]=[]
  await Promise.all(unique.map(async path=>{
@@ -90,7 +96,9 @@ export async function clearImageCache(){
  cacheEpoch++
  thumbUrls.forEach(url=>URL.revokeObjectURL(url))
  thumbUrls.clear();signedUrls.clear()
- await clearThumbs()
+ const clear=pendingClear.then(()=>clearThumbs())
+ pendingClear=clear
+ await clear
 }
 
 export async function uploadImage(client:SupabaseClient,userId:string,file:File):Promise<string>{
