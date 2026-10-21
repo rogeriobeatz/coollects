@@ -6,7 +6,7 @@ create or replace function private.username_slug(raw_value text)
 returns text language sql immutable set search_path = '' as $$
  select trim(both '_' from left(
   pg_catalog.regexp_replace(
-   pg_catalog.translate(pg_catalog.lower(pg_catalog.coalesce(raw_value,'')),
+   pg_catalog.translate(pg_catalog.lower(coalesce(raw_value,'')),
     'áàâãäåāăąçćčďđéèêëēėęěğíìîïīįłñńňóòôõöøōőřśšşťţúùûüūůűýÿźżž',
     'aaaaaaaaacccddeeeeeeeegiiiiiilnnnoooooooorsssttuuuuuuuyyzzz'),
    '[^a-z0-9]+', '_', 'g'), 30))
@@ -29,13 +29,13 @@ declare
  attempt integer;
  inserted_id uuid;
 begin
- submitted_name := pg_catalog.btrim(pg_catalog.coalesce(new.raw_user_meta_data->>'display_name',''));
+ submitted_name := pg_catalog.btrim(coalesce(new.raw_user_meta_data->>'display_name',''));
  name_candidate := private.username_slug(submitted_name);
- email_candidate := private.username_slug(pg_catalog.split_part(pg_catalog.coalesce(new.email,''),'@',1));
+ email_candidate := private.username_slug(pg_catalog.split_part(coalesce(new.email,''),'@',1));
 
  if pg_catalog.char_length(name_candidate)<3 then name_candidate := null; end if;
  if pg_catalog.char_length(email_candidate)<3 then email_candidate := null; end if;
- root_candidate := pg_catalog.coalesce(name_candidate,email_candidate,'colecionador');
+ root_candidate := coalesce(name_candidate,email_candidate,'colecionador');
  fingerprint := pg_catalog.encode(extensions.digest(new.id::text,'sha256'),'hex');
 
  -- Each attempt is atomic. ON CONFLICT DO NOTHING tolerates names claimed
