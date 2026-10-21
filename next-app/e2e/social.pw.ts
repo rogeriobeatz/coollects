@@ -208,10 +208,12 @@ test('Falha na atualização do feed mantém posts já exibidos',async({page})=>
   calls++
   return calls===2?route.fulfill({status:500,json:{message:'Temporary outage'}}):route.fulfill({json:[item]})
  })
+ // A different community post gives an actual follow button alongside the loaded home post.
+ await page.route(backendUrl+'/rest/v1/rpc/community_feed',route=>route.fulfill({json:[{...item,id:'00000000-0000-4000-8000-000000000088',name:'Outra descoberta'}]}))
  await page.goto('/')
  const post=page.getByRole('article',{name:'Rogério Silva publicou Carrinho favorito'})
  await expect(post).toBeVisible()
- await page.locator('.suggested-collectors').getByRole('button',{name:'Seguir Rogério Silva',exact:true}).click()
+ await page.locator('.feed-community').getByRole('button',{name:'Seguir Rogério Silva',exact:true}).click()
  const warning=page.getByRole('alert').filter({hasText:'Não foi possível atualizar seu feed'})
  await expect(warning).toBeVisible()
  await expect(post).toBeVisible()

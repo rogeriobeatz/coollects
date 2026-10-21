@@ -96,7 +96,10 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
    return route.fulfill({status:method==='POST'?201:200,json:rows})
   }
   if(table==='collection_items'){
-   if(method==='POST')state.links.push(...request.postDataJSON())
+   if(method==='POST'){
+    const payload=request.postDataJSON()
+    state.links.push(...(Array.isArray(payload)?payload:[payload]))
+   }
    if(method==='DELETE')state.links=state.links.filter(row=>!matches(row))
    const links=state.links.filter(row=>matches(row))
    return route.fulfill({json:url.searchParams.get('select')?.includes('items(')?links.map(link=>({...link,items:state.items.find(item=>item.id===link.item_id)||null})):links})
