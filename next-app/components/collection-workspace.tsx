@@ -12,8 +12,10 @@ import { collectionPreviewItems,type CollectionPhoto,type PreviewLink } from '@/
 import { isCollectionEmoji } from '@/lib/collection-emoji'
 import { CATEGORIES } from '@/lib/local-catalog'
 import { getBrowserClient } from '@/lib/supabase/client'
-import { CollectionRow,ItemRow,collectionUrlPath } from '@/lib/catalog'
+import { CATALOG_CHANGED,CollectionRow,ItemRow,collectionUrlPath } from '@/lib/catalog'
 import { signedImages } from '@/lib/images'
+import {readAll,readChunks} from '@/lib/pagination'
+import {useUnsavedChanges} from './use-unsaved-changes'
 const colors=['#6125BF','#F15700','#FFD94C','#86DAD8','#E998FB','#A4BCFF']
 export function CollectionWorkspace(){return <AuthGate>{userId=><Workspace userId={userId}/>}</AuthGate>}
 function Workspace({userId}:{userId:string}){
@@ -43,17 +45,18 @@ function Workspace({userId}:{userId:string}){
  const [removing,setRemoving]=useState(false)
  const [deleteError,setDeleteError]=useState('')
  const handledAction=useRef('')
+ const pendingCreated=useRef<string|null>(null)
+ const initialForm=useRef('')
+ const formSnapshot=JSON.stringify({name,category,emoji,color,description,isPublic,coverItemId})
+ useUnsavedChanges(editing&&!saving&&formSnapshot!==initialForm.current)
  function setMessage(value:string,kind:NoticeKind='error'){setMessageValue(value);setMessageKind(kind)}
  const refresh=useCallback(async()=>{
   const db=getBrowserClient();if(!db){setLoadError('Não foi possível carregar suas coleções.');setBusy(false);return}
   setLoadError('')
   try{
-   const {data,error}=await db.from('collections').select('*').eq('owner_id',userId).order('created_at',{ascending:false})
-   if(error)throw error
-   const list=(data||[]) as CollectionRow[]
-   const joined=list.length?await db.from('collection_items').select('collection_id,item_id,created_at,items(id,name,photo_path)').in('collection_id',list.map(collection=>collection.id)).order('created_at',{ascending:true}):{data:[],error:null}
-   if(joined.error)throw joined.error
-   const picked=collectionPreviewItems(list,(joined.data||[]) as unknown as PreviewLink[])
+   const list=await readAll<CollectionRow>((from,to)=>db.from('collections').select('*',{count:'exact'}).eq('owner_id',userId).order('created_at',{ascending:false}).order('id').range(from,to))
+   const joined=await readChunks<PreviewLink>(list.map(c=>c.id),ids=>readAll((from,to)=>db.from('collection_items').select('collection_id,item_id,created_at,items(id,name,photo_path)',{count:'exact'}).in('collection_id',ids).order('collection_id').order('item_id').range(from,to)))
+   const picked=collectionPreviewItems(list,joined)
    setCollections(list);setCounts(picked.counts)
    const paths=[...new Set(Object.values(picked.previews).flat().map(item=>item.photo_path).filter((path):path is string=>Boolean(path)))]
    // Cached copies first, then one batch for the rest; never blocks the list.
@@ -68,6 +71,11 @@ function Workspace({userId}:{userId:string}){
   finally{setBusy(false)}
  },[userId])
  useEffect(()=>{void refresh()},[refresh])
+ useEffect(()=>{
+  const changed=(event:Event)=>{if((event as CustomEvent<string>).detail===userId)void refresh()}
+  window.addEventListener(CATALOG_CHANGED,changed)
+  return()=>window.removeEventListener(CATALOG_CHANGED,changed)
+ },[refresh,userId])
  useEffect(()=>{if(params.get('criar')==='1')start() // New-collection deep link from the item picker.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[])
@@ -86,28 +94,36 @@ function Workspace({userId}:{userId:string}){
  // Resolve contextual actions only once after the owned collections load.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[busy,loadError,collections,params])
- function reset(){setEditing(false);setEditId(null);setStep(0);setCategory('Miniaturas');setEmoji('');setName('');setColor('#6125BF');setDescription('');setPublic(false);setCoverItemId(null);setCoverOptions([])}
- function start(c?:CollectionRow){setMessage('');if(c){setEditId(c.id);setCategory(c.category);setEmoji(c.emoji||'');setName(c.name);setColor(c.color);setDescription(c.description);setPublic(c.is_public);setCoverItemId(c.cover_item_id||null);
+ function reset(){pendingCreated.current=null;setEditing(false);setEditId(null);setStep(0);setCategory('Miniaturas');setEmoji('');setName('');setColor('#6125BF');setDescription('');setPublic(false);setCoverItemId(null);setCoverOptions([])}
+ function start(c?:CollectionRow){
+  if(editing&&formSnapshot!==initialForm.current&&!confirm('Descartar as alterações que ainda não foram salvas?'))return
+  initialForm.current=JSON.stringify({name:c?.name||'',category:c?.category||'Miniaturas',emoji:c?.emoji||'',color:c?.color||'#6125BF',description:c?.description||'',isPublic:c?.is_public||false,coverItemId:c?.cover_item_id||null})
+  setMessage('');if(c){setEditId(c.id);setCategory(c.category);setEmoji(c.emoji||'');setName(c.name);setColor(c.color);setDescription(c.description);setPublic(c.is_public);setCoverItemId(c.cover_item_id||null);
    const db=getBrowserClient();if(db)void db.from('collection_items').select('item_id').eq('collection_id',c.id).then(async({data})=>{const ids=(data||[]).map(row=>row.item_id);if(!ids.length){setCoverOptions([]);return}const result=await db.from('items').select('*').in('id',ids);setCoverOptions((result.data||[]) as ItemRow[])})}else reset();setStep(0);setEditing(true)}
  async function save(){
   if(saving)return
   const db=getBrowserClient();if(!db||!name.trim())return
   if(emoji.trim()&&!isCollectionEmoji(emoji)){setStep(2);setMessage('Escolha apenas um emoji para a coleção.');return}
   setSaving(true);setMessage('')
+  try{
   const values={name:name.trim(),category,emoji:emoji.trim()||null,color,description:description.trim(),is_public:isPublic,cover_item_id:editId?coverItemId:null}
   const back=params.get('voltar')
   const itemId=!editId&&back&&/^item\/[0-9a-f-]{36}$/i.test(back)?back.slice(5):null
-  const response=editId
-   ?await db.from('collections').update(values).eq('id',editId).eq('owner_id',userId).select('id').single()
+  const targetId=editId||pendingCreated.current
+  const response=targetId
+   ?await db.from('collections').update(values).eq('id',targetId).eq('owner_id',userId).select('id').single()
    :await db.from('collections').insert({...values,owner_id:userId}).select('id').single()
   if(response.error||!response.data){setSaving(false);setMessage('Não foi possível salvar a coleção. Verifique os dados e tente novamente.');return}
   if(itemId){
+   pendingCreated.current=response.data.id
    const {error:linkError}=await db.from('collection_items').insert({collection_id:response.data.id,item_id:itemId})
-   if(linkError){setSaving(false);setMessage('Coleção criada, mas não foi possível adicionar o item. Abra a coleção e tente novamente.');void refresh();return}
+   if(linkError&&linkError.code!=='23505'){setMessage('Coleção criada, mas não foi possível adicionar o item. Tente salvar novamente para concluir o vínculo.');void refresh();return}
   }
   setSaving(false)
   reset();setFilter('Todas');setMessage('Coleção salva e sincronizada!','success');void refresh()
   if(itemId)router.push('/item/'+encodeURIComponent(itemId))
+  }catch{setMessage('Não foi possível concluir a operação. Tente novamente; seus dados continuam aqui.')}
+  finally{setSaving(false)}
  }
  async function remove(c:CollectionRow){
   if(removing)return
@@ -133,9 +149,9 @@ function Workspace({userId}:{userId:string}){
    {step===0&&<div className="wizard-categories">{CATEGORIES.map(c=><button type="button" className={'wizard-category '+(category===c.name?'picked':'')} onClick={()=>setCategory(c.name)} key={c.name}><span>{c.emoji}</span>{c.name}{category===c.name&&<Check size={14}/>}</button>)}</div>}
    {step===1&&<label className="field-label">Nome da coleção<input autoFocus maxLength={70} value={name} onChange={e=>setName(e.target.value)} placeholder="Ex.: Meus carrinhos favoritos"/></label>}
    {step===2&&<><div className="swatch-row">{colors.map(s=><button type="button" key={s} className={'swatch '+(color===s?'current':'')} style={{backgroundColor:s}} onClick={()=>setColor(s)} aria-label={'Escolher cor '+s}>{color===s&&<Check size={18}/>}</button>)}</div><label className="field-label custom-color">Ou escolha outra cor<input type="color" value={color} onChange={e=>setColor(e.target.value)}/></label><CollectionEmojiPicker value={emoji} category={category} onChange={setEmoji}/></>}
-   {step===3&&<><label className="field-label">Descrição (opcional)<textarea rows={4} maxLength={300} value={description} onChange={e=>setDescription(e.target.value)}/></label><label className="public-switch"><input type="checkbox" checked={isPublic} onChange={e=>setPublic(e.target.checked)}/> {isPublic?'Pública':'Privada'} <small>{isPublic?'Outras pessoas podem encontrar esta coleção e ver seus itens.':'Somente você pode ver esta coleção e seus itens.'}</small></label>{editId&&coverOptions.length>0&&<label className="field-label">Capa da coleção<select value={coverItemId||''} onChange={e=>setCoverItemId(e.target.value||null)}><option value="">Automática — primeiro item com foto</option>{coverOptions.map(item=><option value={item.id} key={item.id}>{item.name}</option>)}</select><small>Escolha um item da coleção para aparecer na capa.</small></label>}</>}
+   {step===3&&<><label className="field-label">Descrição (opcional)<textarea rows={4} maxLength={300} value={description} onChange={e=>setDescription(e.target.value)}/></label><label className="public-switch"><input type="checkbox" checked={isPublic} onChange={e=>setPublic(e.target.checked)}/> {isPublic?'Pública':'Privada'} <small>{isPublic?'Outras pessoas podem encontrar esta coleção e ver seus itens.':'Esta coleção é privada. Itens também vinculados a coleções públicas continuam visíveis.'}</small></label>{editId&&coverOptions.length>0&&<label className="field-label">Capa da coleção<select value={coverItemId||''} onChange={e=>setCoverItemId(e.target.value||null)}><option value="">Automática — primeiro item com foto</option>{coverOptions.map(item=><option value={item.id} key={item.id}>{item.name}</option>)}</select><small>Escolha um item da coleção para aparecer na capa.</small></label>}</>}
    <div className="wizard-preview"><span className="preview-kicker">PRÉVIA DO CARTÃO</span><CollectionCard className="collection-preview" collection={{name:name||'Minha coleção',category,color,emoji}}/></div>
-   <div className="wizard-footer"><button className="text-btn" onClick={()=>step===0?reset():setStep(step-1)}><ChevronLeft size={17}/>{step===0?'Cancelar':'Voltar'}</button><button disabled={saving||(step===1&&!name.trim())||(step===2&&Boolean(emoji.trim())&&!isCollectionEmoji(emoji))} className="pill-btn" onClick={()=>step===3?void save():setStep(step+1)}>{saving?'Salvando...':step===3?'Salvar coleção':'Continuar'} <ArrowRight size={18}/></button></div>
+   <div className="wizard-footer"><button className="text-btn" onClick={()=>step===0?((formSnapshot===initialForm.current||confirm('Descartar as alterações que ainda não foram salvas?'))&&reset()):setStep(step-1)}><ChevronLeft size={17}/>{step===0?'Cancelar':'Voltar'}</button><button disabled={saving||(step===1&&!name.trim())||(step===2&&Boolean(emoji.trim())&&!isCollectionEmoji(emoji))} className="pill-btn" onClick={()=>step===3?void save():setStep(step+1)}>{saving?'Salvando...':step===3?'Salvar coleção':'Continuar'} <ArrowRight size={18}/></button></div>
   </div>:<>
    {collections.length>1&&<div className="collection-shelf-filters"><div className="chip-rail" role="group" aria-label="Categorias de coleções">{filters.map(category=><button type="button" className={'chip '+(filter===category?'chip-active':'')} aria-pressed={filter===category} onClick={()=>setFilter(category)} key={category}>{category}</button>)}</div></div>}
    {loadError?<div className="scan-notice" role="alert">{loadError} <button type="button" onClick={()=>{setBusy(true);void refresh()}}>Tentar novamente</button></div>

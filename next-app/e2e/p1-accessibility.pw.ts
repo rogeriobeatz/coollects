@@ -38,7 +38,7 @@ test('Confirmações de coleção e conta permitem cancelar pelo teclado',async(
  await page.keyboard.press('Escape')
  await expect(collectionDialog).toHaveCount(0)
  await expect(page.getByRole('button',{name:'Criar coleção',exact:true})).toBeFocused()
- await page.goto('/perfil')
+ await page.goto('/perfil/editar')
  const trigger=page.getByRole('button',{name:'Excluir minha conta',exact:true})
  await trigger.click()
  const accountDialog=page.getByRole('dialog',{name:'Excluir conta',exact:true})

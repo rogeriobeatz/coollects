@@ -6,13 +6,14 @@ A foto e os dados de identificação da miniatura formam a frente; a montadora, 
 
 | Onde | Componente | Apresentação |
 | --- | --- | --- |
-| Home: últimos itens | `home-dashboard.tsx` → `CollectibleCard` | Mesmo card e mesma preferência do acervo |
+| Home: feed social | `home-feed.tsx` → `CollectibleCard` | Mesmo card e mesma preferência do acervo; autor e ações sociais |
+| Perfil: publicados/curtidos | `public-profile.tsx` → `SocialItemGrid` → `CollectibleCard` | Galeria ou Baralho; mesma identidade e preferência |
 | Meus itens | `item-library.tsx` → `CollectionView` → `CollectibleCard` | Grade ou Baralho; ações do proprietário |
 | Coleção, inclusive pública | `public-collection.tsx` → `CollectionView` → `CollectibleCard` | Mesmo card; visitante não recebe ações de gerenciamento |
 | Navegação no Baralho | `ItemDeck` → `CollectibleCard` | Faixa horizontal com até cinco cartas renderizadas e destaque central |
 | Página do item | `item-showcase.tsx` → `ItemCardViewer` | O mesmo conteúdo do card, com título principal e ações contextuais |
 
-Explorar e perfil público exibem coleções, não instâncias adicionais de cards de item. Capas de coleção continuam usando `CollectionCard`.
+Explorar exibe coleções e sugestões de colecionadores. O perfil público também oferece galerias de itens usando os componentes compartilhados acima. Capas de coleção continuam usando `CollectionCard`.
 
 ## Duas escolhas independentes
 

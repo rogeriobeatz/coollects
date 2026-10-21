@@ -2,15 +2,15 @@ import { test, expect } from '@playwright/test'
 import { mockAcervo, item, collectionId, backendUrl } from './helpers/acervo'
 
 for(const width of [320,390]){
- test('Menu dá acesso a Itens e perfil fica no header: '+width+'px',async({page})=>{
+ test('Menu leva ao Perfil e as notificações ficam no header: '+width+'px',async({page})=>{
   await page.setViewportSize({width,height:844})
   await mockAcervo(page)
   await page.goto('/')
   const nav=page.getByRole('navigation',{name:'Navegação principal'})
   await expect(nav.getByRole('link')).toHaveCount(5)
-  const labels=['Home','Itens','Adicionar','Coleções','Explorar']
+  const labels=['Home','Itens','Adicionar','Coleções','Perfil']
   for(let index=0;index<labels.length;index++)await expect(nav.getByRole('link').nth(index)).toHaveAttribute('aria-label',labels[index])
-  await expect(nav.getByRole('link',{name:'Perfil',exact:true})).toHaveCount(0)
+  await expect(nav.getByRole('link',{name:'Explorar',exact:true})).toHaveCount(0)
   await nav.getByRole('link',{name:'Itens',exact:true}).click()
   await expect(page).toHaveURL(/\/itens$/)
   await expect(page.getByRole('heading',{name:'Meus itens.'})).toBeVisible()
@@ -23,10 +23,16 @@ for(const width of [320,390]){
   expect(geometry.overlap).toBe(false)
   expect(geometry.right).toBeLessThanOrEqual(width)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
-  await page.getByRole('link',{name:'Meu perfil',exact:true}).click()
-  await expect(page.getByRole('heading',{name:'Seu perfil.'})).toBeVisible()
-  await expect(page.getByRole('link',{name:'Meu perfil',exact:true})).toHaveAttribute('aria-current','page')
+  await page.getByRole('link',{name:'Notificações',exact:true}).click()
+  await expect(page.getByRole('heading',{level:1,name:'Notificações'})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Tudo tranquilo por aqui'})).toBeVisible()
+  await expect(page.getByRole('link',{name:'Notificações',exact:true})).toHaveAttribute('aria-current','page')
   await expect(nav.locator('[aria-current="page"]')).toHaveCount(0)
+  await nav.getByRole('link',{name:'Perfil',exact:true}).click()
+  await expect(page.getByRole('heading',{level:1,name:'Rogério Silva'})).toBeVisible()
+  await expect(nav.getByRole('link',{name:'Perfil',exact:true})).toHaveAttribute('aria-current','page')
+  await page.getByRole('link',{name:'Editar perfil',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Editar perfil.'})).toBeVisible()
   await nav.getByRole('link',{name:'Coleções',exact:true}).click()
   await expect(page.getByRole('heading',{name:'Minhas coleções.'})).toBeVisible()
   await nav.getByRole('link',{name:'Adicionar',exact:true}).click()

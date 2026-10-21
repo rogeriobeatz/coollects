@@ -4,6 +4,7 @@ import { useEffect,useState,type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertTriangle,Trash2,X } from 'lucide-react'
 import { getBrowserClient } from '@/lib/supabase/client'
+import { clearImageCache } from '@/lib/images'
 export function AccountDeletion(){
  const [email,setEmail]=useState('')
  const [open,setOpen]=useState(false)
@@ -23,7 +24,9 @@ export function AccountDeletion(){
    if(loginError)throw new Error('Confira sua senha e tente novamente.')
    const {data,error}=await db.functions.invoke('delete-account',{body:{confirmation:'EXCLUIR',email}})
    if(error||!data?.success)throw new Error('Não conseguimos excluir a conta agora. Tente novamente mais tarde.')
-   await db.auth.signOut()
+   // Account deletion may invalidate the token before signOut returns.
+   await clearImageCache()
+   try{await db.auth.signOut()}catch{/* Account already deleted. */}
    router.replace('/');router.refresh()
   }catch(e){
    setMessage(e instanceof Error?e.message:'Não foi possível concluir a solicitação.')

@@ -62,12 +62,18 @@ export function ItemDeck<T extends {id:string}>({items,getItem}:{items:T[];getIt
  useLayoutEffect(()=>{
   const viewport=scroller.current
   if(!viewport||!stride)return
-  viewport.scrollLeft=activeRef.current*stride
-  const frame=requestAnimationFrame(()=>{
+  // Native snap and focus scrolling can arrive after ResizeObserver. Keep the
+  // selected index authoritative until layout and the restored snap settle.
+  resizing.current=true
+  viewport.style.scrollSnapType='none'
+  let frame=0,remaining=3
+  const settle=()=>{
    viewport.scrollLeft=activeRef.current*stride
-   viewport.style.scrollSnapType='x mandatory'
-   resizing.current=false
-  })
+   if(--remaining===1)viewport.style.scrollSnapType='x mandatory'
+   if(remaining>0)frame=requestAnimationFrame(settle)
+   else resizing.current=false
+  }
+  settle()
   return()=>cancelAnimationFrame(frame)
  },[stride,items.length])
  useLayoutEffect(()=>{

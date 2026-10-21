@@ -204,7 +204,8 @@ test('Gearhead muda o conteúdo em todas as páginas, persiste e nunca preenche 
  await page.reload()
  await expect(page.getByRole('button',{name:/^Gearhead/})).toHaveAttribute('aria-pressed','true')
  await page.goto('/')
- await expect(page.locator('.collector-recent-grid .cc-focus-gearhead')).toHaveCount(4)
+ // Feed posts use the same card and follow the same preference.
+ await expect(page.locator('.feed-list .cc-focus-gearhead')).toHaveCount(4)
  await page.goto('/colecao/'+collectionId)
  await expect(page.locator('.cc-view-items .cc-focus-gearhead')).toHaveCount(4)
  await page.getByRole('searchbox',{name:'Buscar itens nesta coleção'}).fill('2.7 L')

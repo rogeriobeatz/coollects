@@ -23,8 +23,27 @@ function withDeadline<T>(work:Promise<T|null>,ms=1800):Promise<T|null>{
  return Promise.race([work,new Promise<null>(resolve=>setTimeout(()=>resolve(null),ms))])
 }
 
+export type ProfilePreview={name:string;username:string;bio:string;followers:number;items:number;photos:string[]}
+const USERNAME=/^[a-z0-9_]{3,30}$/
+
 export function collectionPreview(id:string){return withDeadline(loadCollectionPreview(id))}
 export function itemPreview(id:string){return withDeadline(loadItemPreview(id))}
+export function profilePreview(username:string){return withDeadline(loadProfilePreview(username))}
+
+async function loadProfilePreview(username:string):Promise<ProfilePreview|null>{
+ const db=anon();if(!db||!USERNAME.test(username))return null
+ try{
+  const {data:p}=await db.from('profiles').select('id,username,display_name,bio').eq('username',username).maybeSingle()
+  if(!p)return null
+  const [{data:summary},{data:items}]=await Promise.all([
+   db.rpc('profile_social_summary',{p_profile_id:p.id}),
+   db.rpc('profile_public_items',{p_profile_id:p.id,p_limit:6,p_offset:0})
+  ])
+  const counts=(Array.isArray(summary)?summary[0]:summary) as {followers?:number;public_items?:number}|null
+  const photos=((items||[]) as {photo_path:string|null}[]).map(i=>i.photo_path).filter((x):x is string=>Boolean(x)).slice(0,2)
+  return {name:p.display_name||p.username,username:p.username,bio:p.bio||'',followers:Number(counts?.followers??0),items:Number(counts?.public_items??0),photos}
+ }catch{return null}
+}
 
 async function loadCollectionPreview(id:string):Promise<CollectionPreview|null>{
  const db=anon();if(!db||!UUID.test(id))return null
@@ -110,6 +129,14 @@ export async function collectionImage(id:string){
  const photos=data?(await Promise.all(data.photos.slice(0,2).map((p,i)=>photoData(p,i?300:400)))).filter((x):x is string=>Boolean(x)):[]
  return new ImageResponse(<Frame kicker="COLEÇÃO" title={data?.name||'Coleção no Coollects'} photos={photos} fallback={(data?.name||'C').trim().charAt(0).toUpperCase()}
   lines={data?[data.owner?'de '+data.owner:'',data.count+' '+(data.count===1?'item':'itens')]:['Suas coleções em um só lugar']}/>,{...OG_SIZE,fonts:await fonts()})
+}
+
+export async function profileImage(username:string){
+ const data=await profilePreview(username)
+ const photos=data?(await Promise.all(data.photos.map((p,i)=>photoData(p,i?300:400)))).filter((x):x is string=>Boolean(x)):[]
+ const plural=(n:number,one:string,many:string)=>n+' '+(n===1?one:many)
+ return new ImageResponse(<Frame kicker="COLECIONADOR" title={data?.name||'Colecionador no Coollects'} photos={photos} fallback={(data?.name||'C').trim().charAt(0).toUpperCase()}
+  lines={data?['@'+data.username,plural(data.items,'item','itens')+' · '+plural(data.followers,'seguidor','seguidores')]:['Suas coleções em um só lugar']}/>,{...OG_SIZE,fonts:await fonts()})
 }
 
 export async function itemImage(id:string){

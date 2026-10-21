@@ -1,5 +1,6 @@
-import {describe,it,expect} from 'vitest'
-import {validateImageFile} from '../lib/images'
+import {describe,it,expect,vi} from 'vitest'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import {validateImageFile,clearImageCache,signedImage} from '../lib/images'
 import {MAX_PHOTO_BYTES} from '../lib/photo-limits'
 function fixture(header:number[],type:string){
  return new File([Uint8Array.from([...header,0,0,0,0])],'item',{type})
@@ -34,5 +35,27 @@ describe('Validação real de fotografias',()=>{
  })
  it('rejeita arquivo vazio',async()=>{
   await expect(validateImageFile(new File([],'empty.png',{type:'image/png'}))).rejects.toThrow()
+ })
+})
+
+
+describe('Isolamento do cache entre sessões',()=>{
+ it('descarta a URL assinada que terminou de carregar depois do logout',async()=>{
+  let resolveFirst:(value:{data:{signedUrl:string};error:null})=>void=()=>{}
+  const first=new Promise<{data:{signedUrl:string};error:null}>(resolve=>{resolveFirst=resolve})
+  let notifyStarted:()=>void=()=>{}
+  const started=new Promise<void>(resolve=>{notifyStarted=resolve})
+  const createSignedUrl=vi.fn().mockImplementationOnce(()=>{notifyStarted();return first})
+   .mockResolvedValue({data:{signedUrl:'https://example.invalid/new-session'},error:null})
+  const db={storage:{from:()=>({createSignedUrl})}} as unknown as SupabaseClient
+  const pending=signedImage(db,'old-user/photo.jpg',{full:true})
+  // Wait until the URL signing request is actually in flight before logging out.
+  await started
+  await clearImageCache()
+  resolveFirst({data:{signedUrl:'https://example.invalid/old-session'},error:null})
+  await expect(pending).resolves.toBeNull()
+  await expect(signedImage(db,'old-user/photo.jpg',{full:true})).resolves.toBe('https://example.invalid/new-session')
+  expect(createSignedUrl).toHaveBeenCalledTimes(2)
+  await clearImageCache()
  })
 })

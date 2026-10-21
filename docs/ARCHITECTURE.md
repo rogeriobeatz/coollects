@@ -15,3 +15,11 @@
 - Sem chave de serviço Supabase no frontend; as políticas RLS do banco e do Storage são parte fundamental da segurança.
 
 Consulte \`DEPLOY_VERCEL.md\` para instalação e o checklist de testes integrados obrigatórios.
+
+## Sessão de cadastro — 21/10/2026
+
+CaptureProvider, no layout raiz, mantém estado, arquivos preparados, URLs locais e requisição de reconhecimento enquanto as rotas trocam. ScanWorkspace apresenta essa sessão; CaptureIndicator permite retomá-la de outras telas. O progresso é uma estimativa temporal, não telemetria do provedor. Somente o comando de salvar grava o item.
+
+Logout/troca de conta invalidam a geração da análise, cancelam a requisição e liberam as URLs locais. Preparação de fotos e respostas antigas não podem atualizar a sessão seguinte. Um novo atalho de coleção não substitui silenciosamente o contexto de um rascunho em andamento.
+
+O estado existe apenas na memória desta aba: não promete sobreviver a recarga, fechamento ou suspensão do processo pelo sistema operacional. O endpoint /api/recognize e suas quotas permanecem os mesmos; não há job persistente ou nova migração.

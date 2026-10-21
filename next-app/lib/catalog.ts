@@ -3,6 +3,10 @@ export type ItemRow={id:string;owner_id:string;name:string;brand:string;category
 export type ProfileRow={id:string;username:string;display_name:string;bio:string;created_at:string}
 export type LinkRow={collection_id:string;item_id:string}
 export const BUCKET='coollects-items'
+export const CATALOG_CHANGED='coollects:catalog-changed'
+export function notifyCatalogChanged(ownerId:string){
+ if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent(CATALOG_CHANGED,{detail:ownerId}))
+}
 export const COLLECTION_SELECT='id,owner_id,name,category,emoji,color,description,is_public,cover_item_id,created_at'
 export const ITEM_SELECT='id,owner_id,name,brand,category,notes,photo_path,details,created_at'
 export const PROFILE_SELECT='id,username,display_name,bio,created_at'

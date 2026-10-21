@@ -3,11 +3,12 @@
 import { AppHeader } from './app-header'
 import { useAccount } from '@/hooks/use-account'
 import { BrandLogo } from './brand-logo'
-import { HomeDashboard } from './home-dashboard'
+import { HomeFeed } from './home-feed'
 import { MobileNav } from './mobile-nav'
+import { SocialToaster } from './social-interactions'
 import { WelcomeScreen } from './welcome-screen'
 
-export function HomeEntry() {
+export function HomeEntry({aiEnabled=false}:{aiEnabled?:boolean}) {
  const { user, loading } = useAccount()
 
  if (loading) return <main className="app-frame home-loading" aria-busy="true">
@@ -19,7 +20,8 @@ export function HomeEntry() {
 
  return <main className="app-frame">
   <AppHeader/>
-  <HomeDashboard key={user.id} user={user}/>
+  <div className="screen-body screen-body-compact"><HomeFeed key={user.id} user={user} aiEnabled={aiEnabled}/></div>
+  <SocialToaster/>
   <MobileNav active="inicio"/>
  </main>
 }

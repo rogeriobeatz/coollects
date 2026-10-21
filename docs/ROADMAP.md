@@ -1,6 +1,7 @@
 # Coollects — Roadmap do MVP
 
 ## Código implementado (validar integração em produção)
+- [x] Camada social: seguir, curtir, perfis com conexões, feed da Home e notificações; integração e limites em `docs/SOCIAL_NETWORK.md`
 - [x] Next.js 16 + TypeScript, identidade visual original e design mobile editorial
 - [x] Supabase Auth (cadastro, login, sessão, perfil)
 - [x] Schema PostgreSQL com RLS e coleção privada por padrão
@@ -14,13 +15,13 @@
 - [x] Documentação e configuração CI (npm install, testes, tipos, build)
 
 ## Infraestrutura e lançamento — bloqueado até configuração e validação
-- [ ] Criar e conectar **projeto real Supabase**; executar migração SQL
+- [x] Projeto real Supabase conectado; migrações do núcleo e da camada social aplicadas (20/10/2026)
 - [ ] Configurar URL/redirect de Auth e SMTP de e-mails
 - [ ] Adicionar variáveis de ambiente na Vercel e chave de IA se desejada
 - [ ] Testar ponta a ponta com dois usuários (RLS, storage e compartilhamento)
 - [ ] Testar Android, iOS e PWA instalada; ícone PNG dedicado para iOS se necessário
 - [ ] Configurar rate limits por IP/CAPTCHA de cadastro, prevenção contra abuso e observabilidade de custos
-- [ ] Canal de suporte, política de privacidade/termos completos e revisão de LGPD
+- [ ] Validar atendimento em contato@coollects.com.br e concluir revisão jurídica de privacidade/termos
 - [ ] Migração do PHP/MySQL histórico, se houver dump utilizável (não encontrado no repositório)
 - [ ] Beta controlado → correções → lançamento público
 

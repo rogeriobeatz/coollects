@@ -6,7 +6,7 @@ import { ArrowRight,ImageIcon,ImagePlus,Plus,Trash2,Edit3,Check,X,Search,MoreHor
 import { MAX_ITEM_PHOTOS } from '@/lib/photo-limits'
 import { AuthGate } from './auth-gate'
 import { getBrowserClient } from '@/lib/supabase/client'
-import { BUCKET,ItemRow,CollectionRow } from '@/lib/catalog'
+import { BUCKET,CATALOG_CHANGED,ItemRow,CollectionRow } from '@/lib/catalog'
 import { signedImages,uploadImage } from '@/lib/images'
 import { preparePhoto } from '@/lib/photo-preparation'
 import { CATEGORIES } from '@/lib/local-catalog'
@@ -16,6 +16,8 @@ import {CollectionView} from './collection-view'
 import {VehicleFields} from './vehicle-fields'
 import {FeedbackNotice,type NoticeKind} from './feedback-notice'
 import {EmptyIllustration} from './empty-illustration'
+import {readAll,readChunks} from '@/lib/pagination'
+import {useUnsavedChanges} from './use-unsaved-changes'
 const EDIT_PRIMARY=[['manufacturer','Montadora'],['series','Série'],['seriesNumber','Número na série'],['collectionNumber','Numeração geral']] as const
 const EDIT_EXTRA=[['year','Ano da cartela'],['scale','Escala'],['color','Cor'],['condition','Condição']] as const
 export function ItemLibrary(){return <AuthGate>{userId=><Library userId={userId}/>}</AuthGate>}
@@ -49,24 +51,30 @@ function Library({userId}:{userId:string}){
  const [galleryKept,setGalleryKept]=useState<{path:string;url:string|null}[]>([])
  const [galleryNew,setGalleryNew]=useState<{file:File;url:string}[]>([])
  const [form,setForm]=useState({name:'',brand:'',category:'Miniaturas',notes:'',collectionIds:[] as string[],details:{} as Record<string,string|number|null>})
+ const initialForm=useRef('')
+ const editDirty=Boolean(editing&&(JSON.stringify(form)!==initialForm.current||editPhoto||removePhoto||galleryNew.length||galleryKept.length!==(items.find(i=>i.id===editing)?.gallery_paths?.length||0)))
+ useUnsavedChanges(editDirty&&!savingEdit)
+ function closeEditor(){if(!editDirty||confirm('Descartar as alterações que ainda não foram salvas?'))setEditing(null)}
+ const [displayLimit,setDisplayLimit]=useState(48)
  const refresh=useCallback(async()=>{
   const db=getBrowserClient();if(!db)return
   setLoadError('')
   try{
-   const [rows,cols,joined]=await Promise.all([
-    db.from('items').select('*').eq('owner_id',userId).order('created_at',{ascending:false}),
-    db.from('collections').select('*').eq('owner_id',userId),
-    db.from('collection_items').select('collection_id,item_id')
+   const [source,cols]=await Promise.all([
+    readAll<ItemRow>((from,to)=>db.from('items').select('*',{count:'exact'}).eq('owner_id',userId).order('created_at',{ascending:false}).order('id').range(from,to)),
+    readAll<CollectionRow>((from,to)=>db.from('collections').select('*',{count:'exact'}).eq('owner_id',userId).order('id').range(from,to))
    ])
-   if(rows.error||cols.error||joined.error)throw new Error('Acervo indisponível')
-   const source=(rows.data||[]) as ItemRow[]
-   const signed=await signedImages(db,source.map(row=>row.photo_path))
-   const urls=source.map(row=>({...row,url:row.photo_path?signed.get(row.photo_path)??null:null}))
-   setItems(urls);setCollections((cols.data||[]) as CollectionRow[]);setLinks((joined.data||[]) as typeof links)
+   const joined=await readChunks<{collection_id:string;item_id:string}>(cols.map(c=>c.id),ids=>readAll((from,to)=>db.from('collection_items').select('collection_id,item_id',{count:'exact'}).in('collection_id',ids).order('collection_id').order('item_id').range(from,to)))
+   setItems(source.map(row=>({...row,url:null})));setCollections(cols);setLinks(joined)
   }catch{setLoadError('Não conseguimos carregar seus itens. Tente novamente.')}
   finally{setLoading(false)}
  },[userId,retryKey])
  useEffect(()=>{void refresh()},[refresh])
+ useEffect(()=>{
+  const changed=(event:Event)=>{if((event as CustomEvent<string>).detail===userId)void refresh()}
+  window.addEventListener(CATALOG_CHANGED,changed)
+  return()=>window.removeEventListener(CATALOG_CHANGED,changed)
+ },[refresh,userId])
  useEffect(()=>{
   if(loading||deepLinkHandled.current||!items.length)return
   deepLinkHandled.current=true
@@ -83,6 +91,7 @@ function Library({userId}:{userId:string}){
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[loading,items])
  function edit(item:ItemRow){
+  initialForm.current=JSON.stringify({name:item.name,brand:item.brand,category:item.category,notes:item.notes,details:item.details||{},collectionIds:links.filter(x=>x.item_id===item.id).map(x=>x.collection_id)})
   setEditPhoto(null);setRemovePhoto(false);setEditing(item.id);setForm({name:item.name,brand:item.brand,category:item.category,notes:item.notes,details:item.details||{},collectionIds:links.filter(x=>x.item_id===item.id).map(x=>x.collection_id)});setMessage('')
   galleryNew.forEach(p=>URL.revokeObjectURL(p.url));setGalleryNew([])
   const paths=item.gallery_paths||[]
@@ -101,7 +110,7 @@ function Library({userId}:{userId:string}){
    const {error}=await db.from('items').update({gallery_paths:[...kept,...uploaded]}).eq('id',editing!).eq('owner_id',userId)
    if(error)throw error
    const removed=before.filter(path=>!kept.includes(path))
-   if(removed.length)await db.storage.from(BUCKET).remove(removed)
+   if(removed.length)await db.storage.from(BUCKET).remove(removed).catch(()=>{/* Metadata is already committed. */})
    return true
   }catch{
    if(uploaded.length)await db.storage.from(BUCKET).remove(uploaded)
@@ -109,11 +118,12 @@ function Library({userId}:{userId:string}){
   }
  }
  async function save(){
-  const db=getBrowserClient();if(!db||!editing||!form.name.trim())return
+  const db=getBrowserClient();if(!db||!editing||!form.name.trim()||savingEdit)return
   setSavingEdit(true);setMessage('')
   const original=items.find(i=>i.id===editing)
   let uploaded:string|null=null
   let photoPreparationFailed=false
+  let committed=false
   try{
    if(editPhoto){
     let prepared:Awaited<ReturnType<typeof preparePhoto>>
@@ -127,21 +137,27 @@ function Library({userId}:{userId:string}){
     p_collection_ids:form.collectionIds,p_details:form.category==='Miniaturas'?form.details:{}
    })
    if(error)throw error
+   committed=true
+   // A retry must retain the primary photo that was already committed.
+   setItems(rows=>rows.map(row=>row.id===editing?{...row,...form,photo_path:newPhotoPath}:row))
+   setEditPhoto(null);setRemovePhoto(false)
+   uploaded=null
    // Only after the transaction commits, remove the previous image.
    let cleanupWarning=false
-   if((uploaded||removePhoto)&&original?.photo_path){
+   if(newPhotoPath!==original?.photo_path&&original?.photo_path){
     const {error:photoError}=await db.storage.from(BUCKET).remove([original.photo_path])
     cleanupWarning=Boolean(photoError)
    }
    const galleryOk=await saveGallery(db,original)
+   if(!galleryOk){setMessage('A ficha foi salva, mas as fotos extras não. Suas fotos continuam selecionadas; tente salvar novamente.');void refresh();return}
    galleryNew.forEach(p=>URL.revokeObjectURL(p.url))
    setEditing(null);setEditPhoto(null);setRemovePhoto(false);setGalleryNew([])
-   setMessage(!galleryOk?'Item salvo, mas as fotos extras não foram atualizadas. Tente novamente.':cleanupWarning?'Item salvo. A fotografia anterior ainda precisa ser removida.':'Item atualizado!',cleanupWarning||!galleryOk?'error':'success')
+   setMessage(cleanupWarning?'Item salvo. A fotografia anterior ainda precisa ser removida.':'Item atualizado!',cleanupWarning?'error':'success')
    void refresh()
   }catch(error){
    // A failed RPC leaves the original item and links unchanged.
    if(uploaded)await db.storage.from(BUCKET).remove([uploaded])
-   setMessage(photoPreparationFailed&&error instanceof Error?error.message:'Não foi possível concluir a edição. Nenhuma alteração parcial foi salva.')
+   setMessage(committed?'A ficha foi salva, mas não foi possível concluir as fotografias. Seus arquivos selecionados continuam aqui; tente novamente.':photoPreparationFailed&&error instanceof Error?error.message:'Não foi possível concluir a edição. Nenhuma alteração parcial foi salva.')
   }finally{setSavingEdit(false)}
  }
  async function remove(item:ItemRow){
@@ -168,6 +184,15 @@ function Library({userId}:{userId:string}){
   if(collectionFilter!=='all'&&collectionFilter!=='unassigned'&&!links.some(link=>link.item_id===item.id&&link.collection_id===collectionFilter))return false
   return [item.name,item.brand,item.category,item.notes,...Object.values(item.details||{}).map(String)].join(' ').toLocaleLowerCase('pt-BR').includes(deferredSearch)
  }).sort((a,b)=>sortBy==='name'?a.name.localeCompare(b.name,'pt-BR',{numeric:true}):sortBy==='old'?a.created_at.localeCompare(b.created_at):b.created_at.localeCompare(a.created_at))
+ const photoKey=visible.slice(0,displayLimit).map(item=>item.photo_path||'').join(',')
+ useEffect(()=>{
+  const db=getBrowserClient();if(!db)return
+  let active=true
+  const paths=photoKey.split(',').filter(Boolean)
+  void signedImages(db,paths).then(urls=>{if(active)setItems(rows=>rows.map(row=>row.photo_path&&urls.has(row.photo_path)?{...row,url:urls.get(row.photo_path)!}:row))})
+  return()=>{active=false}
+ },[photoKey])
+ useEffect(()=>setDisplayLimit(48),[deferredSearch,categoryFilter,collectionFilter,sortBy])
  return <section className="item-library">{returnCollection&&<Link className="text-link" href={"/colecao/"+encodeURIComponent(returnCollection)}>← Voltar à coleção</Link>}
  <div className="items-summary"><div><strong>{loading||loadError?'—':items.length} {items.length===1?'item':'itens'}</strong></div><Link href="/cadastrar" className="pill-btn"><Plus size={18}/> Novo item</Link></div>
  <label className="collection-search"><Search size={18}/><input aria-label="Buscar no meu acervo" placeholder="Buscar item, marca ou detalhe…" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Limpar busca" onClick={()=>setSearch('')}>Limpar</button>}</label>
@@ -176,9 +201,9 @@ function Library({userId}:{userId:string}){
   <div className="items-filter-row"><label className="field-label">Coleção<select value={collectionFilter} onChange={event=>setCollectionFilter(event.target.value)}><option value="all">Todas as coleções</option><option value="unassigned">Sem coleção</option>{collections.map(collection=><option value={collection.id} key={collection.id}>{collection.name}</option>)}</select></label><label className="field-label">Ordenar por<select value={sortBy} onChange={event=>setSortBy(event.target.value)}><option value="recent">Mais recentes</option><option value="old">Mais antigos</option><option value="name">Nome A–Z</option></select></label></div>
   <div className="items-result-count"><p role="status">{visible.length} de {items.length} {items.length===1?'item':'itens'}</p>{(search||categoryFilter!=='Todas'||collectionFilter!=='all')&&<button type="button" className="text-btn" onClick={clearFilters}>Limpar filtros</button>}</div>
  </div>}
- {message&&<FeedbackNotice key={message} message={message} kind={messageKind}/>}
+ {message&&!editing&&<FeedbackNotice key={message} message={message} kind={messageKind}/>}
  {loadError&&<div role="alert" className="scan-notice">{loadError} <button type="button" onClick={()=>{setLoading(true);setRetryKey(value=>value+1)}}>Tentar novamente</button></div>}
- {loadError?null:loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><EmptyIllustration kind="first-item"/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><EmptyIllustration kind="search"/><p>Nenhum item corresponde aos filtros.</p><button type="button" className="pill-btn" onClick={clearFilters}>Limpar filtros</button></div>}<CollectionView storageKey="coollects-items-view" items={visible} getItem={item=>({item,photoUrl:item.url,href:"/item/"+encodeURIComponent(item.id)})} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
+ {loadError?null:loading?<p>Carregando seu acervo…</p>:items.length===0?<div className="empty-collection-panel"><EmptyIllustration kind="first-item"/><h2>O primeiro item é especial.</h2><p>Cadastre um objeto para começar seu catálogo digital.</p><Link href="/cadastrar" className="pill-btn">Cadastrar item</Link></div>:<div className="item-list-shell">{visible.length===0&&<div role="status" className="empty-collection-panel"><EmptyIllustration kind="search"/><p>Nenhum item corresponde aos filtros.</p><button type="button" className="pill-btn" onClick={clearFilters}>Limpar filtros</button></div>}<CollectionView storageKey="coollects-items-view" items={visible.slice(0,displayLimit)} getItem={item=>({item,photoUrl:item.url,href:"/item/"+encodeURIComponent(item.id)})} renderCard={(item:ViewItem)=><CollectibleCard key={item.id} item={item} photoUrl={item.url} href={"/item/"+encodeURIComponent(item.id)}
   actions={<div className="cc-card-actions">
    <button type="button" className="cc-more-trigger" aria-label={"Ações de "+item.name} aria-expanded={menuItem===item.id} onClick={()=>setMenuItem(menuItem===item.id?null:item.id)}><MoreHorizontal size={20}/></button>
    {menuItem===item.id&&<div className="cc-more-menu">
@@ -188,11 +213,13 @@ function Library({userId}:{userId:string}){
    </div>}
   </div>}
  />}/></div>}
+ {!loading&&!loadError&&visible.length>displayLimit&&<button type="button" className="load-more" onClick={()=>setDisplayLimit(n=>n+48)}>Mostrar mais itens</button>}
  {pickerItem&&<ItemCollectionPicker itemId={pickerItem} onClose={()=>setPickerItem(null)} onChanged={()=>void refresh()}/>}
  {deleteItem&&<Modal label="Confirmar exclusão de item" onClose={()=>setDeleteItem(null)} busy={removing} returnFocus={'[data-item-id="'+deleteItem.id+'"] .cc-more-trigger'}><section className="edit-modal"><h2>Excluir item?</h2><p>Excluir “{deleteItem.name}”? Essa ação não pode ser desfeita.</p>{deleteError&&<p role="alert" className="scan-notice">{deleteError}</p>}<div className="item-delete-actions"><button type="button" className="pill-btn secondary" disabled={removing} onClick={()=>setDeleteItem(null)}>Cancelar</button><button type="button" className="account-delete-button" disabled={removing} onClick={()=>void remove(deleteItem)}>{removing?"Excluindo…":"Excluir item"}</button></div></section></Modal>}
- {editing&&<Modal label="Editar item" onClose={()=>setEditing(null)} busy={savingEdit} initialFocus="input" returnFocus={'[data-item-id="'+editing+'"] .cc-more-trigger'}><section className="edit-modal item-edit-modal">
-  <button type="button" className="close-modal" disabled={savingEdit} onClick={()=>setEditing(null)} aria-label="Fechar"><X size={22}/></button>
+ {editing&&<Modal label="Editar item" onClose={closeEditor} busy={savingEdit} initialFocus="input" returnFocus={'[data-item-id="'+editing+'"] .cc-more-trigger'}><section className="edit-modal item-edit-modal">
+  <button type="button" className="close-modal" disabled={savingEdit} onClick={closeEditor} aria-label="Fechar"><X size={22}/></button>
   <h2>Editar item</h2>
+  {message&&messageKind==='error'&&<p role="alert" className="scan-notice">{message}</p>}
   <label className="field-label">Nome<input value={form.name} maxLength={90} onChange={e=>setForm(v=>({...v,name:e.target.value}))}/></label>
   <div className="form-double">
    <label className="field-label">Marca<input value={form.brand} maxLength={70} onChange={e=>setForm(v=>({...v,brand:e.target.value}))}/></label>

@@ -1,51 +1,78 @@
 'use client'
 import { useEffect,useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight,Check,Copy,LogOut,UserRound } from 'lucide-react'
+import { ArrowRight,Check,LogOut,UserRound } from 'lucide-react'
+import { CollectorAvatar } from './collector-avatar'
 import { AuthGate } from './auth-gate'
 import { LegacyImport } from './legacy-import'
 import { AccountDeletion } from './account-deletion'
-import { ShareButton } from './share-button'
 import { getBrowserClient } from '@/lib/supabase/client'
-import { ProfileRow,publicUrlPath } from '@/lib/catalog'
+import { clearImageCache } from '@/lib/images'
+import { ProfileRow } from '@/lib/catalog'
 import { useRouter } from 'next/navigation'
+import {useUnsavedChanges} from './use-unsaved-changes'
 export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileEditor userId={userId}/>}</AuthGate>}
 function ProfileEditor({userId}:{userId:string}){
  const [profile,setProfile]=useState<ProfileRow|null>(null),[displayName,setDisplayName]=useState(''),[username,setUsername]=useState(''),[bio,setBio]=useState('')
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false)
+ const [loadFailed,setLoadFailed]=useState(false),[attempt,setAttempt]=useState(0)
+ useUnsavedChanges(Boolean(profile&&(displayName!==profile.display_name||username!==profile.username||bio!==profile.bio))&&!busy)
  const router=useRouter()
  useEffect(()=>{
-  const db=getBrowserClient();if(!db)return
+  const db=getBrowserClient();if(!db){setLoadFailed(true);return}
+  setLoadFailed(false);setMessage('')
   let active=true
-  void db.from('profiles').select('*').eq('id',userId).single().then(({data,error})=>{
+  void Promise.resolve(db.from('profiles').select('*').eq('id',userId).single()).then(({data,error})=>{
    if(!active)return
-   if(error){setMessage('Não conseguimos carregar o perfil agora. Tente novamente.');return}
+   if(error||!data){setLoadFailed(true);return}
    if(data){const p=data as ProfileRow;setProfile(p);setDisplayName(p.display_name);setUsername(p.username);setBio(p.bio)}
-  })
+  }).catch(()=>{if(active)setLoadFailed(true)})
   return ()=>{active=false}
- },[userId])
+ },[userId,attempt])
  async function save(){
   if(displayName.trim().length<2||!/^[a-z0-9_]{3,30}$/.test(username)){setMessage('Nome com pelo menos 2 caracteres; usuário de 3 a 30 letras minúsculas, números ou _.');return}
-  setBusy(true);const db=getBrowserClient();if(!db)return
-  const {error}=await db.from('profiles').update({display_name:displayName.trim(),username,bio:bio.trim()}).eq('id',userId)
-  setMessage(error?'Não foi possível atualizar o perfil. O nome de usuário pode já estar em uso.':'Perfil atualizado!')
-  if(!error)setProfile(p=>p?{...p,display_name:displayName.trim(),username,bio:bio.trim()}:p)
-  setBusy(false)
+  if(busy)return
+  const db=getBrowserClient()
+  if(!db){setMessage('Serviço indisponível. Tente novamente.');return}
+  setBusy(true);setMessage('')
+  try{
+   const {error}=await db.from('profiles').update({display_name:displayName.trim(),username,bio:bio.trim()}).eq('id',userId)
+   if(error){setMessage('Não foi possível atualizar o perfil. O nome de usuário pode já estar em uso.');return}
+   setProfile(p=>p?{...p,display_name:displayName.trim(),username,bio:bio.trim()}:p)
+   setMessage('Perfil atualizado!')
+  }catch{setMessage('Não foi possível atualizar o perfil. Verifique sua conexão e tente novamente.')}
+  finally{setBusy(false)}
  }
- async function signOut(){const db=getBrowserClient();if(!db){setMessage('Serviço indisponível. Tente novamente.');return}setBusy(true);const {error}=await db.auth.signOut();setBusy(false);if(error){setMessage('Não foi possível encerrar sua sessão. Tente novamente.');return}router.replace('/');router.refresh()}
- return <div className="profile-preview"><span className="profile-avatar"><UserRound size={42}/></span><h2>{profile?.display_name||'Seu universo'}</h2><p>Personalize seu perfil público e compartilhe suas coleções.</p>
+ async function signOut(){
+  const db=getBrowserClient();if(!db){setMessage('Serviço indisponível. Tente novamente.');return}
+  setBusy(true)
+  try{
+   const {error}=await db.auth.signOut()
+   if(error){setMessage('Não foi possível encerrar sua sessão. Tente novamente.');return}
+   // The global SIGNED_OUT listener also clears; await here before navigating.
+   await clearImageCache()
+   router.replace('/');router.refresh()
+  }catch{setMessage('Não foi possível encerrar sua sessão. Tente novamente.')}
+  finally{setBusy(false)}
+ }
+ return <div className="profile-preview profile-editor">
+  {profile?<CollectorAvatar name={profile.display_name||profile.username} seed={profile.id} size="lg"/>:<span className="profile-avatar"><UserRound size={42}/></span>}
+  <h2>{profile?.display_name||'Seu universo'}</h2>
+  <p>{profile?'@'+profile.username:'Personalize seu perfil público e compartilhe suas coleções.'}</p>
+  {loadFailed&&<div role="alert" className="scan-notice">Não conseguimos carregar o perfil agora. <button type="button" onClick={()=>setAttempt(v=>v+1)}>Tentar novamente</button></div>}
   <label className="field-label">Nome de exibição<input maxLength={60} value={displayName} onChange={e=>setDisplayName(e.target.value)}/></label>
   <label className="field-label">Usuário (URL pública)<input maxLength={30} value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))}/></label>
   <label className="field-label">Biografia<textarea rows={3} maxLength={300} value={bio} onChange={e=>setBio(e.target.value)}/></label>
   <button className="save-item-button" disabled={busy||!profile} onClick={()=>void save()}><Check size={18}/>{busy?'Salvando...':'Salvar perfil'}</button>
   {message&&<p role="status" className="scan-notice">{message}</p>}
   <div className="profile-links">
-   {profile&&<><Link href={publicUrlPath(profile.username)}>Ver perfil público <ArrowRight size={16}/></Link><ShareButton className="profile-share" path={publicUrlPath(profile.username)} title={profile.display_name||profile.username} text={'Conheça as coleções de '+(profile.display_name||profile.username)+' no Coollects'} label="Compartilhar perfil"/></>}
+   {profile&&<Link href="/perfil">Ver meu perfil <ArrowRight size={16}/></Link>}
    <Link href="/itens">Gerenciar meus itens <ArrowRight size={16}/></Link>
+   <a href="mailto:contato@coollects.com.br">Ajuda e privacidade <ArrowRight size={16}/></a>
    <button disabled={busy} onClick={()=>void signOut()}>Sair da conta <LogOut size={16}/></button>
   </div>
   <LegacyImport userId={userId}/>
   <AccountDeletion/>
-  <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seu e-mail nunca aparece no perfil.</p>
+  <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seguidores e curtidas são públicos. Seu e-mail nunca aparece no perfil.</p>
  </div>
 }

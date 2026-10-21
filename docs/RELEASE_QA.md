@@ -1,50 +1,51 @@
-# Coollects — Auditoria de lançamento
+# Coollects — Critérios de validação
 
-Data: 14/10/2026. Solicitada validação de todas as rotas, remoção de rastros de desenvolvimento e proibição de um lançamento incompleto.
+Atualizado em 21/10/2026. Este documento descreve a aplicação atual; auditorias datadas em outros arquivos são registros históricos.
 
-## Critério de publicação
-**Não declarar o Coollects pronto** enquanto qualquer condição crítica não estiver verificada na **Vercel publicada**, com duas contas reais e navegadores reais.
+## Funcionamento atual
 
-A aplicação usa **fail closed**: `COOLLECTS_SITE_MODE` ausente ou diferente de `open`, ou chaves de acesso ausentes ⇒ página de espera institucional. Isso impede o aparecimento de alertas de configuração ao público.
+- As páginas abrem diretamente. Não existe bloqueio por COOLLECTS_SITE_MODE.
+- Configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY para autenticação e persistência.
+- KIE_API_KEY habilita a assistência de IA, exclusivamente no servidor. Cadastro manual continua disponível.
+- /api/health responde 200 quando a consulta ao banco funciona e 503 quando faltam credenciais ou há falha. Isso não comprova Auth, Storage ou IA.
+- Coleções são privadas por padrão. Um item permanece público enquanto estiver em qualquer coleção pública.
+- URLs assinadas de fotos duram até uma hora. Despublicação não revoga cópias já recebidas; miniaturas locais são apagadas ao sair da conta.
+- Ajuda e privacidade: contato@coollects.com.br. A existência do endereço informado não comprova entrega de e-mails ou SLA.
 
-## Auditoria de código e interfaces (CI)
-- [x] Identificada mensagem “Configure o Supabase” em AuthGate e mensagem “Conecte o Supabase” na Home.
-- [x] Localizadas e removidas mensagens equivalentes no login, recuperação de acesso, Explorar, rota de coleção e API de IA.
-- [x] Substituídos erros crus do banco por estados amigáveis nos fluxos principais.
-- [x] Interface de IA oculta quando a credencial opcional não estiver habilitada.
-- [x] Páginas 404, erro inesperado e carregamento com estilo da marca.
-- [x] Políticas de privacidade e termos sem avisos de desenvolvimento.
-- [x] Health endpoint para sinalizar 503 quando lançamento não liberado ou banco indisponível.
-- [x] Teste de cópia para impedir regressão de mensagens internas.
-- [x] Script CI de smoke HTTP de todas as rotas sem autenticação (build verde: 14 rotas, 404 e manutenção).
-- [x] Playwright/Chromium: **8 testes passaram**, com viewport 320 px e 390 px, navegação, Home, login, estado 404 e ausência de mensagens internas.
-- [x] URLs de imagens assinadas reduzidas de 30 minutos para 2 minutos, reduzindo exposição de URLs antigas após tornar uma coleção privada.
+## Verificação local
 
-## Rotas cobertas pelo smoke HTTP
-`/`, `/entrar`, `/registrar`, `/recuperar`, `/redefinir`, `/colecoes`, `/cadastrar`, `/explorar`, `/itens`, `/perfil`, `/privacidade`, `/termos`, `/u/[username]`, `/colecao/[id]`, 404 e modo manutenção.
+Dentro de next-app: npm test, npm run typecheck, npm run build. Inicie npm run start -- -p 3202 e execute npm run test:browser e node scripts/smoke-pages.mjs 3202.
 
-Esses testes confirmam a renderização HTTP, **não** a operação completa das interações com dados reais.
+Quando o build usa a URL real do Supabase, defina PLAYWRIGHT_SUPABASE_URL com a mesma URL pública. Os testes interceptam as chamadas do navegador e usam dados simulados; nunca use credenciais reais como fixtures. A chave KIE não é utilizada nos testes simulados.
 
-## Itens ainda bloqueantes para lançamento (QA real)
-- [ ] Conectar Vercel ao projeto Supabase Coollects (verificando `Root Directory=next-app` e variáveis de ambiente) e confirmar o deployment Ready.
-- [ ] Acessar a URL de produção e comparar commit, versão carregada, console e recursos (sem login).
-- [ ] `/api/health` deve responder **200** após configurar `COOLLECTS_SITE_MODE=open` somente em ambiente controlado.
-- [ ] Cadastrar conta A e B, validar e-mails, login, logout, recuperação e troca de senha.
-- [ ] Conta A cria coleção privada; conta B **não** acessa conteúdo por URL, API ou arquivos.
-- [ ] Criar/editar/excluir itens com foto persistente e vínculos entre coleções.
-- [ ] Publicar e despublicar uma coleção, testar o link com navegador anônimo e URLs de imagem expiradas.
-- [ ] Testar exclusão e reimportação voluntária de dados locais sem perda/duplicação.
-- [ ] Testar reconhecimento IA caso ativado; qualidade das sugestões, erros e limite de uso.
-- [ ] Testar em Safari iOS, Chrome Android, desktop, telas pequenas, teclado, leitores de tela e modo PWA.
-- [ ] Validar ícones de instalação, estados offline e fallback após restauração de conexão.
-- [ ] Informar operador responsável, e-mail de atendimento e procedimento de exclusão de conta; revisar LGPD/termos e política de moderação.
-- [ ] Configurar SMTP com domínio, proteções antiabuso, limites de custo, monitoramento e backups.
-- [ ] Auditoria de segurança real com autenticação e usuários distintos; o CI não cobre isso.
+## Cenários de aceitação
 
-## Regras operacionais
-- Nunca colocar service-role key em `NEXT_PUBLIC_*`.
-- `NEXT_PUBLIC_SUPABASE_URL`: `https://zegjmrogiyyptccstofs.supabase.co`.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: chave publicável do projeto Coollects, colocada apenas em Vercel.
-- `COOLLECTS_SITE_MODE`: manter `maintenance` até aprovar todos os bloqueios; somente então passar a `open`.
-- `GOOGLE_GENERATIVE_AI_API_KEY`: opcional, somente no servidor.
-- Não usar “100% testado”, “lançado” ou “aprovado” sem relatório de QA real, evidência e data.
+- Falha ao consultar coleções não aparece como vazio nem salva silenciosamente sem o vínculo esperado.
+- Criar coleção dentro do cadastro preserva ficha e fotos. Categoria contextual respeita edição manual.
+- Repetir vínculo após criação parcial não cria outra coleção.
+- Falha de galeria mantém fotos selecionadas e permite repetir o salvamento.
+- Leituras de perfil e coleção permitem nova tentativa.
+- Busca pública inclui coleções além das primeiras 60, com filtro de categoria, autor e paginação.
+- Conteúdo público aparece cedo em 320 e 390 px; não há rolagem horizontal.
+- Compartilhar item privado orienta a publicação da coleção e conserva o link do item original.
+- Cadastro manual pode continuar durante a análise da IA, sem resposta tardia sobrescrever a ficha.
+- Navegar durante o reconhecimento conserva fotos, ficha e coleções; indicador permite retomar sem nova requisição, tanto durante quanto após a análise.
+- Conclusão em outra tela não muda a navegação nem salva automaticamente; erros continuam recuperáveis com a mesma foto.
+- Logout/descartar invalidam respostas tardias. Atualizar a aba avisa sobre o rascunho em memória; não há continuidade garantida após fechamento/suspensão do navegador.
+- Busca no acervo considera todas as páginas de metadados; cards e fotos são apresentados progressivamente.
+- Reimportação não sobrescreve itens ou fotografias já existentes.
+- Baralho conserva seleção ao redimensionar e permite rolagem vertical, teclado e movimento reduzido.
+
+## Ainda exigem ambiente real e aparelhos
+
+- [ ] Cadastro de duas contas, confirmação por e-mail, logout e recuperação por link válido/expirado.
+- [ ] Isolamento RLS e Storage entre contas A/B e visitante, inclusive por chamada direta.
+- [ ] Upload real, troca/remoção de fotos e reabertura em outro dispositivo.
+- [ ] Publicação/despublicação e expiração real das URLs já emitidas.
+- [ ] Exclusão de conta descartável em Perfil → Editar perfil → Controle da conta; conferir Auth, tabelas e arquivos.
+- [ ] Reconhecimento real, quota e custos de IA quando habilitada.
+- [ ] Safari iOS e Chrome Android físicos: câmera, teclado, instalação PWA, offline e retorno de conexão.
+- [ ] SMTP, atendimento pelo endereço oficial, proteções antiabuso, monitoramento e backups.
+- [ ] Revisão jurídica dos textos e procedimento de atendimento; não declarar conformidade definitiva pela aprovação do CI.
+
+Nunca declarar todas as jornadas aprovadas apenas porque os testes locais passaram. Não reaplicar migrações já registradas no projeto existente.

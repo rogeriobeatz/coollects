@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:browser": "playwright test --reporter=list"
+    "test:browser": "playwright test --reporter=list",
+    "test:social-backend": "node scripts/check-social-backend.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

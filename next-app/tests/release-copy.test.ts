@@ -4,7 +4,9 @@ import { resolve } from 'node:path'
 
 const customerFacing = [
  'components/auth-gate.tsx',
- 'components/home-dashboard.tsx',
+ 'components/home-feed.tsx',
+ 'components/own-profile.tsx',
+ 'components/suggested-collectors.tsx',
  'components/explore-showcase.tsx',
  'components/account-form.tsx',
  'components/collection-workspace.tsx',
@@ -13,6 +15,9 @@ const customerFacing = [
  'components/profile-workspace.tsx',
  'components/public-collection.tsx',
  'components/public-profile.tsx',
+ 'components/social-interactions.tsx',
+ 'components/connections-sheet.tsx',
+ 'components/social-activity.tsx',
  'app/privacidade/page.tsx',
  'app/termos/page.tsx',
  'app/recuperar/page.tsx',
