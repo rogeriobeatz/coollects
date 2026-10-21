@@ -22,6 +22,7 @@ export async function validateImageFile(file:File):Promise<string>{
 // Per-session memory: one object URL per thumbnail, one signed URL per path.
 const thumbUrls=new Map<string,string>()
 const signedUrls=new Map<string,{url:string;until:number}>()
+let cacheEpoch=0
 
 function freshSigned(path:string){
  const hit=signedUrls.get(path)
@@ -29,11 +30,12 @@ function freshSigned(path:string){
 }
 function keepSigned(path:string,url:string){signedUrls.set(path,{url,until:Date.now()+(SIGN_SECONDS-300)*1000})}
 
-async function localThumb(path:string){
+async function localThumb(path:string,epoch=cacheEpoch){
  const memory=thumbUrls.get(path)
+ if(epoch!==cacheEpoch)return null
  if(memory)return memory
  const blob=await getThumb(path)
- if(!blob)return null
+ if(epoch!==cacheEpoch||!blob)return null
  const url=URL.createObjectURL(blob)
  thumbUrls.set(path,url)
  return url
@@ -45,40 +47,47 @@ async function localThumb(path:string){
  * Pass full:true for detail views that need the original quality.
  */
 export async function signedImage(client:SupabaseClient,path:string|null,options:{full?:boolean}={}):Promise<string|null>{
+ const epoch=cacheEpoch
  if(!path)return null
- if(!options.full){const local=await localThumb(path);if(local)return local}
+ if(!options.full){const local=await localThumb(path,epoch);if(epoch!==cacheEpoch)return null;if(local)return local}
  let url=freshSigned(path)
  if(!url){
   const {data,error}=await client.storage.from(BUCKET).createSignedUrl(path,SIGN_SECONDS)
-  if(error||!data?.signedUrl)return null
+  if(epoch!==cacheEpoch||error||!data?.signedUrl)return null
   url=data.signedUrl;keepSigned(path,url)
  }
+ if(epoch!==cacheEpoch)return null
  rememberThumb(path,url)
  return url
 }
 
 /** Batch version for lists: one request signs every photo not cached yet. */
 export async function signedImages(client:SupabaseClient,paths:(string|null|undefined)[]):Promise<Map<string,string>>{
+ const epoch=cacheEpoch
  const result=new Map<string,string>()
  const unique=[...new Set(paths.filter((path):path is string=>Boolean(path)))]
  const missing:string[]=[]
  await Promise.all(unique.map(async path=>{
-  const url=await localThumb(path)??freshSigned(path)
+  const url=await localThumb(path,epoch)??freshSigned(path)
+  if(epoch!==cacheEpoch)return
   if(url)result.set(path,url);else missing.push(path)
  }))
+ if(epoch!==cacheEpoch)return new Map()
  if(missing.length){
   try{
    const {data}=await client.storage.from(BUCKET).createSignedUrls(missing,SIGN_SECONDS)
+   if(epoch!==cacheEpoch)return new Map()
    for(const photo of data||[])if(photo.path&&photo.signedUrl&&!photo.error){
     result.set(photo.path,photo.signedUrl);keepSigned(photo.path,photo.signedUrl);rememberThumb(photo.path,photo.signedUrl)
    }
   }catch{/* A missing photo never blocks the list; cards show their placeholder. */}
  }
- return result
+ return epoch===cacheEpoch?result:new Map()
 }
 
 /** Called at sign-out: removes on-device photo copies from this browser. */
 export async function clearImageCache(){
+ cacheEpoch++
  thumbUrls.forEach(url=>URL.revokeObjectURL(url))
  thumbUrls.clear();signedUrls.clear()
  await clearThumbs()

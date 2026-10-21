@@ -199,3 +199,65 @@ for(const path of ['/item/'+itemId,'/colecao/'+collectionId]){
   await expect(error).toHaveCount(0)
  })
 }
+
+
+test('Falha na atualização do feed mantém posts já exibidos',async({page})=>{
+ await mockAcervo(page,{viewer:'visitor'})
+ let calls=0
+ await page.route(backendUrl+'/rest/v1/rpc/home_feed',route=>{
+  calls++
+  return calls===2?route.fulfill({status:500,json:{message:'Temporary outage'}}):route.fulfill({json:[item]})
+ })
+ await page.goto('/')
+ const post=page.getByRole('article',{name:'Rogério Silva publicou Carrinho favorito'})
+ await expect(post).toBeVisible()
+ await page.locator('.suggested-collectors').getByRole('button',{name:'Seguir Rogério Silva',exact:true}).click()
+ const warning=page.getByRole('alert').filter({hasText:'Não foi possível atualizar seu feed'})
+ await expect(warning).toBeVisible()
+ await expect(post).toBeVisible()
+ await warning.getByRole('button',{name:'Tentar novamente'}).click()
+ await expect(warning).toHaveCount(0)
+ await expect(post).toBeVisible()
+ expect(calls).toBe(3)
+})
+
+test('Falha ao verificar coleção não marca o item como privado',async({page})=>{
+ await mockAcervo(page,{viewer:'visitor'})
+ const pattern=backendUrl+'/rest/v1/collection_items*'
+ await page.route(pattern,route=>route.fulfill({status:500,json:{message:'Temporary outage'}}))
+ await page.goto('/item/'+itemId)
+ const warning=page.getByRole('alert').filter({hasText:'Não foi possível confirmar a visibilidade deste item'})
+ await expect(warning).toBeVisible()
+ await expect(page.getByRole('button',{name:/^Curtir Carrinho favorito/})).toHaveCount(0)
+ await page.unroute(pattern)
+ await warning.getByRole('button',{name:'Tentar novamente'}).click()
+ await expect(warning).toHaveCount(0)
+ await expect(page.getByRole('button',{name:'Curtir Carrinho favorito · 0 curtidas'})).toBeVisible()
+})
+
+test('Alterar coleção mantém o seletor aberto sem interromper a organização',async({page})=>{
+ await mockAcervo(page)
+ await page.goto('/item/'+itemId)
+ await page.getByRole('button',{name:'Adicionar a uma coleção'}).click()
+ const dialog=page.getByRole('dialog',{name:'Adicionar item a coleções'})
+ await expect(dialog).toBeVisible()
+ const option=dialog.getByRole('button',{name:/Minha garagem/})
+ await expect(option).toHaveAttribute('aria-pressed','true')
+ await option.click()
+ await expect(dialog).toBeVisible()
+ await expect(option).toHaveAttribute('aria-pressed','false')
+ await option.click()
+ await expect(dialog).toBeVisible()
+ await expect(option).toHaveAttribute('aria-pressed','true')
+})
+
+test('Falha de rede ao salvar perfil libera o botão de nova tentativa',async({page})=>{
+ await mockAcervo(page)
+ await page.goto('/perfil/editar')
+ const save=page.getByRole('button',{name:'Salvar perfil'})
+ await expect(save).toBeEnabled()
+ await page.route(backendUrl+'/rest/v1/profiles*',route=>route.request().method()==='PATCH'?route.abort('failed'):route.fallback())
+ await save.click()
+ await expect(page.getByRole('status').filter({hasText:'Não foi possível atualizar o perfil'})).toBeVisible()
+ await expect(save).toBeEnabled()
+})

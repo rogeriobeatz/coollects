@@ -18,7 +18,7 @@ function ProfileEditor({userId}:{userId:string}){
  useEffect(()=>{
   const db=getBrowserClient();if(!db)return
   let active=true
-  void db.from('profiles').select('*').eq('id',userId).single().then(({data,error})=>{
+  void Promise.resolve(db.from('profiles').select('*').eq('id',userId).single()).then(({data,error})=>{
    if(!active)return
    if(error){setMessage('Não conseguimos carregar o perfil agora. Tente novamente.');return}
    if(data){const p=data as ProfileRow;setProfile(p);setDisplayName(p.display_name);setUsername(p.username);setBio(p.bio)}

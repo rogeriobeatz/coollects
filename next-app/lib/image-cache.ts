@@ -11,6 +11,7 @@ const KEEP_AS_IS_BYTES=60_000
 
 type Entry={blob:Blob;at:number}
 let dbPromise:Promise<IDBDatabase|null>|null=null
+let generation=0
 
 function openDb():Promise<IDBDatabase|null>{
  if(dbPromise)return dbPromise
@@ -62,6 +63,10 @@ async function prune(){
 }
 
 export async function clearThumbs(){
+ generation++
+ // Forget queued requests from the previous session before clearing the store.
+ queue.length=0
+ queued.clear()
  await run('readwrite',store=>store.clear())
 }
 
@@ -93,12 +98,16 @@ function pump(){
 
 export function rememberThumb(path:string,url:string){
  if(queued.has(path)||typeof window==='undefined')return
+ const requestGeneration=generation
  queued.add(path)
  queue.push(async()=>{
   try{
+   if(requestGeneration!==generation)return
    const response=await fetch(url)
-   if(!response.ok)return
-   await putThumb(path,await shrink(await response.blob()))
+   if(!response.ok||requestGeneration!==generation)return
+   const thumb=await shrink(await response.blob())
+   if(requestGeneration!==generation)return
+   await putThumb(path,thumb)
   }catch{/* A missing thumbnail only means the next visit loads from the network. */}
  })
  pump()

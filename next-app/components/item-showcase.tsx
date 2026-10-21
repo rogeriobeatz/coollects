@@ -28,7 +28,7 @@ export function ItemShowcase({id}:{id:string}){
   const db=getBrowserClient()
   if(!db){setError('Serviço indisponível.');if(!silent)setLoading(false);return}
   if(!silent)setLoading(true)
-  setError('');setVisibilityError(false)
+  setError('');if(!silent)setVisibilityError(false)
   try{
    const {data,error:itemError}=await db.from('items').select('*').eq('id',id).maybeSingle()
    if(itemError||!data){
