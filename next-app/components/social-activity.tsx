@@ -7,6 +7,7 @@ import { publicUrlPath } from '@/lib/catalog'
 import { activityGroup,relativeTime,type ActivityEntry,type ActivityGroup } from '@/lib/social'
 import { loadActivity } from '@/lib/social-data'
 import { markActivitySeen } from '@/lib/notifications'
+import { PushControls } from './push-controls'
 import { AuthGate } from './auth-gate'
 import { CollectorAvatar } from './collector-avatar'
 import { FollowButton } from './social-interactions'
@@ -15,6 +16,7 @@ import { FollowButton } from './social-interactions'
 export function NotificationsScreen(){
  return <section className="notifications-screen">
   <h1 className="notifications-title"><Bell size={22} aria-hidden="true"/>Notificações</h1>
+  <PushControls/>
   <AuthGate>{userId=><SocialActivity key={userId} userId={userId}/>}</AuthGate>
  </section>
 }

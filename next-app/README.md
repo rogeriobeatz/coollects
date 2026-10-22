@@ -66,3 +66,12 @@ Cadastro cria coleções privadas sem sair da ficha e permite continuar manualme
 O cadastro mantém um rascunho por conta na sessão aberta do app. Após escolher a foto, é possível navegar entre as páginas: o indicador flutuante mostra a análise em andamento (progresso estimado), a conclusão para revisão ou uma falha recuperável. Retomar não envia a mesma foto outra vez; campos editados manualmente continuam protegidos. Fotos, ficha e coleções permanecem no provider do layout até salvar, descartar ou sair da conta. O app não salva o item automaticamente.
 
 Essa continuidade vale para navegação interna na mesma aba. Atualizar, fechar a aba ou o navegador suspender o processo pode interromper a sessão; o aviso de saída da aba ajuda a evitar descarte involuntário. Não há fila durável no backend nem migração nova.
+
+
+## Push notifications (PWA)
+
+A instalação é opcional. No iOS, o usuário deve abrir o PWA pela Tela de Início antes de permitir push. No Android, o botão de instalação utiliza `beforeinstallprompt` quando disponível.
+
+Configure as três variáveis na Vercel (Preview e Production): `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `SUPABASE_SERVICE_ROLE_KEY`. A chave privada VAPID e a service role nunca devem usar prefixo `NEXT_PUBLIC_` nem ser commitadas.
+
+A migração `supabase/migrations/20261022093000_web_push_subscriptions.sql` cria as inscrições por dispositivo e os registros de deduplicação de notificações. Ative as notificações em `/notificacoes` e teste com duas contas distintas: seguir um perfil e curtir um item público. A entrega exige nova compilação depois de adicionar variáveis de ambiente.

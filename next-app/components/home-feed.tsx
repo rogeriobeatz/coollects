@@ -2,7 +2,7 @@
 import { useCallback,useEffect,useId,useRef,useState } from 'react'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
-import { Camera,CheckCircle2,Compass,FolderPlus,Package,Share2,Sparkles,Users } from 'lucide-react'
+import { Camera,CheckCircle2,Compass,ExternalLink,MessageCircle,Package,Share2,Sparkles,Users } from 'lucide-react'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { publicUrlPath } from '@/lib/catalog'
 import { mergeById,relativeTime,type CollectorSummary,type Connection,type ItemSocial } from '@/lib/social'
@@ -50,7 +50,8 @@ export function HomeFeed({user,aiEnabled}:{user:User;aiEnabled:boolean}){
  const firstSteps=itemCount===0
 
  return <div className="home-feed">
-  <AiComposer firstName={firstName} empty={firstSteps} aiEnabled={aiEnabled}/>
+  <AiComposer firstName={firstName} aiEnabled={aiEnabled}/>
+  <BetaTestersBanner/>
   <CollectorsRail userId={user.id} me={me}/>
   {status==='error'&&<p className="profile-inline-error" role="alert">Não foi possível carregar as curtidas. <button type="button" onClick={retryLikes}>Tentar novamente</button></p>}
   {home.status==='loading'&&<FeedSkeleton/>}
@@ -135,17 +136,26 @@ function usePagedFeed(kind:ItemListKind,enabled:boolean){
  return {items,status,hasMore,loadingMore,moreError,refreshError,more,retry}
 }
 
-function AiComposer({firstName,empty,aiEnabled}:{firstName:string;empty:boolean;aiEnabled:boolean}){
- return <section className="ai-composer" aria-labelledby="home-ola">
-  <h1 id="home-ola">Olá{firstName?<>, <em>{firstName}!</em></>:' de novo!'}</h1>
-  <p>{aiEnabled?(empty?'Fotografe sua primeira peça e revise as sugestões da IA.':'Encontrou uma peça nova? Comece pela foto e revise a ficha.'):'Fotografe sua peça e preencha os detalhes do seu acervo.'}</p>
+function AiComposer({firstName,aiEnabled}:{firstName:string;aiEnabled:boolean}){
+ return <section className="ai-composer ai-composer-compact" aria-labelledby="home-ola">
+  <div className="ai-composer-message">
+   <h1 id="home-ola">Olá{firstName?<>, <em>{firstName}!</em></>:'!'}</h1>
+   <p>Vamos colecionar! {aiEnabled?'Conheça a catalogação inteligente com IA.':'Cadastre sua próxima peça.'}</p>
+  </div>
   <Link href="/cadastrar" className="ai-composer-cta" aria-label={aiEnabled?'Catalogar com IA':'Cadastrar item'}>
-   <span className="ai-composer-icon"><Camera size={24} aria-hidden="true"/></span>
-   <span className="ai-composer-copy"><strong>{aiEnabled?'Catalogar com IA':'Cadastrar item'}</strong><small>{aiEnabled?'Foto da peça → sugestões para revisar':'Foto e detalhes da sua peça'}</small></span>
-   <Sparkles size={22} aria-hidden="true" className="ai-composer-spark"/>
+   <Camera size={22} aria-hidden="true"/>
+   <span>{aiEnabled?'Catalogar com IA':'Cadastrar item'}</span>
   </Link>
-  <Link href="/colecoes?criar=1" className="ai-composer-secondary"><FolderPlus size={17} aria-hidden="true"/>Nova coleção</Link>
  </section>
+}
+
+/** Compact WhatsApp invitation under the greeting; an external group is always opt-in. */
+function BetaTestersBanner(){
+ return <a className="home-beta-banner" href="https://chat.whatsapp.com/CIPk2pvIEIjBrlIfLJEznt" target="_blank" rel="noopener noreferrer" aria-label="Participar do grupo de beta testers do Coollects no WhatsApp (abre em uma nova aba)">
+  <span className="home-beta-symbol" aria-hidden="true"><MessageCircle size={20}/></span>
+  <span className="home-beta-copy"><strong>Faça parte do grupo Beta!</strong><small>Troque ideias e converse com o desenvolvedor.</small></span>
+  <ExternalLink size={17} className="home-beta-arrow" aria-hidden="true"/>
+ </a>
 }
 
 /** Stories-like row: you, Explore and the collectors you follow. */

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { PwaRegister } from '@/components/pwa-register'
+import { PushOnboarding } from '@/components/push-onboarding'
 import { ItemPresentationProvider } from '@/components/item-presentation-provider'
 import {CaptureProvider} from '@/components/capture-provider'
 import './globals.css'
@@ -28,5 +29,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#6125BF' }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
- return <html lang="pt-BR" data-scroll-behavior="smooth"><head><meta name="apple-mobile-web-app-capable" content="yes" /></head><body><ItemPresentationProvider><CaptureProvider>{children}</CaptureProvider></ItemPresentationProvider><PwaRegister/></body></html>
+ return <html lang="pt-BR" data-scroll-behavior="smooth"><head><meta name="apple-mobile-web-app-capable" content="yes" /></head><body><ItemPresentationProvider><CaptureProvider>{children}</CaptureProvider></ItemPresentationProvider><PwaRegister/><PushOnboarding/></body></html>
 }
