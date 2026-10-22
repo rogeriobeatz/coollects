@@ -35,7 +35,7 @@ function Workspace({userId}:{userId:string}){
  const [name,setName]=useState('')
  const [color,setColor]=useState('#6125BF')
  const [description,setDescription]=useState('')
- const [isPublic,setPublic]=useState(false)
+ const [isPublic,setPublic]=useState(true)
  const [coverItemId,setCoverItemId]=useState<string|null>(null)
  const [coverOptions,setCoverOptions]=useState<ItemRow[]>([])
  const [filter,setFilter]=useState('Todas')
@@ -94,10 +94,10 @@ function Workspace({userId}:{userId:string}){
  // Resolve contextual actions only once after the owned collections load.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[busy,loadError,collections,params])
- function reset(){pendingCreated.current=null;setEditing(false);setEditId(null);setStep(0);setCategory('Miniaturas');setEmoji('');setName('');setColor('#6125BF');setDescription('');setPublic(false);setCoverItemId(null);setCoverOptions([])}
+ function reset(){pendingCreated.current=null;setEditing(false);setEditId(null);setStep(0);setCategory('Miniaturas');setEmoji('');setName('');setColor('#6125BF');setDescription('');setPublic(true);setCoverItemId(null);setCoverOptions([])}
  function start(c?:CollectionRow){
   if(editing&&formSnapshot!==initialForm.current&&!confirm('Descartar as alterações que ainda não foram salvas?'))return
-  initialForm.current=JSON.stringify({name:c?.name||'',category:c?.category||'Miniaturas',emoji:c?.emoji||'',color:c?.color||'#6125BF',description:c?.description||'',isPublic:c?.is_public||false,coverItemId:c?.cover_item_id||null})
+  initialForm.current=JSON.stringify({name:c?.name||'',category:c?.category||'Miniaturas',emoji:c?.emoji||'',color:c?.color||'#6125BF',description:c?.description||'',isPublic:c?.is_public??true,coverItemId:c?.cover_item_id||null})
   setMessage('');if(c){setEditId(c.id);setCategory(c.category);setEmoji(c.emoji||'');setName(c.name);setColor(c.color);setDescription(c.description);setPublic(c.is_public);setCoverItemId(c.cover_item_id||null);
    const db=getBrowserClient();if(db)void db.from('collection_items').select('item_id').eq('collection_id',c.id).then(async({data})=>{const ids=(data||[]).map(row=>row.item_id);if(!ids.length){setCoverOptions([]);return}const result=await db.from('items').select('*').in('id',ids);setCoverOptions((result.data||[]) as ItemRow[])})}else reset();setStep(0);setEditing(true)}
  async function save(){

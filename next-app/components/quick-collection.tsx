@@ -14,14 +14,14 @@ export function QuickCollection({userId,category,onCreated,onClose}:{userId:stri
   const db=getBrowserClient();if(!db){setError('Não foi possível conectar. Tente novamente.');return}
   setBusy(true);setError('')
   try{
-   const {data,error}=await db.from('collections').insert({owner_id:userId,name:name.trim(),category:kind,color:'#6125BF',description:'',is_public:false}).select('*').single()
+   const {data,error}=await db.from('collections').insert({owner_id:userId,name:name.trim(),category:kind,color:'#6125BF',description:'',is_public:true}).select('*').single()
    if(error||!data)throw error||new Error('missing collection')
    onCreated(data as CollectionRow)
   }catch{setError('Não foi possível criar a coleção. Seus dados do item continuam aqui. Tente novamente.')}
   finally{setBusy(false)}
  }
  return <Modal label="Nova coleção" busy={busy} onClose={onClose} initialFocus="input"><form className="edit-modal" onSubmit={event=>void save(event)}>
-  <h2>Nova coleção</h2><p>Crie uma coleção privada sem sair do cadastro. Você pode personalizá-la depois.</p>
+  <h2>Nova coleção</h2><p>Crie uma coleção pública sem sair do cadastro. Você pode personalizá-la depois.</p>
   <label className="field-label">Nome da coleção<input required maxLength={70} value={name} onChange={e=>setName(e.target.value)}/></label>
   <label className="field-label">Categoria da coleção<select value={kind} onChange={e=>setKind(e.target.value)}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select></label>
   <CollectionCard className="collection-preview" collection={{name:name||'Minha coleção',category:kind,color:'#6125BF'}}/>
