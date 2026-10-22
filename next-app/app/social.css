@@ -267,3 +267,9 @@
 }
 @media(hover:hover){.follow-button:not(.is-following):not(:disabled):hover{filter:brightness(1.06)}.suggested-card:hover{border-color:#d8c8f0}}
 @media(prefers-reduced-motion:reduce){.like-button.is-popping svg,.skeleton-card,.is-skeleton i,.is-skeleton .collector-avatar,.feed-skeleton-lines i{animation:none}.follow-button,.ai-composer-cta{transition:none}}
+
+/* Searchable people directory: every member, not only members with collections. */
+.collector-directory{padding:12px 0 24px}
+.collector-directory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,155px),1fr));gap:12px;list-style:none;margin:10px 0 0;padding:0}
+.collector-directory-grid .suggested-card{min-height:165px}
+.collector-directory-grid .suggested-meta{gap:7px;justify-content:center;flex-wrap:wrap}
