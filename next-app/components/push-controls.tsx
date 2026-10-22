@@ -53,8 +53,8 @@ export function PushControls(){
   setTesting(true);setMessage('Enviando notificação de teste…')
   try{
    const response=await fetch('/api/push/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'test'})})
-   const result=await response.json().catch(()=>({reason:'invalid_response'})) as {ok?:boolean;sent?:number;reason?:string}
-   if(!response.ok||!result.ok)throw new Error('Falha no envio ('+response.status+'): '+(result.reason||'erro desconhecido'))
+   const result=await response.json().catch(()=>({reason:'invalid_response'})) as {ok?:boolean;sent?:number;reason?:string;providerStatuses?:number[];diagnostics?:string[]}
+   if(!response.ok||!result.ok)throw new Error('Falha no envio ('+response.status+'): '+(result.reason||'erro desconhecido')+(result.providerStatuses?.length?' · Apple HTTP '+result.providerStatuses.join(', '):'')+(result.diagnostics?.length?' · '+result.diagnostics.join(', '):''))
    setMessage('Notificação enviada ao serviço push ('+result.sent+' dispositivo(s)). Confira os avisos do celular.')
   }catch(e){setMessage(e instanceof Error?e.message:'Falha no teste push.')}
   finally{setTesting(false)}
