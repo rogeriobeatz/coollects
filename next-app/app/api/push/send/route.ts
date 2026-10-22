@@ -25,7 +25,7 @@ export async function POST(req:Request){
   link='/notificacoes';title='Novo seguidor no Coollects';body='Alguém começou a seguir seu perfil.'
  }else{
   const {data}=await admin.from('item_likes').select('created_at,items!inner(owner_id)').eq('user_id',actorId).eq('item_id',input.targetId).maybeSingle()
-  if(!data||Date.now()-new Date(data.created_at).getTime()>120000)return fail(404)
+  if(!data||Date.now()-new Date(data.created_at).getTime()>120000)return fail(404,'event_not_found_or_expired')
   const parent=data.items as unknown as {owner_id:string}
   recipient=parent.owner_id
   eventKey='like:'+actorId+':'+input.targetId+':'+data.created_at
