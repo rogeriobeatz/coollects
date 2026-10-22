@@ -15,7 +15,7 @@ export function isInstalledPwa(){
 export function isIos(){return typeof navigator!=='undefined'&&/iPad|iPhone|iPod/.test(navigator.userAgent)}
 export function PushControls(){
  const {user}=useAccount()
- const [enabled,setEnabled]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('')
+ const [enabled,setEnabled]=useState(false),[busy,setBusy]=useState(false),[testing,setTesting]=useState(false),[message,setMessage]=useState('')
  const supported=typeof window!=='undefined'&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window
  useEffect(()=>{
   if(!user||!supported){setEnabled(false);return}
@@ -49,10 +49,21 @@ export function PushControls(){
   }catch(e){setMessage(e instanceof Error?e.message:'Não foi possível ativar as notificações.')}
   finally{setBusy(false)}
  }
+ async function testPush(){
+  setTesting(true);setMessage('Enviando notificação de teste…')
+  try{
+   const response=await fetch('/api/push/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'test'})})
+   const result=await response.json().catch(()=>({reason:'invalid_response'})) as {ok?:boolean;sent?:number;reason?:string}
+   if(!response.ok||!result.ok)throw new Error('Falha no envio ('+response.status+'): '+(result.reason||'erro desconhecido'))
+   setMessage('Notificação enviada ao serviço push ('+result.sent+' dispositivo(s)). Confira os avisos do celular.')
+  }catch(e){setMessage(e instanceof Error?e.message:'Falha no teste push.')}
+  finally{setTesting(false)}
+ }
  return <div className="push-controls">
   <strong><Bell size={16}/> Notificações no celular</strong>
   <p>{blocked?'No iPhone, adicione o Coollects à Tela de Início e abra pelo ícone para ativar as notificações.':!supported?'Este navegador não oferece notificações push.':'Receba curtidas e novos seguidores mesmo com o aplicativo fechado.'}</p>
   <button type="button" className="pill-btn" disabled={!supported||blocked||busy} onClick={()=>void toggle()}>{enabled?<><BellOff size={16}/> Desativar notificações</>:<><Bell size={16}/> {busy?'Configurando…':'Ativar notificações'}</>}</button>
+  {enabled&&<button type="button" className="pill-btn" disabled={testing||busy} onClick={()=>void testPush()}><Bell size={16}/> {testing?'Testando…':'Enviar notificação de teste'}</button>}
   {message&&<p role="status">{message}</p>}
  </div>
 }
