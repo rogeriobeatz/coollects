@@ -273,3 +273,20 @@
 .collector-directory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,155px),1fr));gap:12px;list-style:none;margin:10px 0 0;padding:0}
 .collector-directory-grid .suggested-card{min-height:165px}
 .collector-directory-grid .suggested-meta{gap:7px;justify-content:center;flex-wrap:wrap}
+
+/* Compact home welcome + beta community invitation. Keep the feed visible above the fold. */
+.home-feed .ai-composer-compact{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 14px;border-radius:20px;min-height:90px}
+.ai-composer-compact:before{right:2px;top:0;font-size:44px}
+.ai-composer-message{min-width:0;flex:1}
+.ai-composer-compact h1{font-size:clamp(21px,5vw,27px);line-height:1.08}
+.ai-composer-compact .ai-composer-message p{margin:5px 0 0;font-size:12px;line-height:1.35;color:#6a5d7b}
+.ai-composer-compact .ai-composer-cta{flex:0 0 112px;min-height:66px;min-width:0;display:flex;flex-direction:column;gap:4px;justify-content:center;align-items:center;padding:8px 6px;text-align:center;border-radius:15px;box-shadow:0 4px 0 #420e881a}
+.ai-composer-compact .ai-composer-cta span{font-size:11px;font-weight:900;line-height:1.1}
+.home-beta-banner{display:flex;align-items:center;gap:11px;min-height:65px;margin:9px 0 5px;padding:10px 12px;background:#eff9f2;border:1px solid #d5ecdc;color:#184f31;border-radius:17px;transition:background .15s ease}
+.home-beta-banner:active{background:#dff4e6}
+.home-beta-symbol{display:grid;place-items:center;flex-shrink:0;width:37px;height:37px;border-radius:12px;background:#d6f2df;color:#168b49}
+.home-beta-copy{display:grid;gap:2px;min-width:0;flex:1}
+.home-beta-copy strong{font-size:13px;font-weight:900;line-height:1.15}
+.home-beta-copy small{font-size:11px;line-height:1.25;color:#48745a}
+.home-beta-arrow{flex-shrink:0}
+@media(max-width:360px){.home-feed .ai-composer-compact{padding:13px 11px;gap:8px}.ai-composer-compact .ai-composer-cta{flex-basis:100px}.home-beta-banner{gap:8px;padding:10px}}

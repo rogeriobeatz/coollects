@@ -15,7 +15,7 @@ self.addEventListener('push',event=>{
  const title=typeof data.title==='string'?data.title.slice(0,100):'Coollects'
  const body=typeof data.body==='string'?data.body.slice(0,220):'Você tem novidades na sua coleção.'
  const url=typeof data.url==='string'&&data.url.startsWith('/')&&!data.url.startsWith('//')?data.url:'/notificacoes'
- event.waitUntil(self.registration.showNotification(title,{body,icon:'/brand/icon-192.png?v=2',badge:'/brand/icon-192.png?v=2',tag:typeof data.tag==='string'?data.tag:'coollects-social',data:{url}}))
+ event.waitUntil(self.registration.showNotification(title,{body,icon:'/brand/icon-192.png?v=2',badge:'/brand/icon-192.png?v=2',silent:false,tag:typeof data.tag==='string'?data.tag:'coollects-social',data:{url}}))
 })
 self.addEventListener('notificationclick',event=>{
  event.notification.close()
