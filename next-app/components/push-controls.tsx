@@ -29,16 +29,19 @@ export function PushControls(){
   if(!supported||blocked||busy)return
   setBusy(true);setMessage('')
   try{
+   // Permission must be requested directly from the tap, before any awaits on iOS.
+   if(!enabled){
+    if(!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)throw new Error('O envio de notificações ainda não foi configurado.')
+    if(Notification.permission==='denied')throw new Error('Autorize as notificações nas configurações do navegador.')
+    const permission=await Notification.requestPermission()
+    if(permission!=='granted')throw new Error('Você não autorizou as notificações.')
+   }
    const registration=await navigator.serviceWorker.ready
    let subscription=await registration.pushManager.getSubscription()
    if(enabled){
     if(subscription){const endpoint=subscription.endpoint;await fetch('/api/push/subscriptions',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({endpoint})});await subscription.unsubscribe()}
     setEnabled(false);setMessage('Notificações desativadas neste aparelho.');return
    }
-   if(!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)throw new Error('O envio de notificações ainda não foi configurado.')
-   if(Notification.permission==='denied')throw new Error('Autorize as notificações nas configurações do navegador.')
-   const permission=await Notification.requestPermission()
-   if(permission!=='granted')throw new Error('Você não autorizou as notificações.')
    if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeVapid(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)})
    const res=await fetch('/api/push/subscriptions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(subscription.toJSON())})
    if(!res.ok)throw new Error('Não foi possível registrar este aparelho. Tente novamente.')

@@ -58,8 +58,8 @@ export async function sendWebPush(subscription:SavedSubscription,message:PushMes
  const publicKey=process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,privateKey=process.env.VAPID_PRIVATE_KEY
  if(!publicKey||!privateKey)throw Error('Push keys not configured')
  const audience=new URL(subscription.endpoint).origin
- const payload=encryptPush(message,subscription)
  try{
+  const payload=encryptPush(message,subscription)
   const res=await fetch(subscription.endpoint,{
    method:'POST',headers:{'Authorization':'vapid t='+vapidToken(audience,publicKey,privateKey)+', k='+publicKey,
     'TTL':'3600','Content-Encoding':'aes128gcm','Content-Type':'application/octet-stream'},
