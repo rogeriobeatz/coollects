@@ -69,6 +69,11 @@ export async function mockAcervo(page:Page,options:{emptyCollections?:boolean;em
     home_feed:()=>publicItems().filter(i=>i.owner_id===viewerId||state.follows.some(f=>f.follower_id===viewerId&&f.followed_id===i.owner_id)),
     community_feed:()=>publicItems().filter(i=>i.owner_id!==viewerId),
     suggested_collectors:()=>viewerId===ownerId||state.follows.some(f=>f.follower_id===viewerId&&f.followed_id===ownerId)?[]:[{id:ownerId,username:'colecionador_test',display_name:'Rogério Silva',bio:'',followers:0,public_items:publicItems().length}],
+    discover_collectors:()=>{
+     const query=String(body.p_query||'').replace(/^@/,'').toLowerCase()
+     const profile={id:ownerId,username:'colecionador_test',display_name:'Rogério Silva',bio:'',followers:state.follows.length,public_items:publicItems().length,likes_received:state.likes.length,followed_by_me:state.follows.some(f=>f.follower_id===viewerId&&f.followed_id===ownerId)}
+     return ['colecionador_test','rogério silva'].some(text=>text.includes(query))?[profile]:[]
+    },
     // Only the owner profile exists in this fake backend.
     profile_connections:()=>body.p_direction==='following'
      ?state.follows.filter(f=>f.follower_id===body.p_profile_id&&f.followed_id===ownerId).map(f=>({id:ownerId,username:'colecionador_test',display_name:'Rogério Silva',bio:'',followed_by_me:f.follower_id===viewerId,connected_at:'2026-01-01T00:00:00Z'}))
