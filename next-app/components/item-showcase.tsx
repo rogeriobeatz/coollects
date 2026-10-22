@@ -53,7 +53,7 @@ export function ItemShowcase({id}:{id:string}){
      try{visibleCollections=await readChunks<CollectionRow>(ids,chunk=>readAll((from,to)=>db.from('collections').select('*',{count:'exact'}).in('id',chunk).order('id').range(from,to)))}catch{failedVisibility=true}
     }
    }
-   setVisibilityError(failedVisibility)
+   setVisibilityError(failedVisibility&&!result.is_public)
    setCollections(visibleCollections)
    setItem({...result,photoUrl:url,galleryUrls:gallery.filter((u):u is string=>Boolean(u))})
    setOwner((profileResponse.data||null) as ProfileRow|null)
@@ -64,7 +64,7 @@ export function ItemShowcase({id}:{id:string}){
   }finally{if(!silent)setLoading(false)}
  },[id])
  useEffect(()=>{void refresh()},[refresh])
- const publicCollection=collections.some(c=>c.is_public)
+ const publicCollection=Boolean(item?.is_public)||collections.some(c=>c.is_public)
  const {social,status:socialStatus,retry:retryLikes}=useItemSocial(item&&publicCollection?[item.id]:[])
  const itemSocial=item?social.get(item.id):undefined
  const ownerFollowed=useFollowing(owner?.id)
@@ -103,7 +103,7 @@ export function ItemShowcase({id}:{id:string}){
    </div>
   </div>
   {likers&&<ConnectionsSheet targetId={item.id} kinds={['likers']} initial="likers" label={'Quem curtiu '+item.name} counts={itemSocial?{likers:itemSocial.likes}:{}} onClose={()=>setLikers(false)}/>}
-  {isOwner&&!visibilityError&&<div className="item-showcase-hint"><p>{publicCollection?'Este item faz parte de uma coleção pública.':'Para compartilhar, adicione este item a uma coleção pública.'}</p><button type="button" className="pill-btn" onClick={()=>{setSharing(false);setPicker(true)}}>Adicionar a uma coleção</button></div>}
+  {isOwner&&!visibilityError&&<div className="item-showcase-hint"><p>{publicCollection?'Este item está público e pode aparecer na comunidade.':'Este item ainda é privado. Vincule a uma coleção pública para compartilhá-lo.'}</p><button type="button" className="pill-btn" onClick={()=>{setSharing(false);setPicker(true)}}>Adicionar a uma coleção</button></div>}
   {picker&&isOwner&&<ItemCollectionPicker sharing={sharing} itemId={item.id} onClose={()=>setPicker(false)} onChanged={()=>void refresh(true)}/>}
   {item.notes&&<details className="collectible-more"><summary>História e observações</summary><p>{item.notes}</p></details>}
   {collections.length>0&&<details className="collectible-more"><summary>Ver coleções</summary><div className="item-showcase-collections">{collections.map(c=><Link href={'/colecao/'+encodeURIComponent(c.id)} key={c.id}>{c.name} <ExternalLink size={14}/></Link>)}</div></details>}
