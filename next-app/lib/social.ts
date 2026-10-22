@@ -3,6 +3,7 @@
 export type CollectorSummary={id:string;username:string;display_name:string;bio?:string|null}
 export type Connection=CollectorSummary&{followed_by_me:boolean;connected_at:string}
 export type SuggestedCollector=CollectorSummary&{followers:number;public_items:number}
+export type DiscoverableCollector=SuggestedCollector&{likes_received:number;followed_by_me:boolean}
 export type ProfileSocial={
  followers:number;following:number;likes_received:number;likes_given:number
  public_items:number;public_collections:number

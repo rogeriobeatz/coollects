@@ -5,7 +5,7 @@ import { signedImages } from './images'
 import {readAll,readChunks} from './pagination'
 import {
  PAGE_SIZE, toProfileSocial,
- type ActivityEntry, type CollectorSummary, type Connection, type ConnectionKind, type ItemSocial, type ProfileSocial, type SuggestedCollector
+ type ActivityEntry, type CollectorSummary, type Connection, type ConnectionKind, type ItemSocial, type ProfileSocial, type SuggestedCollector, type DiscoverableCollector
 } from './social'
 
 /* ---------- Shared state between components on the same page ---------- */
@@ -85,6 +85,13 @@ export async function loadCollectors(db:SupabaseClient,ids:string[]):Promise<Map
  const {data,error}=await db.from('profiles').select(PROFILE_SELECT).in('id',unique)
  if(error)throw error
  return new Map(((data||[]) as CollectorSummary[]).map(row=>[row.id,row]))
+}
+
+export async function loadDiscoverableCollectors(db:SupabaseClient,query:string,offset=0,limit=24):Promise<{items:DiscoverableCollector[];hasMore:boolean}>{
+ const {data,error}=await db.rpc('discover_collectors',{p_query:query,p_offset:offset,p_limit:limit})
+ if(error)throw error
+ const items=((data||[]) as DiscoverableCollector[]).map(row=>({...row,followers:Number(row.followers)||0,public_items:Number(row.public_items)||0,likes_received:Number(row.likes_received)||0,followed_by_me:row.followed_by_me===true}))
+ return {items,hasMore:items.length===limit}
 }
 
 export async function loadSuggestions(db:SupabaseClient,limit=12):Promise<SuggestedCollector[]>{

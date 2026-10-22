@@ -7,7 +7,7 @@ import {getBrowserClient} from '@/lib/supabase/client'
 import {collectionUrlPath} from '@/lib/catalog'
 import {discoverCollections,type DiscoveredCollection} from '@/lib/discovery'
 import {CATEGORIES} from '@/lib/local-catalog'
-import {SuggestedCollectors} from './suggested-collectors'
+import {CollectorDirectory} from './collector-directory'
 
 export function ExploreShowcase(){
  const [collections,setCollections]=useState<DiscoveredCollection[]>([])
@@ -47,16 +47,17 @@ export function ExploreShowcase(){
  }
  const filtered=Boolean(query.trim()||filter!=='Tudo')
  return <section className="explore-showcase">
-  <div className="explore-search"><Search size={22} aria-hidden="true"/><input maxLength={100} placeholder="Coleção, categoria ou colecionador" aria-label="Buscar coleções públicas" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button type="button" aria-label="Limpar busca" onClick={()=>setQuery('')}>Limpar</button>}</div>
+  <div className="explore-search"><Search size={22} aria-hidden="true"/><input maxLength={100} placeholder="Buscar nome, @usuário ou coleção" aria-label="Buscar colecionadores e coleções" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button type="button" aria-label="Limpar busca" onClick={()=>setQuery('')}>Limpar</button>}</div>
   <div className="chip-rail explore-filters" role="group" aria-label="Categorias públicas">{['Tudo',...CATEGORIES.map(c=>c.name)].map(category=><button type="button" className={'chip '+(filter===category?'chip-active':'')} aria-pressed={filter===category} key={category} onClick={()=>setFilter(category)}>{category}</button>)}</div>
   {offline&&<p role="status" className="scan-notice">Você está sem conexão. Os resultados podem estar desatualizados.</p>}
+  <CollectorDirectory query={debouncedQuery}/>
+  <div className="profile-section-head"><h2>Coleções públicas</h2></div>
   {error?<div role="alert" className="scan-notice">{error} <button type="button" onClick={()=>setRetry(v=>v+1)}>Tentar novamente</button></div>
    :loading?<p role="status">Descobrindo coleções…</p>
    :collections.length?<><div className="explore-grid">{collections.map(collection=><CollectionCard key={collection.id} collection={collection} href={collectionUrlPath(collection.id)+'?origem=explorar'} meta={'por '+(collection.author?.display_name||'Colecionador')}/>)}</div>
     {moreError&&<p role="alert" className="scan-notice">{moreError}</p>}
     {hasMore&&<button type="button" className="load-more" disabled={loadingMore} onClick={()=>void more()}>{loadingMore?'Carregando…':'Mostrar mais coleções'}</button>}</>
    :<div className="explore-no-results"><p>{filtered?'Nenhuma coleção corresponde à busca.':'Ainda não há coleções públicas. A sua pode ser a primeira!'}</p>{filtered?<button type="button" className="pill-btn" onClick={()=>{setQuery('');setFilter('Tudo')}}>Limpar filtros</button>:<Link className="pill-btn" href="/colecoes?criar=1">Criar uma coleção <ArrowRight size={17}/></Link>}</div>}
-  {!loading&&!error&&<SuggestedCollectors title="Conheça colecionadores"/>}
   {!loading&&!error&&!filtered&&collections.length>0&&<div className="explore-footer"><Users size={25} aria-hidden="true"/><div><strong>Compartilhe seu universo.</strong><p>Publique uma coleção para aparecer aqui.</p></div><Link href="/colecoes" aria-label="Ver minhas coleções"><ArrowRight size={22}/></Link></div>}
  </section>
 }
