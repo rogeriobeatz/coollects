@@ -2,11 +2,13 @@
 import {useEffect,useState} from 'react'
 import {Download,Share2,SquarePlus,X} from 'lucide-react'
 import {useAccount} from '@/hooks/use-account'
+import {usePathname} from 'next/navigation'
 import {isInstalledPwa,isIos} from './push-controls'
 type InstallPromptEvent=Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:'accepted'|'dismissed'}>}
 const KEY='coollects-install-dismissed-v1'
 export function PushOnboarding(){
  const {user,loading}=useAccount()
+ const pathname=usePathname()
  const [prompt,setPrompt]=useState<InstallPromptEvent|null>(null)
  const [show,setShow]=useState(false)
  const [ios,setIos]=useState(false)
@@ -16,7 +18,7 @@ export function PushOnboarding(){
   return ()=>window.removeEventListener('beforeinstallprompt',handler)
  },[])
  useEffect(()=>{
-  if(loading||!user||isInstalledPwa())return
+  if(loading||!user||pathname!=='/'||isInstalledPwa())return
   setIos(isIos())
   try{
    if(localStorage.getItem(KEY))return
@@ -24,7 +26,7 @@ export function PushOnboarding(){
    localStorage.setItem('coollects-install-visits',String(visits))
    if(visits>=2)setShow(true)
   }catch{/* Storage can be unavailable in private browsing. */}
- },[loading,user?.id])
+ },[loading,user?.id,pathname])
  if(!show||!user||isInstalledPwa()||(!ios&&!prompt))return null
  async function install(){
   if(prompt){await prompt.prompt();const choice=await prompt.userChoice;if(choice.outcome==='accepted')dismiss();setPrompt(null)}
