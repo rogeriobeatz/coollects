@@ -6,6 +6,7 @@ import { CollectorAvatar } from './collector-avatar'
 import { AuthGate } from './auth-gate'
 import { LegacyImport } from './legacy-import'
 import { AccountDeletion } from './account-deletion'
+import { PhoneRegistration } from './phone-registration'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { clearImageCache } from '@/lib/images'
 import { ProfileRow } from '@/lib/catalog'
@@ -14,6 +15,7 @@ import {useUnsavedChanges} from './use-unsaved-changes'
 export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileEditor userId={userId}/>}</AuthGate>}
 function ProfileEditor({userId}:{userId:string}){
  const [profile,setProfile]=useState<ProfileRow|null>(null),[displayName,setDisplayName]=useState(''),[username,setUsername]=useState(''),[bio,setBio]=useState('')
+ const [phoneSaved,setPhoneSaved]=useState(false)
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false)
  const [loadFailed,setLoadFailed]=useState(false),[attempt,setAttempt]=useState(0)
  useUnsavedChanges(Boolean(profile&&(displayName!==profile.display_name||username!==profile.username||bio!==profile.bio))&&!busy)
@@ -27,6 +29,7 @@ function ProfileEditor({userId}:{userId:string}){
    if(error||!data){setLoadFailed(true);return}
    if(data){const p=data as ProfileRow;setProfile(p);setDisplayName(p.display_name);setUsername(p.username);setBio(p.bio)}
   }).catch(()=>{if(active)setLoadFailed(true)})
+  void db.from('user_contact_numbers').select('user_id').eq('user_id',userId).maybeSingle().then(({data})=>{if(active)setPhoneSaved(Boolean(data))})
   return ()=>{active=false}
  },[userId,attempt])
  async function save(){
@@ -65,6 +68,7 @@ function ProfileEditor({userId}:{userId:string}){
   <label className="field-label">Biografia<textarea rows={3} maxLength={300} value={bio} onChange={e=>setBio(e.target.value)}/></label>
   <button className="save-item-button" disabled={busy||!profile} onClick={()=>void save()}><Check size={18}/>{busy?'Salvando...':'Salvar perfil'}</button>
   {message&&<p role="status" className="scan-notice">{message}</p>}
+  <section className="profile-phone"><h3>Celular cadastral</h3>{phoneSaved?<p className="scan-notice">Celular já cadastrado. Seu número não é público nem será usado para mensagens sem autorização.</p>:<PhoneRegistration userId={userId} compact onSaved={()=>setPhoneSaved(true)}/>}</section>
   <div className="profile-links">
    {profile&&<Link href="/perfil">Ver meu perfil <ArrowRight size={16}/></Link>}
    <Link href="/itens">Gerenciar meus itens <ArrowRight size={16}/></Link>
@@ -73,6 +77,6 @@ function ProfileEditor({userId}:{userId:string}){
   </div>
   <LegacyImport userId={userId}/>
   <AccountDeletion/>
-  <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seguidores e curtidas são públicos. Seu e-mail nunca aparece no perfil.</p>
+  <p className="local-note">Apenas coleções que você marcar como públicas ficarão visíveis para visitantes. Seguidores e curtidas são públicos. Seu e-mail e celular nunca aparecem no perfil.</p>
  </div>
 }

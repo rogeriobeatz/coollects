@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {ArrowRight,Camera,Check,Plus,ChevronDown,FolderPlus,ImagePlus,NotebookPen,PencilLine,RotateCcw,ScanLine,Sparkles,X} from 'lucide-react'
 import {AuthGate} from './auth-gate'
+import {PhoneCaptureGate} from './phone-capture-gate'
 import {AnalysisProgress} from './analysis-progress'
 import {MAX_ITEM_PHOTOS} from '@/lib/photo-limits'
 import {CATEGORIES} from '@/lib/local-catalog'
@@ -13,7 +14,7 @@ import {useCapture,type DetailKey} from './capture-provider'
 
 const PRIMARY_DETAILS:[DetailKey,string,string][]=[['manufacturer','Montadora','Ex.: Honda'],['series','Série','Ex.: Compact Kings'],['seriesNumber','Número na série','Ex.: 4/10'],['collectionNumber','Numeração geral','Ex.: 105/250']]
 const EXTRA_DETAILS:[DetailKey,string,string][]=[['year','Ano da cartela','Somente se impresso'],['scale','Escala','Ex.: 1:64'],['color','Cor','Ex.: Vermelho'],['condition','Condição','Ex.: Lacrado']]
-export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
+export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><PhoneCaptureGate userId={userId}><Editor userId={userId} aiEnabled={aiEnabled}/></PhoneCaptureGate>}</AuthGate>}
 
 function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const params=useSearchParams()
