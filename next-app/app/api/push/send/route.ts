@@ -15,7 +15,7 @@ export async function POST(req:Request){
  let recipient:string,actorId=user.id,eventKey:string,link:string,title:string,body:string
  if(input.kind==='test'){
   recipient=user.id
-  eventKey='test:'+user.id+':'+Math.floor(Date.now()/60000)
+  eventKey='test:'+user.id+':'+crypto.randomUUID()
   link='/notificacoes';title='Teste de notificação Coollects';body='Se você está vendo isto, o push está funcionando!'
  }else if(input.kind==='follow'){
   const {data}=await admin.from('user_follows').select('created_at').eq('follower_id',actorId).eq('followed_id',input.targetId).maybeSingle()
@@ -39,9 +39,11 @@ export async function POST(req:Request){
  if(!devices?.length)return NextResponse.json({ok:false,sent:0,reason:'no_registered_devices'},{status:404})
  const results=await Promise.all((devices||[]).map(async(device)=>{
   const status=await sendWebPush(device as SavedSubscription,{title,body,url:link,tag:eventKey})
-  if(status==='expired')await admin.from('push_subscriptions').delete().eq('user_id',recipient).eq('endpoint',device.endpoint)
+  if(status.status==='expired')await admin.from('push_subscriptions').delete().eq('user_id',recipient).eq('endpoint',device.endpoint)
   return status
  }))
- const sent=results.filter(r=>r==='sent').length
- return NextResponse.json({ok:sent>0,sent,failed:results.filter(r=>r==='error').length,expired:results.filter(r=>r==='expired').length,reason:sent?'accepted':'push_provider_rejected'},{status:sent?200:502})
+ const sent=results.filter(r=>r.status==='sent').length
+ const codes=[...new Set(results.map(r=>r.httpStatus).filter((v):v is number=>v!==null))]
+ const reasons=[...new Set(results.map(r=>r.reason).filter((v):v is string=>Boolean(v)))]
+ return NextResponse.json({ok:sent>0,sent,failed:results.filter(r=>r.status==='error').length,expired:results.filter(r=>r.status==='expired').length,providerStatuses:codes,diagnostics:reasons,reason:sent?'accepted':'push_provider_rejected'},{status:sent?200:502})
 }

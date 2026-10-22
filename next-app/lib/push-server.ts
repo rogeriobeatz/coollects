@@ -53,8 +53,8 @@ function vapidToken(audience:string,publicKey:string,privateKey:string){
  const input=encoded({typ:'JWT',alg:'ES256'})+'.'+encoded({aud:audience,exp:Math.floor(Date.now()/1000)+3600,sub:'mailto:push@coollects.rogerio.work'})
  return input+'.'+sign('sha256',Buffer.from(input),{key:keyObject,dsaEncoding:'ieee-p1363'}).toString('base64url')
 }
-export async function sendWebPush(subscription:SavedSubscription,message:PushMessage):Promise<'sent'|'expired'|'error'>{
- if(!validPushEndpoint(subscription.endpoint))return 'error'
+export async function sendWebPush(subscription:SavedSubscription,message:PushMessage):Promise<{status:'sent'|'expired'|'error';httpStatus:number|null;reason?:string}>{
+ if(!validPushEndpoint(subscription.endpoint))return {status:'error',httpStatus:null,reason:'unsupported_endpoint'}
  const publicKey=process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,privateKey=process.env.VAPID_PRIVATE_KEY
  if(!publicKey||!privateKey)throw Error('Push keys not configured')
  const audience=new URL(subscription.endpoint).origin
@@ -65,7 +65,10 @@ export async function sendWebPush(subscription:SavedSubscription,message:PushMes
     'TTL':'3600','Content-Encoding':'aes128gcm','Content-Type':'application/octet-stream'},
    body:new Uint8Array(payload),signal:AbortSignal.timeout(9000),redirect:'error'
   })
-  if(res.status===404||res.status===410)return 'expired'
-  return res.ok?'sent':'error'
- }catch{return 'error'}
+  if(res.status===404||res.status===410)return {status:'expired',httpStatus:res.status}
+  return {status:res.ok?'sent':'error',httpStatus:res.status}
+ }catch(e){
+  // No secrets or endpoints in diagnostic responses.
+  return {status:'error',httpStatus:null,reason:e instanceof Error&&e.name==='TimeoutError'?'timeout':'transport_or_crypto_error'}
+ }
 }
