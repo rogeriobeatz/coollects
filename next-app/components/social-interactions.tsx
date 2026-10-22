@@ -32,7 +32,7 @@ export function FollowButton({profileId,name,following:initial,followsMe=false,c
   busy.current=true
   const next=!following
   emitSocial({type:'follow',profileId,following:next})
-  try{await setFollowing(db,user.id,profileId,next);emitSocial({type:'saved',action:'follow'})}
+  try{await setFollowing(db,user.id,profileId,next);emitSocial({type:'saved',action:'follow'});if(next)void fetch('/api/push/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'follow',targetId:profileId})}).catch(()=>{})}
   catch{
    emitSocial({type:'follow',profileId,following:!next})
    emitSocial({type:'error',message:next?'Não foi possível seguir '+name+'. Tente novamente.':'Não foi possível deixar de seguir '+name+'. Tente novamente.'})
@@ -70,7 +70,7 @@ export function LikeButton({itemId,itemName,ownerId,social,size='card'}:{
   const next={liked:!state.liked,likes:Math.max(0,state.likes+(state.liked?-1:1))}
   emitSocial({type:'like',itemId,ownerId,social:next,change:next.liked?1:-1})
   if(next.liked)setPop(true)
-  try{await setLiked(db,user.id,itemId,next.liked);emitSocial({type:'saved',action:'like'})}
+  try{await setLiked(db,user.id,itemId,next.liked);emitSocial({type:'saved',action:'like'});if(next.liked)void fetch('/api/push/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'like',targetId:itemId})}).catch(()=>{})}
   catch{
    emitSocial({type:'like',itemId,ownerId,social:previous,change:previous.liked?1:-1})
    emitSocial({type:'error',message:'Não foi possível atualizar a curtida. Tente novamente.'})
