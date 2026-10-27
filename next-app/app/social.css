@@ -342,3 +342,6 @@
 .feed-post .cc-item-actions .like-button.is-static{display:flex;align-items:center}
 .feed-inline-comments .item-comments{margin:2px 0 8px;padding:12px;border-radius:16px;background:#fbf9fe}
 .feed-inline-comments .item-comments-form textarea{font-size:16px;min-height:50px}
+
+/* Safari/iOS does not auto-zoom a focused form control when its font is >= 16px. */
+@media (max-width:600px){input,textarea,select{font-size:16px!important}}
