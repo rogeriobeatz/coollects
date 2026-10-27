@@ -8,6 +8,7 @@ import {signedImage} from '@/lib/images'
 import {ItemCollectionPicker} from './item-collection-picker'
 import {ItemCardViewer} from './item-card-viewer'
 import {ItemGallery} from './item-gallery'
+import {ItemComments} from './item-comments'
 import {ShareButton} from './share-button'
 import {FollowButton,LikeButton,useFollowing,useItemSocial} from './social-interactions'
 import {CollectorAvatar} from './collector-avatar'
@@ -102,6 +103,7 @@ export function ItemShowcase({id}:{id:string}){
      :isOwner&&!visibilityError&&<button type="button" className="item-social-icon is-private" aria-label="Compartilhar" title="Compartilhar" onClick={()=>{setSharing(true);setPicker(true)}}><LockKeyhole size={18} aria-hidden="true"/></button>}
    </div>
   </div>
+  {publicCollection&&<ItemComments itemId={item.id} ownerId={item.owner_id}/>}
   {likers&&<ConnectionsSheet targetId={item.id} kinds={['likers']} initial="likers" label={'Quem curtiu '+item.name} counts={itemSocial?{likers:itemSocial.likes}:{}} onClose={()=>setLikers(false)}/>}
   {isOwner&&!visibilityError&&<div className="item-showcase-hint"><p>{publicCollection?'Este item está público e pode aparecer na comunidade.':'Este item ainda é privado. Vincule a uma coleção pública para compartilhá-lo.'}</p><button type="button" className="pill-btn" onClick={()=>{setSharing(false);setPicker(true)}}>Adicionar a uma coleção</button></div>}
   {picker&&isOwner&&<ItemCollectionPicker sharing={sharing} itemId={item.id} onClose={()=>setPicker(false)} onChanged={()=>void refresh(true)}/>}

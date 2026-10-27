@@ -1,14 +1,15 @@
 'use client'
 import { useEffect,useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight,Check,LogOut,UserRound } from 'lucide-react'
-import { CollectorAvatar } from './collector-avatar'
+import { ArrowRight,Camera,Check,LogOut,Trash2,UserRound } from 'lucide-react'
+import { CollectorAvatar,notifyAvatarUpdated } from './collector-avatar'
 import { AuthGate } from './auth-gate'
 import { LegacyImport } from './legacy-import'
 import { AccountDeletion } from './account-deletion'
 import { PhoneRegistration } from './phone-registration'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { clearImageCache } from '@/lib/images'
+import {preparePhoto} from '@/lib/photo-preparation'
 import { ProfileRow } from '@/lib/catalog'
 import { useRouter } from 'next/navigation'
 import {useUnsavedChanges} from './use-unsaved-changes'
@@ -16,6 +17,7 @@ export function ProfileWorkspace(){return <AuthGate>{userId=><ProfileEditor user
 function ProfileEditor({userId}:{userId:string}){
  const [profile,setProfile]=useState<ProfileRow|null>(null),[displayName,setDisplayName]=useState(''),[username,setUsername]=useState(''),[bio,setBio]=useState('')
  const [phoneSaved,setPhoneSaved]=useState(false)
+ const [avatarBusy,setAvatarBusy]=useState(false)
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false)
  const [loadFailed,setLoadFailed]=useState(false),[attempt,setAttempt]=useState(0)
  useUnsavedChanges(Boolean(profile&&(displayName!==profile.display_name||username!==profile.username||bio!==profile.bio))&&!busy)
@@ -46,6 +48,46 @@ function ProfileEditor({userId}:{userId:string}){
   }catch{setMessage('Não foi possível atualizar o perfil. Verifique sua conexão e tente novamente.')}
   finally{setBusy(false)}
  }
+ async function uploadAvatar(file:File|undefined){
+  if(!file||!profile||avatarBusy)return
+  const db=getBrowserClient();if(!db)return
+  setAvatarBusy(true);setMessage('')
+  let uploadedPath:string|null=null
+  try{
+   const prepared=await preparePhoto(file)
+   const mime=prepared.file.type
+   if(mime!=='image/webp'&&mime!=='image/jpeg')throw Error('Unsupported image format')
+   const path=userId+'/'+crypto.randomUUID()+(mime==='image/webp'?'.webp':'.jpg')
+   const result=await db.storage.from('coollects-avatars').upload(path,prepared.file,{contentType:mime,upsert:false,cacheControl:'3600'})
+   if(result.error)throw result.error
+   uploadedPath=path
+   const {error:updateError}=await db.from('profiles').update({avatar_path:path}).eq('id',userId)
+   if(updateError)throw updateError
+   const previous=profile.avatar_path
+   setProfile(p=>p?{...p,avatar_path:path}:p)
+   notifyAvatarUpdated(userId)
+   if(previous&&previous.startsWith(userId+'/'))void db.storage.from('coollects-avatars').remove([previous])
+   setMessage('Foto de perfil atualizada!')
+  }catch{
+   if(uploadedPath)void db.storage.from('coollects-avatars').remove([uploadedPath])
+   setMessage('Não conseguimos salvar a foto. Tente outra imagem JPG, PNG ou HEIC.')
+  }finally{setAvatarBusy(false)}
+ }
+ async function removeAvatar(){
+  if(!profile?.avatar_path||avatarBusy)return
+  const db=getBrowserClient();if(!db)return
+  setAvatarBusy(true);setMessage('')
+  try{
+   const {error}=await db.from('profiles').update({avatar_path:null}).eq('id',userId)
+   if(error)throw error
+   const path=profile.avatar_path
+   setProfile(p=>p?{...p,avatar_path:null}:p)
+   notifyAvatarUpdated(userId)
+   if(path.startsWith(userId+'/'))void db.storage.from('coollects-avatars').remove([path])
+   setMessage('Foto removida. Suas iniciais aparecerão no perfil.')
+  }catch{setMessage('Não foi possível remover a foto.')}
+  finally{setAvatarBusy(false)}
+ }
  async function signOut(){
   const db=getBrowserClient();if(!db){setMessage('Serviço indisponível. Tente novamente.');return}
   setBusy(true)
@@ -59,7 +101,11 @@ function ProfileEditor({userId}:{userId:string}){
   finally{setBusy(false)}
  }
  return <div className="profile-preview profile-editor">
-  {profile?<CollectorAvatar name={profile.display_name||profile.username} seed={profile.id} size="lg"/>:<span className="profile-avatar"><UserRound size={42}/></span>}
+  <div className="profile-avatar-editor">
+   {profile?<CollectorAvatar name={profile.display_name||profile.username} seed={profile.id} size="lg"/>:<span className="profile-avatar"><UserRound size={42}/></span>}
+   <label className="profile-avatar-upload"><Camera size={16}/> {avatarBusy?'Enviando…':'Adicionar ou trocar foto'}<input className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" disabled={avatarBusy||!profile} onChange={e=>{const file=e.target.files?.[0];e.target.value='';void uploadAvatar(file)}}/></label>
+   {profile?.avatar_path&&<button type="button" className="profile-avatar-remove" disabled={avatarBusy} onClick={()=>void removeAvatar()}><Trash2 size={14}/> Remover foto</button>}
+  </div>
   <h2>{profile?.display_name||'Seu universo'}</h2>
   <p>{profile?'@'+profile.username:'Personalize seu perfil público e compartilhe suas coleções.'}</p>
   {loadFailed&&<div role="alert" className="scan-notice">Não conseguimos carregar o perfil agora. <button type="button" onClick={()=>setAttempt(v=>v+1)}>Tentar novamente</button></div>}

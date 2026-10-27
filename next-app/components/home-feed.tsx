@@ -2,7 +2,7 @@
 import { useCallback,useEffect,useId,useRef,useState } from 'react'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
-import { Camera,CheckCircle2,Compass,ExternalLink,MessageCircle,Package,Share2,Sparkles,Users } from 'lucide-react'
+import { Camera,CheckCircle2,Compass,ExternalLink,MessageCircle,Package,Share2,Sparkles,Users,MessageSquare } from 'lucide-react'
 import { getBrowserClient } from '@/lib/supabase/client'
 import { publicUrlPath } from '@/lib/catalog'
 import { mergeById,relativeTime,type CollectorSummary,type Connection,type ItemSocial } from '@/lib/social'
@@ -208,6 +208,7 @@ function FeedPost({item,social,status,authors,viewerId,onLikers,suggestion=false
   <div className="feed-post-actions">
    {itemSocial?<LikeButton size="detail" itemId={item.id} itemName={item.name} ownerId={item.owner_id} social={itemSocial}/>:status==='loading'&&<span className="like-button like-detail is-placeholder" aria-hidden="true"/>}
    {itemSocial&&itemSocial.likes>0&&<button type="button" className="item-social-icon" aria-label={'Ver quem curtiu '+item.name} title="Ver quem curtiu" onClick={()=>onLikers(item)}><Users size={19} aria-hidden="true"/></button>}
+   <Link href={itemPath} className="item-social-icon" aria-label={'Ver comentários de '+item.name} title="Comentários"><MessageSquare size={19} aria-hidden="true"/></Link>
    <span className="item-social-spacer"/>
    <ShareButton className="item-social-icon" path={'/item/'+encodeURIComponent(item.id)} title={item.name} text={'Olha esta peça'+(author?' do acervo de '+name:'')+' no Coollects: '+item.name} icon={<Share2 size={19} aria-hidden="true"/>}><span className="visually-hidden">Compartilhar {item.name}</span></ShareButton>
   </div>

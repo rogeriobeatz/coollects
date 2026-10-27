@@ -1,6 +1,6 @@
 export type CollectionRow={id:string;owner_id:string;name:string;category:string;emoji?:string|null;color:string;description:string;is_public:boolean;cover_item_id?:string|null;created_at:string}
 export type ItemRow={id:string;owner_id:string;name:string;brand:string;category:string;notes:string;photo_path:string|null;is_public?:boolean;gallery_paths?:string[]|null;details?:Record<string,string|number|null>;created_at:string}
-export type ProfileRow={id:string;username:string;display_name:string;bio:string;created_at:string}
+export type ProfileRow={id:string;username:string;display_name:string;bio:string;avatar_path?:string|null;created_at:string}
 export type LinkRow={collection_id:string;item_id:string}
 export const BUCKET='coollects-items'
 export const CATALOG_CHANGED='coollects:catalog-changed'
