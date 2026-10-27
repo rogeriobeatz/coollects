@@ -1,6 +1,6 @@
 -- Public collector avatars are opt-in profile photos, never private item images.
 alter table public.profiles add column if not exists avatar_path text
- check (avatar_path is null or avatar_path ~ ('^[0-9a-f-]{36}/[0-9a-f-]{36}\\.(webp|jpg|png)$'));
+ check (avatar_path is null or (avatar_path ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}[.](webp|jpg|png)$' and avatar_path like id::text || '/%'));
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values('coollects-avatars','coollects-avatars',true,614400,array['image/webp','image/jpeg','image/png'])
 on conflict(id) do update set public=true,file_size_limit=614400,allowed_mime_types=excluded.allowed_mime_types;
