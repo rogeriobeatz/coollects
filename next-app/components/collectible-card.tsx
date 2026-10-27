@@ -1,6 +1,8 @@
 'use client'
 
-import {useState,type ReactNode} from 'react'
+import {useEffect,useState,type ReactNode} from 'react'
+import {getBrowserClient} from '@/lib/supabase/client'
+import {freshItemPhoto} from '@/lib/images'
 import Link from 'next/link'
 import {ImageIcon,Gauge,Layers3,ArrowUpRight} from 'lucide-react'
 import {BrandLogoSlot} from './brand-logo-slot'
@@ -25,6 +27,15 @@ export function ItemCardContent({item,photoUrl,face,href,actions,headingLevel='h
  item:ItemRow;photoUrl:string|null;face:ItemFocus;href?:string;actions?:ReactNode;headingLevel?:'h1'|'h3'
 }){
  const [failedPhoto,setFailedPhoto]=useState<string|null>(null)
+ const [retryUrl,setRetryUrl]=useState<string|null>(null)
+ useEffect(()=>{setFailedPhoto(null);setRetryUrl(null)},[photoUrl,item.photo_path])
+ async function retryPhoto(){
+  if(!item.photo_path)return
+  const db=getBrowserClient();if(!db)return
+  const fresh=await freshItemPhoto(db,item.photo_path)
+  if(fresh){setFailedPhoto(null);setRetryUrl(fresh)}else setFailedPhoto(photoUrl)
+ }
+ const activePhoto=retryUrl||photoUrl
  const brand=itemValue(item.brand),manufacturer=itemValue(item.details?.manufacturer)
  const mini=item.category==='Miniaturas'
  const scale=itemValue(item.details?.scale)
@@ -46,7 +57,7 @@ export function ItemCardContent({item,photoUrl,face,href,actions,headingLevel='h
    <div className="cc-card-signature"><span>{mini?'FICHA DO VEÍCULO':item.category}</span><strong>coollects</strong></div>
   </div>
  }
- const photo=<>{photoUrl&&failedPhoto!==photoUrl?<img src={photoUrl} alt={item.name} loading="lazy" onError={()=>setFailedPhoto(photoUrl)}/>:<span className="cc-item-no-photo"><ImageIcon size={32} aria-hidden="true"/><small>Sem foto</small></span>}
+ const photo=<>{activePhoto&&failedPhoto!==activePhoto?<img src={activePhoto} alt={item.name} loading="lazy" onError={()=>{if(retryUrl)setFailedPhoto(activePhoto);else void retryPhoto()}}/>:<span className="cc-item-no-photo"><ImageIcon size={32} aria-hidden="true"/><small>Sem foto</small></span>}
   {brand&&<span className="cc-photo-brand"><BrandLogoSlot value={brand} kind="miniaturas"/></span>}
   <span className="cc-photo-category"><Layers3 size={11} aria-hidden="true"/>{scale||item.category}</span></>
  const series=itemValue(item.details?.series)
