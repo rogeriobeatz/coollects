@@ -303,3 +303,17 @@
 .phone-registration .save-item-button{min-height:47px}
 .profile-phone{margin-top:19px;padding:16px;border-radius:18px;border:1px solid var(--line);background:#f9f6ff}
 .profile-phone h3{margin:0 0 11px;font-size:16px}
+
+/* Item comments: compact, readable and friendly on small phones. */
+.item-comments{display:grid;gap:13px;margin:17px 0 22px;padding:16px;border:1px solid var(--line);border-radius:21px;background:#fff}
+.item-comments-header{display:flex;align-items:center;gap:8px;color:var(--purple)}.item-comments-header h2{font-size:19px;letter-spacing:-.035em;margin:0;color:var(--ink)}
+.item-comments-form{padding:10px;border:1px solid #e9e2f1;background:#faf8fd;border-radius:15px}
+.item-comments-form textarea{border:0;background:transparent;width:100%;resize:vertical;min-height:56px;outline-offset:3px;font-size:13px;line-height:1.45;color:var(--ink)}
+.item-comments-form-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}.item-comments-form-actions small{font-size:10px;color:var(--muted)}
+.item-comments-form-actions button{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 12px;border:0;border-radius:11px;color:white;background:var(--purple);font-weight:900;font-size:12px}
+.item-comments-list{display:grid;gap:13px}.item-comment{display:flex;align-items:flex-start;gap:9px;min-width:0}
+.item-comment-content{flex:1;min-width:0}.item-comment-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:7px;font-size:12px}
+.item-comment-top strong{font-weight:900}.item-comment-top time{color:var(--muted);font-size:10px}.item-comment-content p{font-size:13px;line-height:1.4;margin:4px 0 0;overflow-wrap:anywhere;white-space:pre-wrap}
+.item-comment-delete{flex-shrink:0;display:grid;place-items:center;width:30px;height:30px;border:0;background:#f8f5fc;border-radius:10px;color:var(--muted)}
+.item-comments-empty,.item-comments-signin{font-size:12px;line-height:1.5;color:var(--muted);margin:0}.item-comments-signin a{color:var(--purple);font-weight:900}
+.item-comments-more{border:0;background:#eee5fc;color:var(--purple);padding:11px;border-radius:12px;font-size:12px;font-weight:900}
