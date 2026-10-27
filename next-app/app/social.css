@@ -317,3 +317,19 @@
 .item-comment-delete{flex-shrink:0;display:grid;place-items:center;width:30px;height:30px;border:0;background:#f8f5fc;border-radius:10px;color:var(--muted)}
 .item-comments-empty,.item-comments-signin{font-size:12px;line-height:1.5;color:var(--muted);margin:0}.item-comments-signin a{color:var(--purple);font-weight:900}
 .item-comments-more{border:0;background:#eee5fc;color:var(--purple);padding:11px;border-radius:12px;font-size:12px;font-weight:900}
+
+.collector-avatar{overflow:hidden}.collector-avatar img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
+.profile-avatar-editor{display:flex;flex-direction:column;align-items:center;gap:9px;margin:4px 0 17px}
+.profile-avatar-upload,.profile-avatar-remove{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:900;color:var(--purple);padding:9px 12px;background:#f1e9fc;border:0;border-radius:12px;cursor:pointer}
+.profile-avatar-remove{background:transparent;color:var(--muted)}
+.release-backdrop{position:fixed;z-index:100;inset:0;display:grid;place-items:center;background:#160d28ab;padding:20px;backdrop-filter:blur(3px)}
+.release-modal{position:relative;background:#fffdfa;border-radius:25px;padding:25px 20px 17px;width:min(100%,390px);max-height:calc(100dvh - 35px);overflow-y:auto;box-shadow:0 24px 90px #170b3450;display:flex;flex-direction:column;gap:11px}
+.release-close{position:absolute;right:12px;top:12px;display:grid;place-items:center;background:#f2edf8;border:0;border-radius:50%;width:34px;height:34px}
+.release-illustration{display:grid;place-items:center;background:#ebddff;color:var(--purple);width:49px;height:49px;border-radius:16px}
+.release-kicker{font-size:10px;letter-spacing:.12em;color:var(--purple);font-weight:900}
+.release-modal h2{font-size:25px;letter-spacing:-.055em;line-height:1.06;margin:0}
+.release-modal>p{font-size:12px;color:var(--muted);margin:0 0 2px}
+.release-feature{display:flex;gap:12px;align-items:center;border:1px solid var(--line);padding:12px;border-radius:15px;color:var(--purple)}
+.release-feature span{display:grid;gap:3px}.release-feature strong{color:var(--ink);font-size:13px}.release-feature small{color:var(--muted);font-size:11px;line-height:1.3}
+.release-cta{display:grid;place-items:center;background:var(--purple);color:white;padding:12px;border-radius:13px;font-size:13px;font-weight:900}
+.release-later{border:0;background:transparent;color:var(--muted);font-size:12px;padding:10px;font-weight:900}

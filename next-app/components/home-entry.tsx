@@ -6,6 +6,7 @@ import { BrandLogo } from './brand-logo'
 import { HomeFeed } from './home-feed'
 import { MobileNav } from './mobile-nav'
 import { SocialToaster } from './social-interactions'
+import { ReleaseAnnouncement } from './release-announcement'
 import { WelcomeScreen } from './welcome-screen'
 
 export function HomeEntry({aiEnabled=false}:{aiEnabled?:boolean}) {
@@ -22,6 +23,7 @@ export function HomeEntry({aiEnabled=false}:{aiEnabled?:boolean}) {
   <AppHeader/>
   <div className="screen-body screen-body-compact"><HomeFeed key={user.id} user={user} aiEnabled={aiEnabled}/></div>
   <SocialToaster/>
+  <ReleaseAnnouncement userId={user.id}/>
   <MobileNav active="inicio"/>
  </main>
 }
