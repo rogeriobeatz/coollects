@@ -8,6 +8,7 @@ import { publicUrlPath } from '@/lib/catalog'
 import { mergeById,relativeTime,type CollectorSummary,type Connection,type ItemSocial } from '@/lib/social'
 import { loadConnections,loadItemPage,onSocial,type ItemListKind,type SocialItem } from '@/lib/social-data'
 import { CollectibleCard } from './collectible-card'
+import { ItemComments } from './item-comments'
 import { CollectorAvatar } from './collector-avatar'
 import { ConnectionsSheet } from './connections-sheet'
 import { ShareButton } from './share-button'
@@ -190,6 +191,7 @@ type PostProps={
 /** A post: who published, the shared item card, then likes, share and caption. */
 function FeedPost({item,social,status,authors,viewerId,onLikers,suggestion=false}:PostProps){
  const headingId=useId()
+ const [commentsOpen,setCommentsOpen]=useState(false)
  const author=authors.get(item.owner_id)
  const itemSocial=social.get(item.id)
  const own=item.owner_id===viewerId
@@ -204,15 +206,16 @@ function FeedPost({item,social,status,authors,viewerId,onLikers,suggestion=false
    </div>
    {suggestion&&author&&!own&&<FollowButton compact profileId={author.id} name={name} following={false}/>}
   </header>
-  <CollectibleCard item={item} photoUrl={item.url} href={itemPath}/>
+  <CollectibleCard item={item} photoUrl={item.url} href={itemPath} actions={itemSocial?<LikeButton size="card" itemId={item.id} itemName={item.name} ownerId={item.owner_id} social={itemSocial}/>:null}/>
   <div className="feed-post-actions">
-   {itemSocial?<LikeButton size="detail" itemId={item.id} itemName={item.name} ownerId={item.owner_id} social={itemSocial}/>:status==='loading'&&<span className="like-button like-detail is-placeholder" aria-hidden="true"/>}
+
    {itemSocial&&itemSocial.likes>0&&<button type="button" className="item-social-icon" aria-label={'Ver quem curtiu '+item.name} title="Ver quem curtiu" onClick={()=>onLikers(item)}><Users size={19} aria-hidden="true"/></button>}
-   <Link href={itemPath} className="item-social-icon" aria-label={'Ver comentários de '+item.name} title="Comentários"><MessageSquare size={19} aria-hidden="true"/></Link>
+   <button type="button" className="item-social-icon" aria-expanded={commentsOpen} aria-controls={'feed-comments-'+item.id} onClick={()=>setCommentsOpen(value=>!value)} aria-label={(commentsOpen?'Fechar':'Abrir')+' comentários de '+item.name} title="Comentar"><MessageSquare size={19} aria-hidden="true"/></button>
    <span className="item-social-spacer"/>
    <ShareButton className="item-social-icon" path={'/item/'+encodeURIComponent(item.id)} title={item.name} text={'Olha esta peça'+(author?' do acervo de '+name:'')+' no Coollects: '+item.name} icon={<Share2 size={19} aria-hidden="true"/>}><span className="visually-hidden">Compartilhar {item.name}</span></ShareButton>
   </div>
   {item.notes.trim()&&<Caption author={author?.username} text={item.notes}/>}
+  {commentsOpen&&<div id={'feed-comments-'+item.id} className="feed-inline-comments"><ItemComments itemId={item.id} ownerId={item.owner_id}/></div>}
  </article>
 }
 

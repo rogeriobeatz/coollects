@@ -110,3 +110,14 @@ export async function uploadImage(client:SupabaseClient,userId:string,file:File)
  if(error)throw new Error('Não foi possível enviar a fotografia. Tente novamente.')
  return path
 }
+
+/** On iOS resume, expired signed URLs need a new signature, not a cached one. */
+export async function freshItemPhoto(client:SupabaseClient,path:string):Promise<string|null>{
+ const epoch=cacheEpoch
+ if(!path)return null
+ signedUrls.delete(path)
+ const {data,error}=await client.storage.from(BUCKET).createSignedUrl(path,SIGN_SECONDS)
+ if(epoch!==cacheEpoch||error||!data?.signedUrl)return null
+ keepSigned(path,data.signedUrl)
+ return data.signedUrl
+}
