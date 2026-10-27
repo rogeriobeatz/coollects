@@ -1,4 +1,4 @@
-﻿-- Home feed: chronological posts (public items) from the signed-in collector
+-- Home feed: chronological posts (public items) from the signed-in collector
 -- and the people they follow, plus a community feed for empty timelines.
 -- SECURITY INVOKER + private.item_is_public(): private items never appear,
 -- not even the owner's own. Safe to run more than once.

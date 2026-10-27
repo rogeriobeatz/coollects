@@ -1,4 +1,4 @@
-﻿-- Collector-centred social network: profile summary, connections, likes,
+-- Collector-centred social network: profile summary, connections, likes,
 -- following feed, suggestions and activity.
 -- Every function is SECURITY INVOKER: table RLS still decides what the caller
 -- may see, and private.item_is_public() keeps private items out of public
