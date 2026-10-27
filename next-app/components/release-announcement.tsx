@@ -24,8 +24,8 @@ export function ReleaseAnnouncement({userId}:{userId:string}){
   const db=getBrowserClient()
   if(!db)return
   setBusy(true)
-  const {error}=await db.from('user_announcements_seen').upsert({user_id:userId,announcement_key:RELEASE},{onConflict:'user_id,announcement_key'})
-  if(!error)setShow(false)
+  const {error}=await db.from('user_announcements_seen').insert({user_id:userId,announcement_key:RELEASE})
+  if(!error||error.code==='23505')setShow(false)
   setBusy(false)
  }
  if(!show)return null
