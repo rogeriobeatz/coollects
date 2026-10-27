@@ -26,6 +26,8 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci
       - name: Dependency security audit
+        id: dependency_audit
+        continue-on-error: true
         run: npm audit --audit-level=high
       - name: Unit tests and release copy
         run: npm test
@@ -47,3 +49,8 @@ jobs:
           server=$!
           trap 'kill $server || true' EXIT
           npm run test:browser
+      - name: Keep CI blocked by critical dependency advisories
+        if: ${{ always() && steps.dependency_audit.outcome == 'failure' }}
+        run: |
+          echo "::error::Dependency audit failed. Functional checks were run, but security advisories still block a green CI."
+          exit 1
