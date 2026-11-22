@@ -4,6 +4,7 @@ import { parseKieSuggestion, prompt } from '@/lib/kie-parser'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 export const runtime='nodejs'
 export const dynamic='force-dynamic'
+export const maxDuration=60
 
 const CHAT_URL='https://api.kie.ai/gemini-3-8-flash-openai/v1/chat/completions'
 const UPLOAD_URL='https://kieai.redpandaai.co/api/file-stream-upload'
@@ -36,7 +37,7 @@ async function uploadToKie(key:string,bytes:Uint8Array<ArrayBuffer>,mime:string)
  const form=new FormData()
  form.append('file',new Blob([bytes],{type:mime}),'collectible-'+crypto.randomUUID()+'.'+ext)
  form.append('uploadPath','coollects/scans')
- const response=await fetch(UPLOAD_URL,{method:'POST',headers:{Authorization:'Bearer '+key},body:form,signal:AbortSignal.timeout(20000),cache:'no-store'})
+ const response=await fetch(UPLOAD_URL,{method:'POST',headers:{Authorization:'Bearer '+key},body:form,signal:AbortSignal.timeout(12000),cache:'no-store'})
  if(!response.ok)throw new StageError('KIE_UPLOAD_HTTP_'+response.status,'Não foi possível enviar a imagem para análise.')
  const upload=await response.json() as {code?:number;data?:{downloadUrl?:string}}
  if(upload.code!==200||!upload.data?.downloadUrl)throw new StageError('KIE_UPLOAD_CODE_'+String(upload.code??'UNKNOWN'),'O serviço de imagens recusou o arquivo.')
@@ -48,7 +49,7 @@ export async function POST(request:Request){
  const trace=crypto.randomUUID().slice(0,8)
  const started=Date.now()
  const log=(event:Record<string,unknown>)=>console.info('[KIE_VISION]',JSON.stringify({trace,ms:Date.now()-started,...event}))
- const failure=(stage:string,message:string,status:number)=>{console.error('[KIE_VISION]',JSON.stringify({trace,stage,status}));return NextResponse.json({error:message+' (código '+stage+'-'+trace+')',stage,trace},{status})}
+ const failure=(stage:string,message:string,status:number)=>{console.error('[KIE_VISION]',JSON.stringify({trace,stage,status}));return NextResponse.json({error:message,trace},{status,headers:{'Cache-Control':'no-store'}})}
  let stage='config'
  const key=process.env.KIE_API_KEY
  if(!key)return failure('CONFIG','Reconhecimento inteligente não configurado.',503)
@@ -72,21 +73,24 @@ export async function POST(request:Request){
   stage='provider_request'
   let result:Awaited<ReturnType<typeof chat>>|null=null
   try{
-   result=await chat(key,'data:'+mime+';base64,'+Buffer.from(bytes).toString('base64'),true,40000)
+   result=await chat(key,'data:'+mime+';base64,'+Buffer.from(bytes).toString('base64'),true,18000)
    log({stage:'fast_path',status:result.status,ok:result.ok,code:result.payload.code})
   }catch(error){
-   // A timeout here already used the time budget: do not retry.
-   if(error instanceof Error&&error.name==='TimeoutError')throw error
-   log({stage:'fast_path_error',error:error instanceof Error?error.name:'unknown'})
+   // One bounded fallback prevents a transient inline failure from ending the capture.
+   // There is no loop: quota is consumed once and the fallback runs at most once.
+   log({stage:'fast_path_error',timeout:error instanceof Error&&error.name==='TimeoutError',error:error instanceof Error?error.name:'unknown'})
   }
   if(!result?.ok){
    stage='kie_upload'
    const imageUrl=await uploadToKie(key,bytes,mime)
    stage='provider_request'
-   result=await chat(key,imageUrl,false,40000)
+   try{result=await chat(key,imageUrl,false,25000)}catch(error){
+    if(error instanceof Error&&error.name==='TimeoutError')throw new StageError('KIE_TIMEOUT','A análise está demorando mais que o esperado. Tente novamente em instantes ou preencha os dados manualmente.',504)
+    throw error
+   }
    log({stage:'fallback_path',status:result.status,ok:result.ok,code:result.payload.code})
-   if(result.status>=400)throw new StageError('KIE_HTTP_'+result.status,'O provedor recusou a análise da foto.')
-   if(!result.ok)throw new StageError('KIE_CODE_'+String(result.payload.code).slice(0,5),'O provedor retornou um erro. Verifique os créditos e a disponibilidade do modelo.')
+   if(result.status>=400)throw new StageError('KIE_HTTP_'+result.status,'Não foi possível concluir a análise agora. Tente novamente em instantes ou preencha os dados manualmente.')
+   if(!result.ok)throw new StageError('KIE_CODE_'+String(result.payload.code).slice(0,5),'O reconhecimento está temporariamente indisponível. Tente novamente em instantes ou preencha os dados manualmente.')
   }
   stage='provider_response'
   const content=result.payload.choices?.[0]?.message?.content
@@ -99,6 +103,6 @@ export async function POST(request:Request){
  }catch(e){
   if(e instanceof StageError)return failure(e.stage,e.userMessage,e.status)
   console.error('[KIE_VISION]',JSON.stringify({trace,stage,error:e instanceof Error?e.name:'unknown'}))
-  return failure(stage.toUpperCase(),e instanceof Error&&e.name==='TimeoutError'?'Tempo de análise esgotado.':'A análise falhou. Você pode preencher manualmente.',502)
+  return failure(stage.toUpperCase(),e instanceof Error&&e.name==='TimeoutError'?'A análise está demorando mais que o esperado. Tente novamente em instantes ou preencha os dados manualmente.':'Não foi possível concluir a análise agora. Tente novamente em instantes ou preencha os dados manualmente.',502)
  }
 }
