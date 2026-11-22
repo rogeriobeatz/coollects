@@ -96,6 +96,9 @@ export function BulkImportWorkspace(){
  const update=(id:string,key:keyof Suggestion,value:string)=>{
   setEdits(v=>({...v,[id]:{...(v[id]||{}),[key]:value}}))
  }
+ const updateDetail=(id:string,key:string,value:string)=>{
+  setEdits(v=>({...v,[id]:{...(v[id]||{}),details:{...((v[id]?.details||items.find(x=>x.id===id)?.suggestion?.details)||{}),[key]:value}}}))
+ }
  const saveOne=async(item:ImportItem)=>{
   if(!client||!item.suggestion||!job)return
   const s={...item.suggestion,...edits[item.id]}
@@ -148,6 +151,7 @@ export function BulkImportWorkspace(){
     {s&&item.status==='ready'&&<><label style={{display:'grid',gap:5,fontSize:13}}>Nome *<input style={inputStyle} value={edits[item.id]?.name??s.name} onChange={e=>update(item.id,'name',e.target.value)}/></label>
      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}><label style={{display:'grid',gap:5,fontSize:13}}>Marca<input style={inputStyle} value={edits[item.id]?.brand??s.brand} onChange={e=>update(item.id,'brand',e.target.value)}/></label><label style={{display:'grid',gap:5,fontSize:13}}>Categoria<select style={inputStyle} value={edits[item.id]?.category??s.category} onChange={e=>update(item.id,'category',e.target.value)}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select></label></div>
      <label style={{display:'grid',gap:5,fontSize:13}}>Observações<input style={inputStyle} value={edits[item.id]?.notes??s.notes} onChange={e=>update(item.id,'notes',e.target.value)}/></label>
+     {(edits[item.id]?.category??s.category)==='Miniaturas'&&<details><summary style={{cursor:'pointer',fontSize:13,padding:'8px 0'}}>Detalhes da miniatura</summary><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}}>{[['manufacturer','Montadora'],['series','Série'],['seriesNumber','Número na série'],['collectionNumber','Numeração geral'],['year','Ano'],['scale','Escala'],['color','Cor'],['condition','Condição']].map(([key,label])=><label key={key} style={{display:'grid',gap:4,fontSize:12}}>{label}<input style={inputStyle} value={String((edits[item.id]?.details||s.details||{})[key]??'')} onChange={e=>updateDetail(item.id,key,e.target.value)}/></label>)}</div></details>}
      <p style={{fontSize:12,opacity:.65,margin:0}}>Confiança da IA: {s.confidence==='high'?'alta':s.confidence==='medium'?'média':'baixa'} · confira os dados antes de salvar.</p>
      <button type="button" disabled={Boolean(savingId)} onClick={()=>void saveOne(item)} style={{...inputStyle,background:'#6125BF',color:'#fff',border:0,fontWeight:700}}>{savingId===item.id?'Salvando…':'Salvar este item'}</button>
     </>}
