@@ -28,9 +28,6 @@ alter table public.bulk_import_items enable row level security;
 grant select on public.bulk_import_jobs,public.bulk_import_items to authenticated;
 create policy "owners read bulk import jobs" on public.bulk_import_jobs for select to authenticated using(owner_id=(select auth.uid()));
 create policy "owners read bulk import items" on public.bulk_import_items for select to authenticated using(owner_id=(select auth.uid()));
-grant insert on public.bulk_import_jobs,public.bulk_import_items to authenticated;
-create policy "owners create bulk import jobs" on public.bulk_import_jobs for insert to authenticated with check(owner_id=(select auth.uid()));
-create policy "owners create bulk import items" on public.bulk_import_items for insert to authenticated with check(owner_id=(select auth.uid()));
 
 -- Create the job and its photo rows in one transaction, under the caller's RLS identity.
 create or replace function public.create_bulk_import_job(p_photo_paths text[])
