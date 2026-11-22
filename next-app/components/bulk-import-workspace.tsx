@@ -31,6 +31,7 @@ export function BulkImportWorkspace(){
  const [savingId,setSavingId]=useState<string|null>(null)
  const [edits,setEdits]=useState<Record<string,Partial<Suggestion>>>({})
  const [polling,setPolling]=useState(false)
+ const [photoUrls,setPhotoUrls]=useState<Record<string,string>>({})
  const picker=useRef<HTMLInputElement>(null)
  const client=getBrowserClient()
  const active=Boolean(job&&['queued','processing'].includes(job.status))
@@ -43,6 +44,8 @@ export function BulkImportWorkspace(){
   return()=>{live=false}
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[user?.id])
+
+ useEffect(()=>{if(!client||!items.length)return;let live=true;const paths=items.map(x=>x.photo_path);void client.storage.from(BUCKET).createSignedUrls(paths,3600).then(({data})=>{if(!live)return;const next:Record<string,string>={};for(const entry of data||[])if(entry.path&&entry.signedUrl)next[entry.path]=entry.signedUrl;setPhotoUrls(next)});return()=>{live=false}},[items,client])
 
  const refresh=useCallback(async(id:string)=>{
   setPolling(true)
@@ -141,6 +144,7 @@ export function BulkImportWorkspace(){
    const s=item.suggestion
    return <article key={item.id} style={{border:'1px solid var(--line,#ddd)',borderRadius:16,padding:14,display:'grid',gap:10,opacity:item.status==='saved'?.65:1}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><strong>Foto {index+1}</strong><span style={{fontSize:12,fontWeight:700}}>{item.status==='ready'?'Pronto para revisar':item.status==='saved'?'Salvo':item.status==='failed'?'Falhou':item.status==='processing'?'Analisando':'Na fila'}</span></div>
+    {photoUrls[item.photo_path]&&<img src={photoUrls[item.photo_path]} alt={'Foto '+(index+1)+' do item'} style={{width:'100%',maxHeight:210,objectFit:'contain',borderRadius:10,background:'#8882'}}/>}
     {s&&item.status==='ready'&&<><label style={{display:'grid',gap:5,fontSize:13}}>Nome *<input style={inputStyle} value={edits[item.id]?.name??s.name} onChange={e=>update(item.id,'name',e.target.value)}/></label>
      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}><label style={{display:'grid',gap:5,fontSize:13}}>Marca<input style={inputStyle} value={edits[item.id]?.brand??s.brand} onChange={e=>update(item.id,'brand',e.target.value)}/></label><label style={{display:'grid',gap:5,fontSize:13}}>Categoria<select style={inputStyle} value={edits[item.id]?.category??s.category} onChange={e=>update(item.id,'category',e.target.value)}>{CATEGORIES.map(c=><option key={c.name}>{c.name}</option>)}</select></label></div>
      <label style={{display:'grid',gap:5,fontSize:13}}>Observações<input style={inputStyle} value={edits[item.id]?.notes??s.notes} onChange={e=>update(item.id,'notes',e.target.value)}/></label>
