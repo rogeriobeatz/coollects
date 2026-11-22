@@ -63,10 +63,8 @@ export async function POST(request:Request){
   if(!(image instanceof File)||image.size===0||image.size>MAX_PHOTO_BYTES)return failure('IMAGE_SIZE','A imagem para análise deve ter no máximo 600 KB. Selecione a foto novamente.',400)
   const bytes=new Uint8Array(await image.arrayBuffer()),mime=mimeHeader(bytes)
   if(!mime)return failure('IMAGE_TYPE','Formato inválido. Use JPG, PNG ou WebP.',400)
-  stage='quota'
-  const {data:allowed,error:quotaError}=await db.rpc('consume_scan_quota')
-  if(quotaError)return failure('QUOTA_SERVICE','Não foi possível consultar o limite diário.',503)
-  if(!allowed)return failure('QUOTA_LIMIT','Limite de 10 análises por dia atingido. Você pode preencher manualmente.',429)
+  // Premium beta: no per-user daily scan cap while subscriptions are not active.
+  // Provider failures and server-side safeguards remain in place.
 
   // Fast path: image inline (no KIE storage round trip, photo not kept by KIE)
   // and low reasoning effort. If the provider rejects it quickly, fall back.
