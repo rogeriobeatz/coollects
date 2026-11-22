@@ -33,6 +33,7 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const showProgress=aiEnabled&&busy
 
  return <section className="scan-workspace">
+  <Link href="/importar-em-massa" className="bulk-import-entry" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'14px 16px',border:'1px solid var(--line,#ddd)',borderRadius:14,textDecoration:'none',marginBottom:16}}><span><strong style={{display:'block'}}>Cadastrar vários itens</strong><small style={{opacity:.7}}>Importe até 100 fotos de uma vez</small></span><ArrowRight size={20}/></Link>
   {hasDraft&&<div className="capture-resume-note"><p>Você pode navegar pelo app e retomar este cadastro a qualquer momento.</p><button type="button" className="text-btn" disabled={saving||preparing>0} onClick={discard}>Descartar cadastro</button></div>}
   {lastSaved&&<div role="status" className="saved-banner"><Check size={18} aria-hidden="true"/><p><strong>“{lastSaved.name}” salvo!</strong> Pronto para o próximo.</p><Link href={'/item/'+encodeURIComponent(lastSaved.id)}>Ver item</Link><button type="button" aria-label="Fechar aviso" onClick={()=>setLastSaved(null)}><X size={16}/></button></div>}
   <div className={'scanner-stage '+(main?'has-image ':'')+(busy||(preparing&&!main)?'is-scanning':'')}>
