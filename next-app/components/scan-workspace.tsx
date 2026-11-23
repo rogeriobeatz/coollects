@@ -94,12 +94,12 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
     <details className="diecast-more"><summary>Mais detalhes da cartela {extraFilled>0&&<span>{extraFilled} preenchido(s)</span>}</summary>
      <div className="diecast-field-grid">{EXTRA_DETAILS.map(([key,label,placeholder])=><label key={key} className={field('d.'+key)}>{label}<input value={details[key]} onChange={e=>{edited('d.'+key);setDetails(v=>({...v,[key]:e.target.value}))}} placeholder={placeholder} maxLength={key==='year'?4:90} inputMode={key==='year'?'numeric':'text'}/></label>)}</div>
     </details>
-    <VehicleFields values={vehicleDetails} onChange={(key,value)=>{setVehicleDetails(v=>({...v,[key]:value}))}}/>
+    <VehicleFields values={vehicleDetails} onChange={(key,value)=>{edited('vehicle.'+key);setVehicleDetails(v=>({...v,[key]:value}))}}/>
    </section>}
 
    <fieldset ref={collectionsRef} className="collection-selector"><legend>Adicionar a coleções</legend>
    {collectionsLoading?<p role="status">Carregando suas coleções…</p>:collectionsError?<div role="alert"><p>{collectionsError}</p><button type="button" className="text-btn" onClick={()=>setCollectionAttempt(v=>v+1)}>Tentar novamente</button>{originMissing&&<button type="button" className="text-btn" onClick={()=>setCollectionsError('')}>Continuar sem a coleção de origem</button>}</div>:collections.length
-    ?<div className="collection-chips">{collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>{setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}}/>{c.name}</label>)}</div>
+    ?<div className="collection-chips">{collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>{edited('collections');setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}}/>{c.name}</label>)}</div>
     :<p>Você ainda não tem coleções.</p>}
     {!collectionsLoading&&!collectionsError&&<button type="button" className="text-btn" onClick={()=>setCreatingCollection(true)}><FolderPlus size={16}/> Criar coleção</button>}
    </fieldset>
