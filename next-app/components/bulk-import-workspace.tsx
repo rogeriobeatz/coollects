@@ -1,7 +1,7 @@
 'use client'
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
+import {useCallback,useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
-import {ArrowLeft,Check,ChevronDown,Clock3,FileImage,ImagePlus,LoaderCircle,RefreshCw,Sparkles,UploadCloud,X} from 'lucide-react'
+import {Check,Clock3,ImagePlus,LoaderCircle,RefreshCw,Sparkles,UploadCloud} from 'lucide-react'
 import {useAccount} from '@/hooks/use-account'
 import {getBrowserClient} from '@/lib/supabase/client'
 import {BUCKET} from '@/lib/catalog'
@@ -32,11 +32,18 @@ export function BulkImportWorkspace(){
  const [edits,setEdits]=useState<Record<string,Partial<Suggestion>>>({})
  const [polling,setPolling]=useState(false)
  const [photoUrls,setPhotoUrls]=useState<Record<string,string>>({})
+ const [previewUrls,setPreviewUrls]=useState<string[]>([])
  const picker=useRef<HTMLInputElement>(null)
  const client=getBrowserClient()
  const active=Boolean(job&&['queued','processing'].includes(job.status))
  const completed=counts.ready+counts.failed+counts.saved
  const percent=job?Math.round((completed/job.total_count)*100):0
+
+ useEffect(()=>{
+  const urls=files.map(file=>URL.createObjectURL(file))
+  setPreviewUrls(urls)
+  return()=>urls.forEach(url=>URL.revokeObjectURL(url))
+ },[files])
 
  useEffect(()=>{if(!user||!client)return;let live=true;void client.from('collections').select('id,name').eq('owner_id',user.id).order('created_at').then(({data})=>{if(live)setCollections(data||[])})
   const stored=window.localStorage.getItem(STORAGE_KEY)
@@ -67,9 +74,9 @@ export function BulkImportWorkspace(){
   if(files.length+next.length>100){setError('O limite é de 100 fotos por importação.');return}
   setPreparing(true)
   const prepared:File[]=[];const failures:string[]=[]
-  for(const file of next){try{prepared.push((await preparePhoto(file)).file)}catch(e){failures.push(e instanceof Error?e.message:'Uma foto não pôde ser preparada.')}}
+  for(const file of next){try{prepared.push((await preparePhoto(file)).file)}catch(e){failures.push(file.name+': '+(e instanceof Error?e.message:'não foi possível preparar a foto.'))}}
   setFiles(v=>[...v,...prepared]);setPreparing(false)
-  if(failures.length)setError(failures[0])
+  if(failures.length)setError(failures.slice(0,3).join(' · ')+(failures.length>3?' · e mais '+(failures.length-3)+' arquivo(s).':''))
   if(picker.current)picker.current.value=''
  }
  const start=async()=>{
@@ -77,14 +84,17 @@ export function BulkImportWorkspace(){
   setUploading(true);setError('')
   const paths:string[]=[]
   try{
-   // Three uploads at a time: avoids exhausting mobile memory/network sockets.
+   // Upload in small groups to avoid exhausting mobile memory/network sockets.
    for(let i=0;i<files.length;i+=3){
     const batch=await Promise.all(files.slice(i,i+3).map(file=>uploadImage(client,user.id,file)))
     paths.push(...batch)
    }
    const response=await fetch('/api/bulk-import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({photoPaths:paths})})
    const data=await response.json()
-   if(!response.ok||!data.jobId)throw new Error(data.error||'Não foi possível iniciar a fila.')
+   if(!response.ok||!data.jobId){
+    const diagnostic=data.diagnosticId?' (diagnóstico '+data.diagnosticId+')':''
+    throw new Error((data.error||'Não foi possível iniciar a fila.')+diagnostic+(data.code?' · código '+data.code:''))
+   }
    window.localStorage.setItem(STORAGE_KEY,data.jobId)
    setJob({id:data.jobId,status:'queued',total_count:paths.length});setFiles([])
    await refresh(data.jobId)
@@ -140,7 +150,7 @@ export function BulkImportWorkspace(){
   </div>
   {preparing&&<p role="status"><LoaderCircle size={16}/> Preparando fotos…</p>}
   {files.length>0&&<><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><strong>{files.length} foto(s) selecionada(s)</strong><button type="button" onClick={()=>setFiles([])} style={{background:'none',border:0,color:'inherit'}}>Limpar</button></div>
-   <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:7}}>{files.slice(0,16).map((f,i)=><div key={i} style={{aspectRatio:'1',borderRadius:10,background:'#8882',display:'grid',placeItems:'center',fontSize:12,overflow:'hidden'}}><FileImage size={24}/><span>{i+1}</span></div>)}</div>
+   <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:7}}>{files.slice(0,16).map((f,i)=><div key={i} style={{aspectRatio:'1',borderRadius:10,background:'#8882',display:'grid',placeItems:'center',fontSize:12,overflow:'hidden'}}><img src={previewUrls[i]} alt={'Prévia da foto '+(i+1)} style={{width:'100%',height:'100%',objectFit:'cover'}}/><span style={{position:'absolute',alignSelf:'end',justifySelf:'start',background:'#111b',color:'#fff',padding:'3px 6px',borderRadius:6}}>{i+1}</span></div>)}</div>
    {files.length>16&&<p style={{margin:0,opacity:.7}}>+ {files.length-16} fotos</p>}
    <button type="button" disabled={uploading||preparing} onClick={()=>void start()} style={{...inputStyle,background:'#6125BF',color:'#fff',border:0,fontWeight:800,display:'flex',justifyContent:'center',gap:10,alignItems:'center'}}>{uploading?<><LoaderCircle size={18}/> Enviando fotos…</>:<><UploadCloud size={18}/> Iniciar importação de {files.length} itens</>}</button>
   </>}</>}
