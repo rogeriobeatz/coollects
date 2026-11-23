@@ -40,8 +40,8 @@ as $$
       last_attempt_at=now(), updated_at=now()
   where j.id = (
     select id from public.recognition_jobs
-    where status in ('queued','retry_wait','waiting_user')
-      and next_attempt_at <= now()
+    where (status in ('queued','retry_wait','waiting_user') and next_attempt_at <= now())
+       or (status='processing' and updated_at < now() - interval '3 minutes')
     order by next_attempt_at,created_at
     for update skip locked limit 1
   )
