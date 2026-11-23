@@ -42,10 +42,10 @@ function response(suggestion: unknown, trace: string, cached = false) {
   )
 }
 
-async function releaseReservation(db: Awaited<ReturnType<typeof createSupabaseServerClient>>, ownerId: string, imageHash: string, status: 'provider_error' | 'unknown', message: string) {
+async function releaseReservation(db: Awaited<ReturnType<typeof createSupabaseServerClient>>, ownerId: string, imageHash: string, status: 'provider_error' | 'response_received', message: string) {
   await db.from('recognition_cache').update({
     status,
-    error_stage: status === 'unknown' ? 'provider_outcome_unknown' : 'provider_rejected',
+    error_stage: status === 'response_received' ? 'provider_outcome_unknown' : 'provider_rejected',
     error_message: message.slice(0, 500),
     updated_at: new Date().toISOString()
   }).eq('owner_id', ownerId).eq('image_sha256', imageHash).eq('status', 'processing')
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
       const age = Date.now() - new Date(cached.updated_at).getTime()
       if (age > 120_000) {
         await db.from('recognition_cache').update({
-          status: 'unknown', error_stage: 'stale_processing',
+          status: 'response_received', error_stage: 'stale_processing',
           error_message: 'A execução foi interrompida e o resultado do provedor não pôde ser confirmado.',
           updated_at: new Date().toISOString()
         }).eq('owner_id', user.id).eq('image_sha256', imageHash).eq('status', 'processing')
