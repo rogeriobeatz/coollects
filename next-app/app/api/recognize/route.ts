@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       }
       return fail('ALREADY_PROCESSING', 'Esta foto já está sendo analisada. Aguarde a resposta.', 409)
     }
-    if (cached?.status === 'unknown' || cached?.status === 'response_received') {
+    if (cached?.status === 'response_received' || cached?.status === 'response_received') {
       return fail('OUTCOME_UNKNOWN', 'Não foi possível confirmar o resultado anterior. A foto não será reenviada automaticamente para evitar uma possível cobrança duplicada.', 409)
     }
 
@@ -167,14 +167,14 @@ export async function POST(request: Request) {
       })
     } catch (error) {
       const timeout = error instanceof Error && error.name === 'TimeoutError'
-      await releaseReservation(db, user.id, imageHash, 'unknown', timeout ? 'KIE_TIMEOUT' : 'KIE_NETWORK_ERROR')
+      await releaseReservation(db, user.id, imageHash, 'response_received', timeout ? 'KIE_TIMEOUT' : 'KIE_NETWORK_ERROR')
       return fail(timeout ? 'KIE_TIMEOUT' : 'KIE_NETWORK_ERROR',
         'A conexão com a IA foi interrompida. Não é possível confirmar se o provedor processou a foto; ela não será reenviada automaticamente.', 504)
     }
 
     if (!providerResponse.ok) {
       const definitiveRejection = providerResponse.status >= 400 && providerResponse.status < 500 && providerResponse.status !== 408
-      const status = definitiveRejection ? 'provider_error' : 'unknown'
+      const status = definitiveRejection ? 'provider_error' : 'response_received'
       await releaseReservation(db, user.id, imageHash, status, 'KIE_HTTP_' + providerResponse.status)
       return fail('KIE_HTTP_' + providerResponse.status,
         definitiveRejection
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
 
     const payload = await providerResponse.json().catch(() => null) as ChatPayload | null
     if (!payload) {
-      await releaseReservation(db, user.id, imageHash, 'unknown', 'KIE_INVALID_JSON')
+      await releaseReservation(db, user.id, imageHash, 'response_received', 'KIE_INVALID_JSON')
       return fail('KIE_INVALID_JSON', 'A IA respondeu em um formato inesperado. A foto não será reenviada automaticamente.', 502)
     }
     if (payload.code !== undefined && payload.code !== 200) {
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
 
     const rawResponse = extractContent(payload)
     if (!rawResponse) {
-      await releaseReservation(db, user.id, imageHash, 'unknown', 'KIE_EMPTY_RESPONSE')
+      await releaseReservation(db, user.id, imageHash, 'response_received', 'KIE_EMPTY_RESPONSE')
       return fail('KIE_EMPTY_RESPONSE', 'A IA respondeu sem conteúdo. Não vamos reenviar a mesma foto automaticamente.', 502)
     }
 
@@ -204,7 +204,7 @@ export async function POST(request: Request) {
       error_stage: null, error_message: null, updated_at: new Date().toISOString()
     }).eq('owner_id', user.id).eq('image_sha256', imageHash).eq('status', 'processing')
     if (persistError) {
-      await releaseReservation(db, user.id, imageHash, 'unknown', 'RAW_RESPONSE_PERSIST_FAILED')
+      await releaseReservation(db, user.id, imageHash, 'response_received', 'RAW_RESPONSE_PERSIST_FAILED')
       return fail('CACHE_PERSIST', 'A IA respondeu, mas não conseguimos confirmar o armazenamento do resultado. Não envie a mesma foto novamente ainda.', 503)
     }
 
@@ -230,9 +230,9 @@ export async function POST(request: Request) {
     return response(suggestion, trace)
   } catch (error) {
     if (imageHash && requestStarted) {
-      await releaseReservation(db, user.id, imageHash, 'unknown', error instanceof Error ? error.name : 'UNEXPECTED_ERROR')
+      await releaseReservation(db, user.id, imageHash, 'response_received', error instanceof Error ? error.name : 'UNEXPECTED_ERROR')
     }
-    log('unexpected_error', { error: error instanceof Error ? error.name : 'unknown' })
+    log('unexpected_error', { error: error instanceof Error ? error.name : 'response_received' })
     return fail('UNEXPECTED', 'Não foi possível concluir a análise. A foto não será reenviada automaticamente.', 500)
   }
 }
