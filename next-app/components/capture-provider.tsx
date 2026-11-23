@@ -108,12 +108,34 @@ function useCaptureSession(){
   try{
    const form=new FormData();form.append('image',photo.file)
    const response=await fetch('/api/recognize',{method:'POST',body:form,signal:controller.signal})
-   const data=await response.json().catch(()=>({})) as {error?:string;suggestion?:Suggestion}
-   if(!response.ok||!data.suggestion)throw new Error(data.error||'A análise não foi concluída.')
+   const submitted=await response.json().catch(()=>({})) as {error?:string;suggestion?:Suggestion;jobId?:string;status?:string}
+   if(!response.ok)throw new Error(submitted.error||'Não foi possível iniciar a análise.')
    if(id!==requestId.current)return
-   const filled=apply(data.suggestion)
-   setAnalysis(v=>({...v,status:'finishing',filled,confidence:data.suggestion!.confidence}))
-   window.setTimeout(()=>{if(id===requestId.current)setAnalysis(v=>({...v,status:'done'}))},FINISH_HOLD_MS)
+   if(submitted.suggestion){
+    const filled=apply(submitted.suggestion)
+    setAnalysis(v=>({...v,status:'finishing',filled,confidence:submitted.suggestion!.confidence}))
+    window.setTimeout(()=>{if(id===requestId.current)setAnalysis(v=>({...v,status:'done'}))},FINISH_HOLD_MS)
+    return
+   }
+   if(!submitted.jobId)throw new Error('Não foi possível acompanhar a análise.')
+   // Poll durable state every 15s. The KIE call itself runs independently in the worker.
+   while(!controller.signal.aborted&&id===requestId.current){
+    await new Promise<void>((resolve,reject)=>{
+     const timer=window.setTimeout(resolve,15000)
+     controller.signal.addEventListener('abort',()=>{window.clearTimeout(timer);reject(new DOMException('Aborted','AbortError'))},{once:true})
+    })
+    const statusResponse=await fetch('/api/recognize?jobId='+encodeURIComponent(submitted.jobId),{cache:'no-store',signal:controller.signal})
+    const job=await statusResponse.json().catch(()=>({})) as {status?:string;suggestion?:Suggestion;attempts?:number;last_error?:string}
+    if(!statusResponse.ok)throw new Error('Não foi possível consultar o andamento da análise.')
+    if(job.status==='completed'&&job.suggestion){
+     if(id!==requestId.current)return
+     const filled=apply(job.suggestion)
+     setAnalysis(v=>({...v,status:'finishing',filled,confidence:job.suggestion!.confidence}))
+     window.setTimeout(()=>{if(id===requestId.current)setAnalysis(v=>({...v,status:'done'}))},FINISH_HOLD_MS)
+     return
+    }
+    if(job.status==='failed')throw new Error('Não conseguimos identificar esta foto. Você pode preencher os dados manualmente.')
+   }
   }catch(error){
    if(controller.signal.aborted||id!==requestId.current)return
    setAnalysis(v=>({...v,status:'error',error:error instanceof Error?error.message:'A análise falhou.'}))
