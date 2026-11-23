@@ -20,11 +20,16 @@ create table if not exists public.recognition_jobs (
   unique(owner_id,image_sha256)
 );
 alter table public.recognition_jobs enable row level security;
-grant select on public.recognition_jobs to authenticated;
+grant select,insert,update on public.recognition_jobs to authenticated;
+create policy "owners insert own recognition jobs" on public.recognition_jobs
+  for insert to authenticated with check (owner_id = (select auth.uid()));
+create policy "owners update own recognition jobs" on public.recognition_jobs
+  for update to authenticated using (owner_id = (select auth.uid()))
+  with check (owner_id = (select auth.uid()));
 create policy "owners read own recognition jobs" on public.recognition_jobs
   for select to authenticated using (owner_id = (select auth.uid()));
 create index if not exists recognition_jobs_due_idx
-  on public.recognition_jobs(status,next_attempt_at) where status in ('queued','retry_wait','final_retry_wait');
+  on public.recognition_jobs(status,next_attempt_at) where status in ('queued','retry_wait','waiting_user','final_retry_wait');
 
 create or replace function public.claim_recognition_job()
 returns setof public.recognition_jobs
@@ -53,7 +58,16 @@ select cron.schedule(
  '* * * * *',
  $job$
  select net.http_get(
-  url := (select decrypted_secret from vault.decrypted_secrets where name='recognition_worker_url'),
+  url := regexp_replace((select decrypted_secret from vault.decrypted_secrets where name='bulk_import_worker_url'), '/api/cron/bulk-import/?
+  headers := jsonb_build_object(
+   'Authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='bulk_import_worker_secret'),
+   'Accept','application/json'
+  ),
+  timeout_milliseconds := 5000
+ );
+ $job$
+);
+, '/api/cron/recognition'),
   headers := jsonb_build_object(
    'Authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='recognition_worker_secret'),
    'Accept','application/json'
