@@ -53,7 +53,7 @@ grant execute on function public.claim_recognition_job() to service_role;
 -- Reuse the existing vaulted worker URL and secret; only change the route.
 select cron.schedule(
  'coollects-recognition-worker',
- '* * * * *',
+ '*/15 * * * * *',
  $job$
  select net.http_get(
   url := regexp_replace(
