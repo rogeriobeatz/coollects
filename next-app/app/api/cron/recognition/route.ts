@@ -81,7 +81,7 @@ export async function GET(request:Request) {
   } catch(error) {
     const message=error instanceof Error?error.message:'PROVIDER_ERROR'
     const finalAttempt=job.attempts>10
-    const nextStatus=finalAttempt?'failed':job.attempts>=10?'final_retry_wait':'retry_wait'
+    const nextStatus=finalAttempt?'failed':job.attempts>=10?'waiting_user':'retry_wait'
     const delayMs=job.attempts>=10?200000:15000
     await db.from('recognition_jobs').update({
       status:nextStatus,
