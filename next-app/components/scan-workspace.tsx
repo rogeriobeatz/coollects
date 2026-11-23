@@ -4,7 +4,6 @@ import Link from 'next/link'
 import {useSearchParams} from 'next/navigation'
 import {ArrowRight,Camera,Check,Plus,ChevronDown,FolderPlus,ImagePlus,NotebookPen,PencilLine,RotateCcw,ScanLine,Sparkles,X} from 'lucide-react'
 import {AuthGate} from './auth-gate'
-import {PhoneCaptureGate} from './phone-capture-gate'
 import {AnalysisProgress} from './analysis-progress'
 import {MAX_ITEM_PHOTOS} from '@/lib/photo-limits'
 import {CATEGORIES} from '@/lib/local-catalog'
@@ -14,7 +13,7 @@ import {useCapture,type DetailKey} from './capture-provider'
 
 const PRIMARY_DETAILS:[DetailKey,string,string][]=[['manufacturer','Montadora','Ex.: Honda'],['series','Série','Ex.: Compact Kings'],['seriesNumber','Número na série','Ex.: 4/10'],['collectionNumber','Numeração geral','Ex.: 105/250']]
 const EXTRA_DETAILS:[DetailKey,string,string][]=[['year','Ano da cartela','Somente se impresso'],['scale','Escala','Ex.: 1:64'],['color','Cor','Ex.: Vermelho'],['condition','Condição','Ex.: Lacrado']]
-export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><PhoneCaptureGate userId={userId}><Editor userId={userId} aiEnabled={aiEnabled}/></PhoneCaptureGate>}</AuthGate>}
+export function ScanWorkspace({aiEnabled=false}:{aiEnabled?:boolean}){return <AuthGate>{userId=><Editor userId={userId} aiEnabled={aiEnabled}/>}</AuthGate>}
 
 function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
  const params=useSearchParams()
@@ -95,12 +94,12 @@ function Editor({userId,aiEnabled}:{userId:string;aiEnabled:boolean}){
     <details className="diecast-more"><summary>Mais detalhes da cartela {extraFilled>0&&<span>{extraFilled} preenchido(s)</span>}</summary>
      <div className="diecast-field-grid">{EXTRA_DETAILS.map(([key,label,placeholder])=><label key={key} className={field('d.'+key)}>{label}<input value={details[key]} onChange={e=>{edited('d.'+key);setDetails(v=>({...v,[key]:e.target.value}))}} placeholder={placeholder} maxLength={key==='year'?4:90} inputMode={key==='year'?'numeric':'text'}/></label>)}</div>
     </details>
-    <VehicleFields values={vehicleDetails} onChange={(key,value)=>setVehicleDetails(v=>({...v,[key]:value}))}/>
+    <VehicleFields values={vehicleDetails} onChange={(key,value)=>{edited('vehicle.'+key);setVehicleDetails(v=>({...v,[key]:value}))}}/>
    </section>}
 
    <fieldset ref={collectionsRef} className="collection-selector"><legend>Adicionar a coleções</legend>
    {collectionsLoading?<p role="status">Carregando suas coleções…</p>:collectionsError?<div role="alert"><p>{collectionsError}</p><button type="button" className="text-btn" onClick={()=>setCollectionAttempt(v=>v+1)}>Tentar novamente</button>{originMissing&&<button type="button" className="text-btn" onClick={()=>setCollectionsError('')}>Continuar sem a coleção de origem</button>}</div>:collections.length
-    ?<div className="collection-chips">{collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}/>{c.name}</label>)}</div>
+    ?<div className="collection-chips">{collections.map(c=><label key={c.id}><input type="checkbox" checked={collectionIds.includes(c.id)} onChange={e=>{edited('collections');setCollectionIds(v=>e.target.checked?[...v,c.id]:v.filter(id=>id!==c.id))}}/>{c.name}</label>)}</div>
     :<p>Você ainda não tem coleções.</p>}
     {!collectionsLoading&&!collectionsError&&<button type="button" className="text-btn" onClick={()=>setCreatingCollection(true)}><FolderPlus size={16}/> Criar coleção</button>}
    </fieldset>

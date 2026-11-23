@@ -111,8 +111,19 @@ export function BulkImportWorkspace(){
   setSavingId(null)
  }
  const retry=async()=>{
-  if(!job)return
-  setError('Os itens com falha poderão ser reprocessados em uma etapa de retomada. Por enquanto, tente novamente mais tarde.')
+  if(!job||!client)return
+  const failed=items.filter(item=>item.status==='failed')
+  if(!failed.length)return
+  setError('');setPolling(true)
+  try{
+   for(const item of failed){
+    const {error:retryError}=await client.rpc('retry_bulk_import_item',{p_item_id:item.id})
+    if(retryError)throw retryError
+   }
+   await refresh(job.id)
+  }catch{
+   setError('Não foi possível retomar todos os itens. Atualize a importação e tente novamente.')
+  }finally{setPolling(false)}
  }
  const readyItems=items.filter(x=>x.status==='ready')
  const queuedCount=counts.queued+counts.processing
@@ -141,6 +152,7 @@ export function BulkImportWorkspace(){
    <p style={{marginBottom:0,fontWeight:700}}>{completed} de {job.total_count} processados ({percent}%)</p>
    <div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:12,marginTop:12,opacity:.8}}><span>Na fila: {queuedCount}</span><span>Para revisar: {counts.ready}</span><span>Falhas: {counts.failed}</span><span>Salvos: {counts.saved}</span></div>
    {active&&<p style={{display:'flex',alignItems:'center',gap:7,fontSize:13,marginBottom:0}}><Clock3 size={15}/> Processamento automático, normalmente em alguns minutos.</p>}
+   {counts.failed>0&&<button type="button" disabled={polling} onClick={()=>void retry()} style={{...inputStyle,background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><RefreshCw size={16}/> Tentar novamente {counts.failed} foto(s) com falha</button>}
   </div>
   {items.length>0&&<div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><h2 style={{fontSize:20,margin:0}}>Revisar itens</h2><span style={{fontSize:13,opacity:.7}}>{readyItems.length} aguardando revisão</span></div>}
   {items.map((item,index)=>{

@@ -47,6 +47,7 @@ function useCaptureSession(){
  const [notice,setNotice]=useState('')
  const [lastSaved,setLastSaved]=useState<{id:string;name:string}|null>(null)
  const savingRef=useRef(false)
+ const saveRequestId=useRef<string|null>(null)
  const requestId=useRef(0)
  const abortRef=useRef<AbortController|null>(null)
  // Fields the person typed in. The AI never overwrites them.
@@ -93,6 +94,7 @@ function useCaptureSession(){
  },[main?.id,aiEnabled])
 
  function edited(key:string){
+  saveRequestId.current=null
   touched.current.add(key)
   setAiFilled(v=>{if(!v.has(key))return v;const next=new Set(v);next.delete(key);return next})
  }
@@ -146,6 +148,7 @@ function useCaptureSession(){
  function continueManually(){manualOnly.current=true;cancelAnalysis();document.getElementById('item-name')?.focus()}
 
  async function addPhotos(e:ChangeEvent<HTMLInputElement>){
+  saveRequestId.current=null
   const operation=epoch.current
   const chosen=Array.from(e.target.files||[]);e.target.value=''
   if(!chosen.length)return
@@ -169,6 +172,7 @@ function useCaptureSession(){
  }
 
  function removePhoto(id:string){
+  saveRequestId.current=null
   const photo=photos.find(p=>p.id===id);if(!photo)return
   URL.revokeObjectURL(photo.url)
   // Removing the main photo while it is analyzed cancels that analysis; the
@@ -178,6 +182,7 @@ function useCaptureSession(){
  }
 
  function makeMain(id:string){
+  saveRequestId.current=null
   setPhotos(v=>{const photo=v.find(p=>p.id===id);return photo?[photo,...v.filter(p=>p.id!==id)]:v})
  }
 
@@ -191,25 +196,38 @@ function useCaptureSession(){
   if(savingRef.current||saving||preparing||busy||collectionsLoading||collectionsError)return
   if(!name.trim()){setNotice('Dê um nome ao item.');document.getElementById('item-name')?.focus();return}
   const db=getBrowserClient();if(!db)return
+  const requestKey=saveRequestId.current||(saveRequestId.current=crypto.randomUUID())
   savingRef.current=true;setSaving(true);setNotice('')
   const uploaded:string[]=[]
+  let rpcStarted=false
   try{
-   // Upload in parallel; remember every success so a failure can clean up.
    const results=await Promise.allSettled(photos.map(p=>uploadImage(db,userId,p.file).then(path=>{uploaded.push(path);return path})))
    if(operation!==epoch.current)throw new Error('session changed')
    if(results.some(r=>r.status==='rejected'))throw new Error('upload')
    const paths=results.map(r=>(r as PromiseFulfilledResult<string>).value)
    const payload={
+    p_request_id:requestKey,
     p_name:name.trim(),p_brand:brand.trim(),p_category:category,p_notes:notes.trim(),
     p_photo_path:paths[0]??null,p_collection_ids:collectionIds,
-    p_details:category==='Miniaturas'?{...details,...vehicleDetails,year:details.year?Number(details.year):null}:{}
+    p_details:category==='Miniaturas'?{...details,...vehicleDetails,year:details.year?Number(details.year):null}:{},
+    p_gallery_paths:paths.slice(1)
    }
-   // Without extra photos keep using the original RPC.
-   const {data:itemId,error}=paths.length>1
-    ?await db.rpc('create_item_with_gallery',{...payload,p_gallery_paths:paths.slice(1)})
-    :await db.rpc('create_item_with_details',payload)
-   if(error||!itemId)throw error||new Error('Não foi possível salvar o item.')
+   rpcStarted=true
+   let {data:itemId,error}=await db.rpc('create_item_idempotent',payload)
+   // A network error can happen after Postgres committed. Resolve by request key
+   // before showing failure; never delete files while commit status is unknown.
+   if(error||!itemId){
+    const recovered=await db.from('items').select('id').eq('owner_id',userId).eq('creation_request_id',requestKey).maybeSingle()
+    if(!recovered.error&&recovered.data?.id)itemId=recovered.data.id
+    else throw error||new Error('Não foi possível confirmar o salvamento.')
+   }
    if(operation!==epoch.current)return
+   const savedRecord=await db.from('items').select('photo_path,gallery_paths').eq('id',itemId).eq('owner_id',userId).maybeSingle()
+   if(!savedRecord.error&&savedRecord.data){
+    const used=new Set([savedRecord.data.photo_path,...(savedRecord.data.gallery_paths||[])].filter(Boolean))
+    const unused=uploaded.filter(path=>!used.has(path))
+    if(unused.length)await db.storage.from(BUCKET).remove(unused).catch(()=>{})
+   }
    notifyCatalogChanged(userId)
    if(next==='another'){
     setLastSaved({id:String(itemId),name:name.trim()})
@@ -225,10 +243,13 @@ function useCaptureSession(){
    allowExit()
    if(pathRef.current==='/cadastrar')router.replace('/item/'+encodeURIComponent(String(itemId)))
   }catch{
-   // The RPC commits metadata, links and gallery together, or nothing.
-   if(uploaded.length)await db.storage.from(BUCKET).remove(uploaded).catch(()=>{})
+   // Before the RPC starts, uploaded files are certainly unused and can be
+   // cleaned. After it starts, preserve them: the transaction may have committed.
+   if(!rpcStarted&&uploaded.length)await db.storage.from(BUCKET).remove(uploaded).catch(()=>{})
    if(operation!==epoch.current)return
-   setNotice('Não foi possível salvar o item agora. Seus dados não foram alterados. Tente novamente.')
+   setNotice(rpcStarted
+    ?'Não foi possível confirmar o salvamento. Seus dados e fotos foram preservados; tente novamente para verificar sem duplicar o item.'
+    :'Não foi possível enviar todas as fotos. Seus dados foram preservados. Tente novamente.')
    savingRef.current=false;setSaving(false)
   }
  }
@@ -236,6 +257,7 @@ function useCaptureSession(){
  /** Clears the form for the next item; keeps the chosen collections. */
  function startOver(){
   cancelAnalysis()
+  saveRequestId.current=null
   photosRef.current.forEach(p=>URL.revokeObjectURL(p.url))
   setPhotos([]);setName('');setBrand('');setNotes('');setDetails(EMPTY_DETAILS);setVehicleDetails({})
   setAiFilled(new Set());setNotice('')
