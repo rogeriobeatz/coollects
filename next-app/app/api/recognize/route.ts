@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { MAX_PHOTO_BYTES } from '@/lib/photo-limits'
+import { parseKieSuggestion } from '@/lib/kie-parser'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -32,20 +33,34 @@ export async function POST(request: Request) {
     .select('suggestion,raw_response').eq('owner_id',user.id).eq('image_sha256',imageHash).maybeSingle()
   if (cacheError) return NextResponse.json({ error: 'Não foi possível recuperar a análise.' }, { status: 503 })
   if (cached?.suggestion) return NextResponse.json({ status:'completed', suggestion:cached.suggestion, cached:true })
+  if (cached?.raw_response) {
+    try {
+      const suggestion=parseKieSuggestion(cached.raw_response)
+      await db.from('recognition_cache').update({suggestion,status:'completed',updated_at:new Date().toISOString()}).eq('owner_id',user.id).eq('image_sha256',imageHash)
+      return NextResponse.json({status:'completed',suggestion,cached:true})
+    } catch {
+      return NextResponse.json({error:'A resposta anterior foi preservada, mas não pôde ser interpretada. Tente novamente mais tarde.'},{status:422})
+    }
+  }
 
   const { data: existing, error: existingError } = await db.from('recognition_jobs')
-    .select('id,status,suggestion,attempts').eq('owner_id',user.id).eq('image_sha256',imageHash).maybeSingle()
+    .select('id,status,suggestion,attempts,raw_response').eq('owner_id',user.id).eq('image_sha256',imageHash).maybeSingle()
   if (existingError) return NextResponse.json({ error:'Não foi possível consultar a fila de análise.' },{status:503})
   if (existing?.status === 'completed' && existing.suggestion)
     return NextResponse.json({status:'completed',suggestion:existing.suggestion,cached:true})
-  if (existing && ['queued','processing','retry_wait','waiting_user','final_retry_wait'].includes(existing.status))
+  if (existing && ['queued','processing','retry_wait','waiting_user'].includes(existing.status))
     return NextResponse.json({status:existing.status,jobId:existing.id,attempts:existing.attempts})
 
+  if(existing?.raw_response && existing.status==='failed') {
+    const {data:recovered,error:recoverError}=await db.from('recognition_jobs').update({status:'queued',attempts:0,next_attempt_at:new Date().toISOString(),updated_at:new Date().toISOString(),last_error:null}).eq('id',existing.id).select('id,status,attempts').single()
+    if(recoverError||!recovered)return NextResponse.json({error:'Não foi possível recuperar a análise anterior.'},{status:503})
+    return NextResponse.json({status:recovered.status,jobId:recovered.id,attempts:recovered.attempts},{status:202})
+  }
   const base64 = Buffer.from(bytes).toString('base64')
   const { data: job, error: insertError } = await db.from('recognition_jobs').upsert({
     owner_id:user.id,image_sha256:imageHash,mime_type:mime,image_base64:base64,
     status:'queued',attempts:0,next_attempt_at:new Date().toISOString(),last_error:null,
-    raw_response:null,suggestion:null,updated_at:new Date().toISOString()
+    raw_response:existing?.raw_response??null,suggestion:null,updated_at:new Date().toISOString()
   },{onConflict:'owner_id,image_sha256'}).select('id,status,attempts').single()
   if (insertError || !job) return NextResponse.json({error:'Não foi possível iniciar o reconhecimento.'},{status:503})
   return NextResponse.json({status:job.status,jobId:job.id,attempts:job.attempts},{status:202,headers:{'Cache-Control':'no-store'}})
