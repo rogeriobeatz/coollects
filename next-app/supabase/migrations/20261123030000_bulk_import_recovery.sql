@@ -56,13 +56,14 @@ $$;
 
 create or replace function public.retry_bulk_import_item(p_item_id uuid)
 returns void
-language plpgsql security invoker set search_path=public,pg_temp as $$
-declare v_job uuid;
+language plpgsql security definer set search_path=public,pg_temp as $
+declare v_job uuid; v_owner uuid := (select auth.uid());
 begin
+  if v_owner is null then raise exception 'authentication required' using errcode='42501'; end if;
   update public.bulk_import_items
   set status='queued', error_message=null, updated_at=now()
   where id=p_item_id
-    and owner_id=(select auth.uid())
+    and owner_id=v_owner
     and status='failed'
   returning job_id into v_job;
 
