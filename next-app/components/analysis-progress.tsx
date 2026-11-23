@@ -39,7 +39,7 @@ export function AnalysisProgress({startedAt,done,children}:{startedAt:number;don
  const progress=analysisProgress(elapsed,done)
  const current=done?STEPS.length:STEPS.reduce((index,step,i)=>elapsed>=step.at?i:index,0)
  const remaining=Math.ceil((ANALYSIS_EXPECTED_MS-elapsed)/1000)
- const timeLabel=done?'Pronto!':remaining>0?'cerca de '+remaining+' s':elapsed<35_000?'quase lá…':elapsed<180_000?'esta foto está levando mais tempo que o normal':'a análise continua na fila; vamos tentar novamente automaticamente'
+ const timeLabel=done?'Pronto!':remaining>0?'cerca de '+remaining+' s':elapsed<35_000?'quase lá…':'esta foto está levando mais tempo que o normal'
  const tip=TIPS[Math.floor(elapsed/6_000)%TIPS.length]
  return <section className="analysis-progress" aria-labelledby="analysis-title">
   <div className="analysis-head">
