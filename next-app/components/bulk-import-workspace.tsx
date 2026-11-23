@@ -1,5 +1,5 @@
 'use client'
-import {useCallback,useEffect,useRef,useState} from 'react'
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import {Check,Clock3,ImagePlus,LoaderCircle,RefreshCw,Sparkles,UploadCloud} from 'lucide-react'
 import {useAccount} from '@/hooks/use-account'
@@ -32,18 +32,14 @@ export function BulkImportWorkspace(){
  const [edits,setEdits]=useState<Record<string,Partial<Suggestion>>>({})
  const [polling,setPolling]=useState(false)
  const [photoUrls,setPhotoUrls]=useState<Record<string,string>>({})
- const [previewUrls,setPreviewUrls]=useState<string[]>([])
+ const previewUrls=useMemo(()=>files.map(file=>URL.createObjectURL(file)),[files])
  const picker=useRef<HTMLInputElement>(null)
  const client=getBrowserClient()
  const active=Boolean(job&&['queued','processing'].includes(job.status))
  const completed=counts.ready+counts.failed+counts.saved
  const percent=job?Math.round((completed/job.total_count)*100):0
 
- useEffect(()=>{
-  const urls=files.map(file=>URL.createObjectURL(file))
-  setPreviewUrls(urls)
-  return()=>urls.forEach(url=>URL.revokeObjectURL(url))
- },[files])
+ useEffect(()=>()=>previewUrls.forEach(url=>URL.revokeObjectURL(url)),[previewUrls])
 
  useEffect(()=>{if(!user||!client)return;let live=true;void client.from('collections').select('id,name').eq('owner_id',user.id).order('created_at').then(({data})=>{if(live)setCollections(data||[])})
   const stored=window.localStorage.getItem(STORAGE_KEY)
@@ -150,7 +146,7 @@ export function BulkImportWorkspace(){
   </div>
   {preparing&&<p role="status"><LoaderCircle size={16}/> Preparando fotos…</p>}
   {files.length>0&&<><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><strong>{files.length} foto(s) selecionada(s)</strong><button type="button" onClick={()=>setFiles([])} style={{background:'none',border:0,color:'inherit'}}>Limpar</button></div>
-   <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:7}}>{files.slice(0,16).map((f,i)=><div key={i} style={{aspectRatio:'1',borderRadius:10,background:'#8882',display:'grid',placeItems:'center',fontSize:12,overflow:'hidden'}}><img src={previewUrls[i]} alt={'Prévia da foto '+(i+1)} style={{width:'100%',height:'100%',objectFit:'cover'}}/><span style={{position:'absolute',alignSelf:'end',justifySelf:'start',background:'#111b',color:'#fff',padding:'3px 6px',borderRadius:6}}>{i+1}</span></div>)}</div>
+   <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:7}}>{files.slice(0,16).map((f,i)=><div key={i} style={{aspectRatio:'1',position:'relative',borderRadius:10,background:'#8882',display:'grid',placeItems:'center',fontSize:12,overflow:'hidden'}}><img src={previewUrls[i]} alt={'Prévia da foto '+(i+1)} style={{width:'100%',height:'100%',objectFit:'cover'}}/><span style={{position:'absolute',alignSelf:'end',justifySelf:'start',background:'#111b',color:'#fff',padding:'3px 6px',borderRadius:6}}>{i+1}</span></div>)}</div>
    {files.length>16&&<p style={{margin:0,opacity:.7}}>+ {files.length-16} fotos</p>}
    <button type="button" disabled={uploading||preparing} onClick={()=>void start()} style={{...inputStyle,background:'#6125BF',color:'#fff',border:0,fontWeight:800,display:'flex',justifyContent:'center',gap:10,alignItems:'center'}}>{uploading?<><LoaderCircle size={18}/> Enviando fotos…</>:<><UploadCloud size={18}/> Iniciar importação de {files.length} itens</>}</button>
   </>}</>}
