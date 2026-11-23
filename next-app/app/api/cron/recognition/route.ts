@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
-type Job = { id:string; owner_id:string; image_sha256:string; mime_type:string; image_base64:string; attempts:number }
+type Job = { id:string; owner_id:string; image_sha256:string; mime_type:string; image_base64:string; attempts:number; raw_response:string|null }
 type Payload = { code?:number; msg?:string; choices?:{message?:{content?:string|{text?:string}[]}}[] }
 
 function extractContent(payload:Payload) {
@@ -30,30 +30,31 @@ export async function GET(request:Request) {
   if(!job)return NextResponse.json({claimed:0})
 
   try {
-    const response=await fetch('https://api.kie.ai/gemini-3-8-flash-openai/v1/chat/completions',{
-      method:'POST',
-      headers:{Authorization:'Bearer '+kieKey,'Content-Type':'application/json'},
-      body:JSON.stringify({
-        stream:false,
-        messages:[{role:'user',content:[
-          {type:'text',text:prompt},
-          {type:'image_url',image_url:{url:'data:'+job.mime_type+';base64,'+job.image_base64}}
-        ]}]
-      }),
-      signal:AbortSignal.timeout(110000),
-      cache:'no-store'
-    })
-    if(!response.ok)throw new Error('KIE_HTTP_'+response.status)
-    const payload=await response.json() as Payload
-    if(payload.code!==undefined&&payload.code!==200)throw new Error('KIE_CODE_'+String(payload.code))
-    const raw=extractContent(payload)
-    if(!raw)throw new Error('KIE_EMPTY_RESPONSE')
-
-    // Persist provider output before parsing; recovery never needs another KIE call.
-    const {error:persistError}=await db.from('recognition_jobs')
-      .update({raw_response:raw,updated_at:new Date().toISOString()})
-      .eq('id',job.id).eq('status','processing')
-    if(persistError)throw new Error('RAW_RESPONSE_PERSIST_FAILED')
+    let raw=job.raw_response
+    if(!raw) {
+      const response=await fetch('https://api.kie.ai/gemini-3-8-flash-openai/v1/chat/completions',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+kieKey,'Content-Type':'application/json'},
+        body:JSON.stringify({
+          stream:false,
+          messages:[{role:'user',content:[
+            {type:'text',text:prompt},
+            {type:'image_url',image_url:{url:'data:'+job.mime_type+';base64,'+job.image_base64}}
+          ]}]
+        }),
+        signal:AbortSignal.timeout(110000),
+        cache:'no-store'
+      })
+      if(!response.ok)throw new Error('KIE_HTTP_'+response.status)
+      const payload=await response.json() as Payload
+      if(payload.code!==undefined&&payload.code!==200)throw new Error('KIE_CODE_'+String(payload.code))
+      raw=extractContent(payload)
+      if(!raw)throw new Error('KIE_EMPTY_RESPONSE')
+      const {error:persistError}=await db.from('recognition_jobs')
+        .update({raw_response:raw,updated_at:new Date().toISOString()})
+        .eq('id',job.id).eq('status','processing')
+      if(persistError)throw new Error('RAW_RESPONSE_PERSIST_FAILED')
+    }
 
     let suggestion
     try { suggestion=parseKieSuggestion(raw) }
